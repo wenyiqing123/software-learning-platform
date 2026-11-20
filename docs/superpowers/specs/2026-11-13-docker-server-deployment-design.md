@@ -41,7 +41,8 @@ Python Bridge 进程在容器内监听 `0.0.0.0:8999`，但该端口不发布到
 
 - MySQL：通过现有 `agent-chat-mysql` 创建 `software_learning` schema 与独立应用账号；账号只获得该 schema 所需权限。Flyway 在新 schema 中执行项目 V1-V5 migration。不得对 `agent_chat` 执行更新或删除。
 - RabbitMQ：启动既有 RabbitMQ 容器；创建 `/software-learning` vhost 和独立应用用户。只在此 vhost 授予 `configure/read/write` 权限；保留现有 vhost、用户与数据。
-- Redis：启动既有 Redis 7 容器；新增 ACL 用户 `software_learning`，授权 `~slp:*` 键范围及 `GET`、`SET`、`DEL`、`PING` 命令。后端通过 `spring.data.redis.username` 与环境变量 `REDIS_USERNAME` 连接。ACL 不改变现有用户或全局密码，不清空 Redis。
+- Redis：启动既有 Redis 7 容器；新增随机、项目专属的 ACL 用户（`slp_redis_` 前缀），授权 `~slp:*` 键范围和应用缓存所需的 `GET`、`SET`、`DEL`、`PING` 命令，并允许 Spring Data Redis 健康探测/连接协商使用 `INFO`、`HELLO`。服务器实际 Redis 7.0.15 不支持 `CLIENT SETINFO` ACL 子命令，因此不授予该权限。后端通过 `spring.data.redis.username` 与环境变量 `REDIS_USERNAME` 连接。ACL 不改变现有用户或全局密码，不清空 Redis。
+- MySQL 与 RabbitMQ 使用随机、项目专属用户名（分别以 `slp_mysql_`、`slp_rabbit_` 开头）；MySQL 权限仅限 `software_learning.*`，RabbitMQ 权限仅限 `/software-learning` vhost。
 - NebulaGraph：只读连接现有 `air_ticket` 图空间，使用 Bridge 当前逻辑 ID 1。部署探测仅执行查询；不新增、删除、更新顶点、边、索引或图空间。
 - Python Bridge：将 `Mecha-QA-main/nebula` 中未修改的原始模块及 `air_ticket-finetuned-model-riddle_new/model` 复制到服务器专用只读挂载目录。Bridge 容器以只读挂载使用它们，不复制或改写原 Python 项目的其他文件。
 - 凭据：在服务器 `/opt/software-learning-platform/.env.server` 保存服务器专属 JWT、MySQL/RabbitMQ/Redis 应用凭据、DeepSeek API 配置及管理员引导凭据，文件权限 `0600`。不上传本机 `.env.local`，不把密钥写进镜像、Compose 文件、Nginx 配置或 Git。

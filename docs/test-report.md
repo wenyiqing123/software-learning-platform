@@ -1,0 +1,62 @@
+# 验收与验证报告
+
+日期：2026-11-12。应用位置：D:/develop/PythonProject/pythonallwork/毕设/software-learning-platform。
+
+## 追加验收（2026-11-19）
+
+- 后端使用 Temurin OpenJDK 21.0.13+9 执行 `mvn -f backend/pom.xml test`：learning-service 91 项、ai-service 85 项、learning-gateway 2 项通过，共 178 项，0 失败、0 错误。新增覆盖 F5 自适应专项练习、F6 错因关联、F7 个性化掌握图谱和 F8 阶段性学习报告；F6 的 V8/V9 Flyway 迁移已在本机专用库应用。
+- 前端执行 `npm test -- --run`：16 个测试文件、40 项测试通过；`npm run build`（包含 vue-tsc）成功。Element Plus 仅引入必要组件样式；G6/可视化容器仍按页面懒加载，构建保留大 chunk 警告但不影响结果。
+- 当前本地 5173、8080、8081、8082 均监听，三个 Java Actuator 健康状态均为 UP。登录后真实 API 冒烟：专项题单返回 5 个候选；掌握图谱返回 8 个节点、7 条先修边；阶段性报告按课程返回 2 个章节、8 个知识点；报告 CSV 返回 200；管理员错因配置读取为空，说明临时冒烟配置已清理。
+- F6 真实联调曾发现并修复 `MasteryMapMapper` 注解 SQL 中 XML 实体比较符导致的 MySQL 语法错误；修复后掌握图谱接口再次返回 200。该修复没有修改 NebulaGraph 或 Mecha-QA。
+- 本次追加验收未启动 Python Bridge 8999；因此知识图谱/AI 实时检索依赖是否可用仍以单独 Bridge/NebulaGraph 启动状态为准，不把它计入上述学习服务功能的成功证据。
+- 本次后续复核已启动并验证 NebulaGraph 与 Python Bridge：Flyway 当前版本为 V9，`quiz_option_diagnosis` 有 27 条课程种子关联；实际图谱检索返回 7 条三元组，图谱接口返回 8 个节点、7 条边。F7 的“全部课程”逻辑修复已通过回归测试和重新打包的运行实例验证。
+
+## 自动化验证
+
+- 后端：JDK 21.0.13+9，执行 mvn -f backend/pom.xml test。学习服务 51 项测试通过，AI 服务 47 项测试通过；总计 98 项，0 失败、0 错误。覆盖认证与刷新轮换、管理员角色、题目答案隐私、无效答案、停用课程、课程进度隔离、前置知识推荐、图谱 HTTP 契约、HTTP/1.1 Bridge 连接、消融安全限制、消息 outbox 拒收、实验指标与用户隔离、模型缺失、对比超时、SSE 取消及安全 ERROR/ASYNC 分派。
+- 前端：npm test，5 个测试文件、17 项测试通过；npm run build（包含 vue-tsc）。生产构建成功。
+- 构建保留一条 G6 图谱懒加载 chunk 体积警告：约 1.41 MB，gzip 约 406 KB。该 chunk 只在进入图谱页面时加载；非图谱路由保持分块加载。
+- PowerShell start.ps1、stop.ps1 和 smoke-test.ps1 通过语法解析。
+
+## 本机真实服务
+
+- start.ps1 已在 JDK 21 下实际启动学习服务、AI 服务、Gateway 和 Vite。四个健康检查通过。
+- Flyway 在专用 MySQL 8.0.33 schema software_learning 中成功应用 V4、V5，当前版本 V5。未重置或升级既有 MySQL、Redis、RabbitMQ 或 Nacos 安装。
+- learning-service 使用专用 RabbitMQ vhost /software-learning 成功连接。本地答题接口提交并更新错题与推荐，界面数据由 MySQL 返回。
+- 在 Docker Desktop 启动本机原有 NebulaGraph Desktop 容器（metad/storaged/graphd 均 healthy），并启动 Mecha-QA/python-knowledge-bridge 的 uvicorn Bridge（8999）。没有重建/删除容器、重置卷、导入数据或写入 NebulaGraph。
+- repeatable smoke-test.ps1 对本机 HTTP API 执行认证、管理员、课程内容/阅读进度、题库、无效答案、错题复习、推荐、会话归属与登出检查，18/18 通过。模型已配置时另行验证了模型路径。每次烟测创建唯一 smoke_ 和 isolation_ 学生记录并写入本应用专用库；脚本不会清理用户数据。
+
+## 浏览器人工验证
+
+- 使用真实注册表单创建本地学生账户并查看软件工程课程首页，包含八个可读小节、章节目录、学习目标、正文、延伸阅读和个人阅读进度。
+- 提交一题错误答案后，界面显示服务端正确答案/解析、累计次数和错题数量；从错题本打开 questionId + wrongItemId 定向复习，答对后待复习数量归零。
+- 推荐页实际展示前置知识优先顺序、当前掌握度与逐项解释。
+- Python Bridge/NebulaGraph 离线提示此前曾在服务停止状态验证；本轮重启后，知识图谱页面已实际显示 NebulaGraph 返回的图数据。
+- AI 助教的 DeepSeek 缺省密钥处理此前以未配置状态验证；当前已配置 deepseek-flash 并完成了真实直答与图谱增强调用。
+- 用户提供的 DeepSeek API Key 已存入本地 .env.local，AI 服务通过兼容端点和 deepseek-flash 实际完成直答测试。模型 Key 仅存放在被 Git 忽略的配置文件中，不进入项目源码。
+- /auth/me 的刷新拦截回归由 Vitest 覆盖；使用真实浏览器验证了课程到练习、错题及推荐导航。
+
+## Qwen3.5 LoRA RANKED 接入补充验收（2026-11-18）
+
+- 本地适配器位于 `model-training/local-adapter/best-adapter`，配置对应 `Qwen/Qwen3.5-0.8B`。本机推理服务 `127.0.0.1:8998` 在 RTX 3050 Laptop GPU 上报告 `UP`，Python Knowledge Bridge `127.0.0.1:8999` 同时可用。
+- 本地模型直连接口以附带课程三元组的 5 个问题做生成冒烟，5/5 返回非空答案并命中预设关键实体；单题耗时约 0.64–1.39 秒。该检查只验证推理与样例输出，不代表正式准确率。
+- 在临时启用 `RANKED_MODEL_ENABLED=true` 的 Java 服务进程中，交互式 RANKED 五个课程知识点全部由 `qwen35-ranked-lora` 完成，五条均为 `EVIDENCE_CHECK_PASSED`。原始问答、选中证据 ID、延迟及未审校标签说明记录在 `model-training/results/qwen35-integration-20261118/ranked-live-cases.json`。
+- 浏览器验收截图 `model-training/results/qwen35-integration-20261118/frontend-ranked-qwen.png` 显示 AI 学习助教的 RANKED 交互、Qwen 回答及 7 条图谱证据。实时 SSE 验收顺序为 `status → knowledge → delta → done`，最终事件携带 Qwen 来源与通过校验的答案。
+- 隔离与失败策略由 AI 服务测试覆盖：仅交互式 RANKED 使用专用客户端；DIRECT、TRIPLES 和 compare 仍使用默认客户端；Qwen 调用失败不静默切换模型；无充分证据时停止答案生成。本次重新执行 `mvn -f backend/pom.xml -pl ai-service test`，75 项通过、0 失败；`npm test -- --run`，28 项通过、0 失败。
+- 回退实测：当前 `.env.local` 保持 `RANKED_MODEL_ENABLED=false`，依赖接口报告 `DISABLED`，Qwen 推理服务仍可单独运行。随后通过本地 RANKED API 实测，来源为 `deepseek-flash`，答案正常且无错误码，耗时 1272 ms；此旧默认路径不生成 Qwen 专用 `grounding` 轨迹。
+- 训练标签仍未经教师审校。上述五题和浏览器检查证明模型接入、路由、图谱证据校验与回退行为，不证明课程问答总体准确率或教学效果提升。
+
+## 尚未验证与限制
+
+- 问答实验比较型 RANKED 当前使用 `ranked-grounded-v3`：两阶段证据选择与受限生成，要求回答覆盖每条选中三元组的主体、关系和宾语，并按关系词语义自然组织汉语句子；“规则、类型、方式、形式”等标签关系直接接宾语，“实质、定义、含义”等名词性判断关系使用“是/为”，不机械用冒号替代连接词。服务端逐项校验三元组覆盖，轨迹记录候选、选择、原始回答、校验、调用耗时和 token。新版本与 v2 及更早策略历史分开统计。策略不会为贴近参考答案而补入图谱未收录的例子；文本相似度指标需结合证据覆盖范围解释。准确率与学习效果仍需在固定题集上复测并人工盲评。
+
+- 本轮已启动 NebulaGraph Desktop 原有容器和只读 Python Bridge。图谱接口对“需求分析”返回 8 个节点、7 条边、7 条证据。未重建容器、删除卷、重导入数据或写图；Mecha-QA 源码未修改。
+- 实际运行 DIRECT、TRIPLES、RANKED 及四种消融模式，7/7 成功。RANKED Java 返回的 Prompt 与同问题 Python Bridge 返回 Prompt 逐字一致。实验 run 4 和七项人工评分已保存在 MySQL。实时验收摘要见 logs/live-nebula-deepseek-verification.log。
+- 验收参考答案和实体由开发验收输入，不构成正式评测集或科学性能结论。ROUGE/BLEU 结果、教师盲评与准确率提升研究仍需准备固定样本和规范。
+- 人工浏览器检查在本次开发视口完成；没有独立 Playwright 浏览器矩阵，移动端仍应在项目答辩设备上做最终视觉复核。
+- 个人实验评价目前使用有参考答案时的中文字符级 ROUGE-L、有效阶数 BLEU、期望实体召回率以及人工 1–5 分。未实现 LLM-as-a-judge 分数。正式论文需要自行提供固定题集与评分规范并按模型/问题分组评估。
+- Redis 当前用于个性化推荐缓存与失效；未实现图谱查询/课程目录缓存。
+
+## 环境依赖
+
+MySQL 8.0.33、Redis 5.0.14.1、RabbitMQ 4.2.3 和 Nacos 2.2.0 为用户本机原有版本，本项目没有修改它们。NebulaGraph Desktop 的 graphd、metad、storaged 原容器通过 Docker Desktop 启动，不重建和不重置卷。当前 Nacos 不在 Gateway 运行路径中。JDK 使用项目启动脚本显式选择的 Temurin OpenJDK 21.0.13+9。

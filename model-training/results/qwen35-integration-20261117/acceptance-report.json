@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "qwen35-ranked-integration-acceptance.v1",
+  "generatedAt": "2026-11-17",
+  "status": "INCOMPLETE_REMOTE_MODEL_UNAVAILABLE",
+  "featureFlag": {"name":"RANKED_MODEL_ENABLED","value":false,"defaultModelPreserved":true},
+  "localVerification": {
+    "localGpuSnapshot":{"device":"NVIDIA GeForce RTX 3050 Laptop GPU","vramMiB":4096,"freeAtCheckMiB":3462,"serviceStartupMinimumFreeMiB":3072,"minimumMetAtCheck":true,"realModelLoad":"NOT_RUN_ADAPTER_UNAVAILABLE"},
+    "javaTests":{"total":141,"failures":0,"errors":0,"result":"PASS"},
+    "pythonServingContractTests":{"total":14,"failures":0,"result":"PASS"},
+    "offlinePackageVerification":{"verifiedFiles":28,"pinnedRevision":"2fc06364715b967f1860aea9cf38778875588b17","result":"PASS"},
+    "frontend":{"unitTests":28,"testFiles":8,"productionBuild":"PASS","result":"PASS"},
+    "pythonBridge":{"health":"UP","graphQuery":{"query":"需求分析","nodes":8,"edges":7,"evidenceTriples":7,"result":"PASS"}},
+    "frontendEndToEnd":{"knowledgeGraphRendered":true,"entities":8,"relations":7,"rankedModeSelectable":true,"rankedModelGenerationDuringModeSelection":false,"result":"PASS"},
+    "frontendRankedFallback":{"mode":"RANKED","answerDisplayed":true,"evidenceTriples":7,"qwenEnabled":false,"modelProvenanceVerifiedByLocalApi":"deepseek-flash","result":"PASS"},
+    "rollbackRoute":{"rankedModelStatus":"DISABLED","interactiveRankedRequestModel":"deepseek-flash","evidenceTriples":7,"answerReturned":true,"result":"PASS"},
+    "routingIsolationTests":{"directAndTriplesUseDefaultModel":true,"comparisonAndAblationsUseDefaultModel":true,"qwenFailureDoesNotSilentlyFallback":true,"rankedSseBuffersUntilEvidenceValidation":true,"result":"PASS"}
+  },
+  "remoteModelVerification": {
+    "adapterAvailableLocally":false,
+    "adapterIncludedInCurrentOfflineTransferArchive":false,
+    "servingFilesIncludedInCurrentOfflineTransferArchive":false,
+    "tcpPort8998Reachable":true,
+    "healthEndpoint":"TIMEOUT",
+    "modelsEndpoint":"TIMEOUT",
+    "sshPortAcceptsTcpButProvidesNoSshBanner":true,
+    "winRmHttpIdentityProbe":"RESPONDS",
+    "winRmAuthenticatedSession":"REQUIRES_TRUSTED_HOSTS_OR_SSL",
+    "httpsWinRmEndpoint":"TIMEOUT",
+    "result":"NOT_VERIFIED"
+  },
+  "trainingEvaluationBoundary":{"testCases":72,"teacherReviewed":false,"metricsAreExploratoryOnly":true,"notUsedAsServiceAcceptance":true},
+  "notPassed":[
+    "Load and health-check the actual trained adapter on a reachable inference host.",
+    "Authorized JSON and SSE inference against the actual adapter.",
+    "Live Java RANKED routing to Qwen with actual graph evidence.",
+    "Live browser RANKED answer provenance and evidence-validation trace from Qwen.",
+    "Qwen service-offline fail-closed behavior and explicit rollback after Qwen was enabled."
+  ],
+  "requiredNextInput":"Provide a supported secure remote transfer/management channel (for example, start SSH and authorize a public key), or copy the adapter directory from D:/SXJ/qwen35-finetune/output/qwen35-ranked-unreviewed/best-adapter into a protected local workspace path. Do not change TrustedHosts, firewall, or global system configuration for this integration."
+}

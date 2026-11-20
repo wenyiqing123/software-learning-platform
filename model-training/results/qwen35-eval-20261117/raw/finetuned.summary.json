@@ -1,0 +1,19 @@
+{
+  "cases": 72,
+  "endToEndEvidenceValidRate": 1.0,
+  "endToEndValidAnswerMetrics": {
+    "bleu4": 0.972153,
+    "entityRecall": 1.0,
+    "rougeL": 0.951113
+  },
+  "model": "D:\\SXJ\\qwen35-finetune\\output\\qwen35-ranked-unreviewed\\best-adapter",
+  "oracleEvidenceGenerationValidRate": 1.0,
+  "oracleValidAnswerMetrics": {
+    "bleu4": 0.972153,
+    "entityRecall": 1.0,
+    "rougeL": 0.951113
+  },
+  "predictions": "D:\\SXJ\\qwen35-finetune\\evaluation-unreviewed\\finetuned.jsonl",
+  "selectionExactMatchRate": 1.0,
+  "split": "test"
+}

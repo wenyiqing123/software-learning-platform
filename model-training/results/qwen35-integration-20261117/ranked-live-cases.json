@@ -1,0 +1,52 @@
+[
+  {
+    "knowledgePoint": "需求分析",
+    "question": "需求分析的交付文档是什么？",
+    "model": "qwen35-ranked-lora",
+    "answer": "需求分析的交付文档是软件需求规格说明书。",
+    "errorCode": null,
+    "groundingStatus": "EVIDENCE_CHECK_PASSED",
+    "taskType": "SINGLE_FACT",
+    "selectedIds": [
+      "T2"
+    ],
+    "selectedEvidence": [
+      {
+        "id": "T2",
+        "subject": "需求分析",
+        "predicate": "交付文档",
+        "object": "软件需求规格说明书",
+        "score": 0.8591153621673584
+      }
+    ],
+    "tripleCount": 7,
+    "latencyMs": 3747,
+    "modelCallCount": 2,
+    "passed": true
+  },
+  {
+    "knowledgePoint": "加工命名",
+    "question": "加工命名应采用什么形式？",
+    "model": "qwen35-ranked-lora",
+    "answer": "",
+    "errorCode": "ANSWER_EVIDENCE_MISMATCH",
+    "groundingStatus": "ANSWER_EVIDENCE_MISMATCH",
+    "taskType": "SINGLE_FACT",
+    "selectedIds": [
+      "T1"
+    ],
+    "selectedEvidence": [
+      {
+        "id": "T1",
+        "subject": "加工命名",
+        "predicate": "语法结构",
+        "object": "必须采用动词+宾语的动宾短语形式，如校验权限、生成报表",
+        "score": 0.7439006567001343
+      }
+    ],
+    "tripleCount": 2,
+    "latencyMs": 4352,
+    "modelCallCount": 2,
+    "passed": false
+  }
+]

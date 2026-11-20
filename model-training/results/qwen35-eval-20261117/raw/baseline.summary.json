@@ -1,0 +1,19 @@
+{
+  "cases": 72,
+  "endToEndEvidenceValidRate": 0.013888888888888888,
+  "endToEndValidAnswerMetrics": {
+    "bleu4": 1.0,
+    "entityRecall": 1.0,
+    "rougeL": 1.0
+  },
+  "model": "D:\\SXJ\\qwen35-finetune\\package\\base-model",
+  "oracleEvidenceGenerationValidRate": 0.027777777777777776,
+  "oracleValidAnswerMetrics": {
+    "bleu4": 0.855164,
+    "entityRecall": 1.0,
+    "rougeL": 0.973684
+  },
+  "predictions": "D:\\SXJ\\qwen35-finetune\\evaluation-unreviewed\\baseline.jsonl",
+  "selectionExactMatchRate": 0.4444444444444444,
+  "split": "test"
+}

@@ -1,0 +1,64 @@
+{
+  "baseModel": "Qwen/Qwen3.5-0.8B",
+  "filesSha256": {
+    "dataset/test.jsonl": "4241b0dac691686a458be1a2a0c202176e5a49cecd0ffa0b670479b7807211e1",
+    "dataset/train.jsonl": "83c230217ad09a7f47e66685ebab31bbd4ac2c2e2d0a8b1e2a99d4e5b9040a18",
+    "dataset/validation.jsonl": "764d8a1c7f01ee293cc7d2c5386a352d87a87f01048295b6e545135b68e9a8cc",
+    "evaluation/test-cases.jsonl": "37f592646adea211d935fdff240b2021e602ba2831608015187ec7df3fa624e9",
+    "evaluation/test-grounded-answer.jsonl": "1d77829e031a4a882c8a8a35316735acf800c254603e3d0c3bc1624c695b2a30",
+    "evaluation/test-selection.jsonl": "8d4ab235d2b75759227d2a9c8651916704693caec71343397735b56020d4378d",
+    "provenance/source-manifest.json": "26eaac0d50f22ae968ae4c24f1f8aeebb2835a40b75953079a1c17cfe1773d42",
+    "provenance/test-cases.jsonl": "37f592646adea211d935fdff240b2021e602ba2831608015187ec7df3fa624e9",
+    "provenance/tokenization-smoke.json": "457720f73c8ddc29a90ce6fc819c93c186ad0232680e076057ac89e7b82e2d97",
+    "provenance/train-cases.jsonl": "0aa85c3b016395a1db41d9eac8ef3db5670fafa5a87bc06b8b8ca0016d4d1fda",
+    "provenance/train-facts.jsonl": "e2da5d031792e7f59aa5b661608bd69df7436d0b366f37788f6607efd4ff0353",
+    "provenance/validation-cases.jsonl": "f953070761cce194f264076a3e845c6ad26c1b83b64ce33e68f179e7c8b85e6d",
+    "provenance/validation-facts.jsonl": "6e563d70a3ffeafc23aec037babbbb463099c8fd7561186975cdf43c343c97cd",
+    "review/test-review.csv": "00fcdd1d77ccb6512d3e2a9d44ddf15311b68cc59327dfd299834c148dd15b26",
+    "review/train-validation-review.csv": "1be1a9e887f86d66b70e2bcad0062480990fa526ed56c9eaa7e5c2ce07a0d0bf"
+  },
+  "javaStrategyVersion": "ranked-grounded-v3",
+  "labelSource": "graph-template-needs-human-review",
+  "projection": "Only the exact EVIDENCE_SELECTION and GROUNDED_ANSWER messages used by Java RANKED are included. The grounded system context contains selected graph evidence, which is the runtime contract for the second stage, not the reference answer text.",
+  "schemaVersion": 1,
+  "sourceDatasetSha256": "26eaac0d50f22ae968ae4c24f1f8aeebb2835a40b75953079a1c17cfe1773d42",
+  "sourceDatasetVerification": {
+    "all_jsonl_hashes_verified": true,
+    "case_counts": {
+      "test": 72,
+      "train": 624,
+      "validation": 66
+    },
+    "cross_split_candidate_overlap": 0,
+    "cross_split_fact_overlap": 0,
+    "cross_split_identical_answer_overlap": 0,
+    "cross_split_subject_overlap": 0,
+    "fact_counts": {
+      "test": 55,
+      "train": 434,
+      "validation": 55
+    },
+    "long_answer_substring_overlap_ge8": 0,
+    "training_schema_and_evidence_labels_verified": true
+  },
+  "splits": {
+    "cross_split_case_overlap": 0,
+    "splits": {
+      "test": {
+        "cases": 72,
+        "records": 144
+      },
+      "train": {
+        "cases": 624,
+        "records": 1248
+      },
+      "validation": {
+        "cases": 66,
+        "records": 132
+      }
+    }
+  },
+  "teacherReviewed": false,
+  "testDataLoaded": false,
+  "testPolicy": "Test files exist only under evaluation/ and are not accepted by train.py."
+}

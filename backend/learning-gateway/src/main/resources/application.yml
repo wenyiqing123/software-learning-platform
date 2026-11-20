@@ -1,0 +1,29 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: learning-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          httpclient:
+            connect-timeout: 3000
+            response-timeout: 210s
+          routes:
+            - id: ai-service
+              order: -1
+              uri: ${AI_SERVICE_URL:http://127.0.0.1:8082}
+              predicates:
+                - Path=/api/ai/**
+            - id: learning-service
+              uri: ${LEARNING_SERVICE_URL:http://127.0.0.1:8081}
+              predicates:
+                - Path=/api/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

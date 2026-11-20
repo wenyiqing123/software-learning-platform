@@ -1,0 +1,65 @@
+{
+  "cross_split_fact_overlap": 0,
+  "cross_split_subject_overlap": 0,
+  "cross_split_identical_answer_overlap": 0,
+  "cross_split_candidate_overlap": 0,
+  "fact_counts": {
+    "train": 434,
+    "validation": 55,
+    "test": 55
+  },
+  "case_counts": {
+    "train": 624,
+    "validation": 66,
+    "test": 72
+  },
+  "long_answer_substring_overlap_ge8": 0,
+  "all_jsonl_hashes_verified": true,
+  "training_schema_and_evidence_labels_verified": true,
+  "officialDataset": "data/nebula-20261116/dataset-v1",
+  "deterministicReplay": "all JSONL hashes match reproducibility-v1",
+  "model": "qwen3.5:0.8b",
+  "runtime": "Ollama 0.40.16 portable, local 11435",
+  "snapshotEdgeCount": 1088,
+  "deduplicatedFacts": 544,
+  "duplicatePhysicalEdges": 544,
+  "sftCounts": {
+    "test": 288,
+    "train": 2496,
+    "validation": 264
+  },
+  "independentQuestionGroups": {
+    "test": 36,
+    "train": 312,
+    "validation": 33
+  },
+  "labelSource": "graph-template-needs-human-review",
+  "llmDataGenerationCalls": 0,
+  "testsPassed": 10,
+  "trainingExecuted": false,
+  "providerSwitched": false,
+  "graphMutations": 0,
+  "rankerDiagnosticOnlyNotQaAccuracy": {
+    "train": {
+      "candidateCounts": {
+        "6": 624
+      },
+      "topScoredCandidateIsGold": 492,
+      "cases": 624
+    },
+    "validation": {
+      "candidateCounts": {
+        "6": 66
+      },
+      "topScoredCandidateIsGold": 52,
+      "cases": 66
+    },
+    "test": {
+      "candidateCounts": {
+        "6": 72
+      },
+      "topScoredCandidateIsGold": 49,
+      "cases": 72
+    }
+  }
+}

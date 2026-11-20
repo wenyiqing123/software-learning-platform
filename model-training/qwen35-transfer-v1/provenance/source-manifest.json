@@ -1,0 +1,135 @@
+{
+  "case_counts": {
+    "test": 72,
+    "train": 624,
+    "validation": 66
+  },
+  "cross_split_candidate_overlap": 0,
+  "cross_split_fact_overlap": 0,
+  "cross_split_identical_answer_overlap": 0,
+  "cross_split_subject_overlap": 0,
+  "excluded": {
+    "duplicate_edges": 544,
+    "invalid_rows": 0,
+    "rejected": []
+  },
+  "excluded_from_qa": {
+    "test": [],
+    "train": [
+      {
+        "factId": "138deae6f9502307cae76f02",
+        "predicate": "包括",
+        "reason": "relation has more objects or answer characters than the candidate/length budget",
+        "subject": "机票预定系统类图"
+      },
+      {
+        "factId": "1aa7892cd8e8356bcb872f48",
+        "predicate": "包括",
+        "reason": "relation has more objects or answer characters than the candidate/length budget",
+        "subject": "机票预定系统类图"
+      },
+      {
+        "factId": "32a5cad354621c5c2becd6b4",
+        "predicate": "包括",
+        "reason": "relation has more objects or answer characters than the candidate/length budget",
+        "subject": "机票预定系统类图"
+      },
+      {
+        "factId": "50d9ac8fd8a39e80f4ada0b1",
+        "predicate": "包括",
+        "reason": "relation has more objects or answer characters than the candidate/length budget",
+        "subject": "机票预定系统类图"
+      },
+      {
+        "factId": "704c88b72dbb991dc19579bf",
+        "predicate": "包括",
+        "reason": "relation has more objects or answer characters than the candidate/length budget",
+        "subject": "机票预定系统类图"
+      },
+      {
+        "factId": "7246c8ec6d7ce6475df5f4f7",
+        "predicate": "包括",
+        "reason": "relation has more objects or answer characters than the candidate/length budget",
+        "subject": "机票预定系统类图"
+      },
+      {
+        "factId": "9f6b703f53879501b06237de",
+        "predicate": "包括",
+        "reason": "relation has more objects or answer characters than the candidate/length budget",
+        "subject": "机票预定系统类图"
+      },
+      {
+        "factId": "a1292d0a498057eb8eb90e5a",
+        "predicate": "包括",
+        "reason": "relation has more objects or answer characters than the candidate/length budget",
+        "subject": "机票预定系统类图"
+      },
+      {
+        "factId": "d0896fad6e2c2f0e4d71ae08",
+        "predicate": "包括",
+        "reason": "relation has more objects or answer characters than the candidate/length budget",
+        "subject": "机票预定系统类图"
+      }
+    ],
+    "validation": []
+  },
+  "fact_counts": {
+    "test": 55,
+    "train": 434,
+    "validation": 55
+  },
+  "gold_fact_counts": {
+    "test": 55,
+    "train": 425,
+    "validation": 55
+  },
+  "independent_question_groups": {
+    "test": 36,
+    "train": 312,
+    "validation": 33
+  },
+  "inputSha256": "99d60d35657567ef5620811fc1c2f21c3fce48b942453bf4d7824c89dd4e827f",
+  "javaStrategyVersion": "ranked-grounded-v3",
+  "labelSource": "graph-template-needs-human-review",
+  "limitations": [
+    "Template questions/references require teacher review; this is not a formal human evaluation dataset.",
+    "Objects shared as short substrings of other facts may still occur; subject/fact/identical-answer overlaps are prohibited.",
+    "Candidates are constructed within split and include gold evidence; this tests evidence use, not end-to-end retrieval recall.",
+    "No data is evidence for improved cognition or guaranteed superiority of RANKED.",
+    "Examples from one subject/relation always share a split; multiple objects are combined, never trained as contradictory single answers.",
+    "Sequence lengths are recorded as characters; tokenizer-length filtering is required before actual training."
+  ],
+  "llmCalls": 0,
+  "max_message_chars": {
+    "test": 2171,
+    "train": 1898,
+    "validation": 1655
+  },
+  "physical_edges": 1088,
+  "seed": 20261116,
+  "semanticScoring": {
+    "device": "cpu",
+    "modelPath": "D:\\develop\\PythonProject\\pythonallwork\\Mecha-QA\\output\\air_ticket-finetuned-model-riddle_new\\model",
+    "score": "cosine similarity of question and subject predicate object; no gold label used",
+    "source": "existing-mecha-qa-sentence-transformer"
+  },
+  "sft_counts": {
+    "test": 288,
+    "train": 2496,
+    "validation": 264
+  },
+  "sha256": {
+    "facts.jsonl": "b85edd7c80a26a2a9a36692edf485580503d94a30e4823cabe0898b5b952b08b",
+    "test-cases.jsonl": "1087ac383533182d4c3756fd57c1a9fcd95ab9f99bf425b58a6a011ce4373688",
+    "test-facts.jsonl": "9555ad386b35fe469a34d4ea67deed483fd8073e3adb429da411865b11832e3a",
+    "test.jsonl": "629bd988f3daf883d2acc28850c254259ef499f471a363ea06f67d3d62f49cac",
+    "train-cases.jsonl": "eb61e3e9f29c48c6afe452b55aed9340cc725dba373c47b412e97acafd3eeb01",
+    "train-facts.jsonl": "5a459bb4bd930ce87c62885c20ae6e5d0c77a31cb4eb262c8b1b0b027ffaf3f5",
+    "train.jsonl": "7992ab6fe7d5080ddf1e00c7cb150413e595309d102a119a74504ad8b729a104",
+    "validation-cases.jsonl": "459825274e4fb18fcc5e7fb4ac856162d6d216a51fb0e7cd261a1915ea68b925",
+    "validation-facts.jsonl": "00b8fa5a235425f4458d6689bb78fe27cdbe7e71617f1e47742b1140d812966c",
+    "validation.jsonl": "aa27439c6ec59334354355c36ea5bf545c4040cc4c95618cfabcfba221405d9b"
+  },
+  "split": "subject/identical-object groups, approx 80/10/10; long answer substring groups >=8 chars",
+  "unique_facts": 544
+}

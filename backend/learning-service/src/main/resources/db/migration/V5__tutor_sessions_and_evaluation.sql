@@ -1,0 +1,14 @@
+CREATE TABLE ai_session (
+ id BIGINT NOT NULL AUTO_INCREMENT, user_id BIGINT NOT NULL, title VARCHAR(120) NOT NULL,
+ created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+ updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+ PRIMARY KEY(id), KEY idx_session_user_updated(user_id,updated_at),
+ CONSTRAINT fk_session_user FOREIGN KEY(user_id) REFERENCES sys_user(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+CREATE TABLE ai_message (
+ id BIGINT NOT NULL AUTO_INCREMENT, session_id BIGINT NOT NULL, role VARCHAR(20) NOT NULL,
+ content MEDIUMTEXT NOT NULL, mode VARCHAR(30) NULL, metadata_json JSON NULL,
+ created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY(id), KEY idx_message_session_id(session_id,id),
+ CONSTRAINT fk_message_session FOREIGN KEY(session_id) REFERENCES ai_session(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+ALTER TABLE ai_experiment_run ADD COLUMN evaluation_json JSON NULL;

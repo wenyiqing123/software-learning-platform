@@ -1,0 +1,26 @@
+-- AI-generated micro-lessons are isolated drafts. They never overwrite course_study_section content.
+CREATE TABLE micro_lesson_draft (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    course_id BIGINT NOT NULL,
+    section_id BIGINT NOT NULL,
+    title VARCHAR(160) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
+    summary MEDIUMTEXT NOT NULL,
+    objectives_json JSON NOT NULL,
+    triples_json JSON NOT NULL,
+    common_errors_json JSON NOT NULL,
+    self_test_json JSON NOT NULL,
+    prerequisites_json JSON NOT NULL,
+    generated_text MEDIUMTEXT NOT NULL,
+    evidence_json JSON NOT NULL,
+    created_by BIGINT NOT NULL,
+    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    published_at TIMESTAMP(6) NULL,
+    PRIMARY KEY (id),
+    KEY idx_micro_lesson_course_section_status (course_id, section_id, status, id),
+    CONSTRAINT fk_micro_lesson_course FOREIGN KEY (course_id) REFERENCES course(id) ON DELETE CASCADE,
+    CONSTRAINT fk_micro_lesson_section FOREIGN KEY (section_id) REFERENCES course_study_section(id) ON DELETE CASCADE,
+    CONSTRAINT fk_micro_lesson_creator FOREIGN KEY (created_by) REFERENCES sys_user(id) ON DELETE RESTRICT,
+    CONSTRAINT ck_micro_lesson_status CHECK (status IN ('DRAFT', 'PUBLISHED', 'ARCHIVED'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

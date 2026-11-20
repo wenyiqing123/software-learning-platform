@@ -1,0 +1,178 @@
+{
+  "generatedAt": "2026-11-18T02:33:47.5548918+08:00",
+  "featureFlagPersisted": "false",
+  "rankedModelEnabledInTemporaryProcess": true,
+  "modelId": "qwen35-ranked-lora",
+  "device": "cuda:0",
+  "gpu": "NVIDIA GeForce RTX 3050 Laptop GPU",
+  "testLabelReviewStatus": "UNREVIEWED_EXPLORATORY_TRAINING_LABELS",
+  "cases": [
+    {
+      "caseId": "software-analysis-deliverable",
+      "knowledgePoint": "需求分析",
+      "question": "需求分析的交付文档是什么？",
+      "passed": true,
+      "model": "qwen35-ranked-lora",
+      "answer": "需求分析的交付文档是软件需求规格说明书。",
+      "errorCode": null,
+      "groundingStatus": "EVIDENCE_CHECK_PASSED",
+      "taskType": "SINGLE_FACT",
+      "selectedIds": [
+        "T2"
+      ],
+      "selectedEvidence": [
+        {
+          "id": "T2",
+          "subject": "需求分析",
+          "predicate": "交付文档",
+          "object": "软件需求规格说明书",
+          "score": 0.8591153621673584
+        }
+      ],
+      "selectionRawResponse": "{\"status\":\"SUFFICIENT\",\"taskType\":\"SINGLE_FACT\",\"selectedIds\":[\"T2\"]}",
+      "generationRawResponse": "{\"answer\":\"需求分析的交付文档是软件需求规格说明书。\",\"usedIds\":[\"T2\"]}",
+      "candidateCount": 7,
+      "modelCallCount": 2,
+      "latencyMs": 3845,
+      "tokenUsage": {
+        "promptTokens": 1171,
+        "completionTokens": 42,
+        "totalTokens": 1213
+      }
+    },
+    {
+      "caseId": "dfd-process-naming",
+      "knowledgePoint": "数据流图加工命名",
+      "question": "加工命名的语法结构是什么？",
+      "passed": true,
+      "model": "qwen35-ranked-lora",
+      "answer": "加工命名的语法结构是必须采用动词+宾语的动宾短语形式，如校验权限、生成报表。",
+      "errorCode": null,
+      "groundingStatus": "EVIDENCE_CHECK_PASSED",
+      "taskType": "SINGLE_FACT",
+      "selectedIds": [
+        "T1"
+      ],
+      "selectedEvidence": [
+        {
+          "id": "T1",
+          "subject": "加工命名",
+          "predicate": "语法结构",
+          "object": "必须采用动词+宾语的动宾短语形式，如校验权限、生成报表",
+          "score": 0.8108295202255249
+        }
+      ],
+      "selectionRawResponse": "{\"status\":\"SUFFICIENT\",\"taskType\":\"SINGLE_FACT\",\"selectedIds\":[\"T1\"]}",
+      "generationRawResponse": "{\"answer\":\"加工命名的语法结构是必须采用动词+宾语的动宾短语形式，如校验权限、生成报表。\",\"usedIds\":[\"T1\"]}",
+      "candidateCount": 2,
+      "modelCallCount": 2,
+      "latencyMs": 4004,
+      "tokenUsage": {
+        "promptTokens": 868,
+        "completionTokens": 55,
+        "totalTokens": 923
+      }
+    },
+    {
+      "caseId": "use-case-perspective",
+      "knowledgePoint": "用例图",
+      "question": "用例图的视角是什么？",
+      "passed": true,
+      "model": "qwen35-ranked-lora",
+      "answer": "用例图的视角是从用户的角度描述系统的功能需求。",
+      "errorCode": null,
+      "groundingStatus": "EVIDENCE_CHECK_PASSED",
+      "taskType": "SINGLE_FACT",
+      "selectedIds": [
+        "T2"
+      ],
+      "selectedEvidence": [
+        {
+          "id": "T2",
+          "subject": "用例图",
+          "predicate": "视角",
+          "object": "从用户的角度描述系统的功能需求",
+          "score": 0.5477064847946167
+        }
+      ],
+      "selectionRawResponse": "{\"status\":\"SUFFICIENT\",\"taskType\":\"SINGLE_FACT\",\"selectedIds\":[\"T2\"]}",
+      "generationRawResponse": "{\"answer\":\"用例图的视角是从用户的角度描述系统的功能需求。\",\"usedIds\":[\"T2\"]}",
+      "candidateCount": 8,
+      "modelCallCount": 2,
+      "latencyMs": 3455,
+      "tokenUsage": {
+        "promptTokens": 1241,
+        "completionTokens": 43,
+        "totalTokens": 1284
+      }
+    },
+    {
+      "caseId": "ticket-system-lifecycle",
+      "knowledgePoint": "机票预定系统",
+      "question": "机票预定系统遵循的过程是什么？",
+      "passed": true,
+      "model": "qwen35-ranked-lora",
+      "answer": "机票预定系统遵循软件生命周期。",
+      "errorCode": null,
+      "groundingStatus": "EVIDENCE_CHECK_PASSED",
+      "taskType": "SINGLE_FACT",
+      "selectedIds": [
+        "T1"
+      ],
+      "selectedEvidence": [
+        {
+          "id": "T1",
+          "subject": "机票预定系统",
+          "predicate": "遵循",
+          "object": "软件生命周期",
+          "score": 0.6571539044380188
+        }
+      ],
+      "selectionRawResponse": "{\"status\":\"SUFFICIENT\",\"taskType\":\"SINGLE_FACT\",\"selectedIds\":[\"T1\"]}",
+      "generationRawResponse": "{\"answer\":\"机票预定系统遵循软件生命周期。\",\"usedIds\":[\"T1\"]}",
+      "candidateCount": 7,
+      "modelCallCount": 2,
+      "latencyMs": 3124,
+      "tokenUsage": {
+        "promptTokens": 1178,
+        "completionTokens": 39,
+        "totalTokens": 1217
+      }
+    },
+    {
+      "caseId": "srs-contents",
+      "knowledgePoint": "软件需求规格说明书",
+      "question": "软件需求规格说明书包含什么？",
+      "passed": true,
+      "model": "qwen35-ranked-lora",
+      "answer": "软件需求规格说明书包含系统的功能需求、系统的非功能要求及系统的运行环境。",
+      "errorCode": null,
+      "groundingStatus": "EVIDENCE_CHECK_PASSED",
+      "taskType": "SINGLE_FACT",
+      "selectedIds": [
+        "T1"
+      ],
+      "selectedEvidence": [
+        {
+          "id": "T1",
+          "subject": "软件需求规格说明书",
+          "predicate": "包含",
+          "object": "系统的功能需求、系统的非功能要求及系统的运行环境",
+          "score": 0.9485527276992798
+        }
+      ],
+      "selectionRawResponse": "{\"status\":\"SUFFICIENT\",\"taskType\":\"SINGLE_FACT\",\"selectedIds\":[\"T1\"]}",
+      "generationRawResponse": "{\"answer\":\"软件需求规格说明书包含系统的功能需求、系统的非功能要求及系统的运行环境。\",\"usedIds\":[\"T1\"]}",
+      "candidateCount": 3,
+      "modelCallCount": 2,
+      "latencyMs": 3711,
+      "tokenUsage": {
+        "promptTokens": 934,
+        "completionTokens": 50,
+        "totalTokens": 984
+      }
+    }
+  ],
+  "passed": 5,
+  "total": 5
+}

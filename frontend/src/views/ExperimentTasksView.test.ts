@@ -1,0 +1,27 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
+import { createMemoryHistory, createRouter } from 'vue-router'
+import ExperimentTasksView from './ExperimentTasksView.vue'
+
+const http = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }))
+vi.mock('../api/client', () => ({ api: http, apiError: vi.fn(() => '实验任务请求失败') }))
+
+beforeEach(() => {
+  vi.resetAllMocks()
+  http.get.mockResolvedValue({ data: [{ id: 21, taskId: 9, groupId: 3, userId: 7, status: 'ASSIGNED', title: '需求分析任务', description: '完成服务器实验', experimentType: 'METHODS', question: '数据流图中加工如何命名？', groupName: '三元组组', conditionKey: 'TRIPLES', taskStatus: 'OPEN' }] })
+  http.post.mockResolvedValue({ data: { id: 21, taskId: 9, groupId: 3, userId: 7, status: 'IN_PROGRESS', title: '需求分析任务', description: '完成服务器实验', experimentType: 'METHODS', question: '数据流图中加工如何命名？', groupName: '三元组组', conditionKey: 'TRIPLES', taskStatus: 'OPEN' } })
+})
+
+describe('ExperimentTasksView', () => {
+  it('starts a server-managed assignment and navigates to the linked experiment', async () => {
+    const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/experiment-tasks', component: ExperimentTasksView }, { path: '/experiments', component: { template: '<div />' } }] })
+    await router.push('/experiment-tasks'); await router.isReady()
+    const wrapper = mount(ExperimentTasksView, { global: { plugins: [router] } })
+    await flushPromises()
+    await wrapper.get('button[aria-label="开始实验任务 21"]').trigger('click')
+    await flushPromises()
+    expect(http.post).toHaveBeenCalledWith('/experiment-tasks/21/start')
+    expect(router.currentRoute.value.fullPath).toBe('/experiments?taskId=9&assignmentId=21')
+    wrapper.unmount()
+  })
+})

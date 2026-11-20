@@ -1,0 +1,31 @@
+{
+  "maxSeqLen": 1536,
+  "model": "Qwen/Qwen3.5-0.8B",
+  "modelType": "qwen3_5",
+  "revision": "2fc06364715b967f1860aea9cf38778875588b17",
+  "splits": {
+    "test": {
+      "maxTokens": 1206,
+      "overLimit": 0,
+      "overLimitCaseIds": [],
+      "rows": 144,
+      "tokenized": 144
+    },
+    "train": {
+      "maxTokens": 978,
+      "overLimit": 0,
+      "overLimitCaseIds": [],
+      "rows": 1248,
+      "tokenized": 1248
+    },
+    "validation": {
+      "maxTokens": 912,
+      "overLimit": 0,
+      "overLimitCaseIds": [],
+      "rows": 132,
+      "tokenized": 132
+    }
+  },
+  "tokenizerClass": "Qwen3_5Tokenizer",
+  "vocabSize": 248077
+}

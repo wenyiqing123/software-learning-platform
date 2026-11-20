@@ -1,0 +1,192 @@
+name: software-learning
+
+services:
+  python-bridge:
+    image: software-learning/python-bridge:${IMAGE_TAG:?Set IMAGE_TAG}
+    restart: unless-stopped
+    init: true
+    environment:
+      BRIDGE_HOST: 0.0.0.0
+      BRIDGE_PORT: "8999"
+      NEBULA_HOST: ${NEBULA_HOST:-agent-chat-nebula-graphd}
+      NEBULA_PORT: ${NEBULA_PORT:-9669}
+      NEBULA_ACCOUNT: ${NEBULA_ACCOUNT:-root}
+      NEBULA_PASSWORD: ${NEBULA_PASSWORD:?Set NEBULA_PASSWORD}
+      NEBULA_SPACE_ID: "1"
+      MECHA_QA_PROJECT_ROOT: /opt/mecha
+      SCORING_MODEL_PATH: /opt/mecha/output/air_ticket-finetuned-model-riddle_new/model
+      SCORING_DEVICE: cpu
+      PYTHONPATH: /opt/mecha
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      TOKENIZERS_PARALLELISM: "false"
+    volumes:
+      - type: bind
+        source: ${MECHA_QA_ROOT:?Set MECHA_QA_ROOT}/Mecha-QA-main/nebula
+        target: /opt/mecha/nebula
+        read_only: true
+      - type: bind
+        source: ${MECHA_QA_ROOT:?Set MECHA_QA_ROOT}/output/air_ticket-finetuned-model-riddle_new/model
+        target: /opt/mecha/output/air_ticket-finetuned-model-riddle_new/model
+        read_only: true
+    mem_limit: 640m
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8999/health', timeout=2)"]
+      interval: 30s
+      timeout: 4s
+      retries: 3
+      start_period: 45s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    networks:
+      - app
+      - agent-chat-stack-net
+
+  learning-service:
+    image: software-learning/learning-service:${IMAGE_TAG:?Set IMAGE_TAG}
+    restart: unless-stopped
+    init: true
+    depends_on:
+      python-bridge:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      MYSQL_HOST: ${MYSQL_HOST:-agent-chat-mysql}
+      MYSQL_PORT: ${MYSQL_PORT:-3306}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-software_learning}
+      MYSQL_USERNAME: ${MYSQL_USERNAME:?Set MYSQL_USERNAME}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_USERNAME: ${REDIS_USERNAME:?Set REDIS_USERNAME}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:?Set RABBITMQ_USERNAME}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
+      PYTHON_KNOWLEDGE_URL: http://python-bridge:8999
+      AI_SERVICE_URL: http://ai-service:8082
+      SLP_BOOTSTRAP_ADMIN_USERNAME: ${SLP_BOOTSTRAP_ADMIN_USERNAME:?Set SLP_BOOTSTRAP_ADMIN_USERNAME}
+      SLP_BOOTSTRAP_ADMIN_PASSWORD: ${SLP_BOOTSTRAP_ADMIN_PASSWORD:?Set SLP_BOOTSTRAP_ADMIN_PASSWORD}
+      SLP_BOOTSTRAP_ADMIN_DISPLAY_NAME: ${SLP_BOOTSTRAP_ADMIN_DISPLAY_NAME:-课程管理员}
+      JAVA_TOOL_OPTIONS: >-
+        -Xms48m -Xmx160m -Xss256k -XX:MaxMetaspaceSize=112m
+        -XX:ReservedCodeCacheSize=32m -XX:ActiveProcessorCount=2
+        -XX:+UseSerialGC -XX:+ExitOnOutOfMemoryError -Dfile.encoding=UTF-8
+    mem_limit: 320m
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8081/actuator/health >/dev/null"]
+      interval: 20s
+      timeout: 5s
+      retries: 6
+      start_period: 75s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    networks:
+      - app
+      - agent-chat-stack-net
+      - cloudchat-data
+
+  ai-service:
+    image: software-learning/ai-service:${IMAGE_TAG:?Set IMAGE_TAG}
+    restart: unless-stopped
+    init: true
+    depends_on:
+      python-bridge:
+        condition: service_healthy
+    environment:
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.deepseek.com}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?Set OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL:-deepseek-flash}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
+      PYTHON_KNOWLEDGE_URL: http://python-bridge:8999
+      JAVA_TOOL_OPTIONS: >-
+        -Xms48m -Xmx128m -Xss256k -XX:MaxMetaspaceSize=96m
+        -XX:ReservedCodeCacheSize=32m -XX:ActiveProcessorCount=2
+        -XX:+UseSerialGC -XX:+ExitOnOutOfMemoryError -Dfile.encoding=UTF-8
+    mem_limit: 256m
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8082/actuator/health >/dev/null"]
+      interval: 20s
+      timeout: 5s
+      retries: 6
+      start_period: 75s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    networks:
+      - app
+
+  learning-gateway:
+    image: software-learning/learning-gateway:${IMAGE_TAG:?Set IMAGE_TAG}
+    restart: unless-stopped
+    init: true
+    depends_on:
+      learning-service:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
+    environment:
+      AI_SERVICE_URL: http://ai-service:8082
+      LEARNING_SERVICE_URL: http://learning-service:8081
+      JAVA_TOOL_OPTIONS: >-
+        -Xms32m -Xmx96m -Xss256k -XX:MaxMetaspaceSize=80m
+        -XX:ReservedCodeCacheSize=24m -XX:ActiveProcessorCount=2
+        -XX:+UseSerialGC -XX:+ExitOnOutOfMemoryError -Dfile.encoding=UTF-8
+    ports:
+      - "127.0.0.1:18084:8080"
+    mem_limit: 224m
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/actuator/health >/dev/null"]
+      interval: 20s
+      timeout: 5s
+      retries: 6
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    networks:
+      - app
+
+  frontend:
+    image: software-learning/frontend:${IMAGE_TAG:?Set IMAGE_TAG}
+    restart: unless-stopped
+    init: true
+    depends_on:
+      learning-gateway:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:18083:80"
+    mem_limit: 48m
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/health"]
+      interval: 30s
+      timeout: 4s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    networks:
+      - app
+
+networks:
+  app:
+    name: software-learning
+  agent-chat-stack-net:
+    external: true
+  cloudchat-data:
+    external: true

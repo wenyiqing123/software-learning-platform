@@ -1,0 +1,763 @@
+﻿split,case_id,question,reference_answer,expected_objects,review_status
+train,c3c65bf029714c2c987d31de,1层数据流图的任务是什么？,1层数据流图的任务是将顶层图的加工分解为主要的逻辑功能子系统或主业务模块。,"[""将顶层图的加工分解为主要的逻辑功能子系统或主业务模块""]",PENDING_HUMAN_REVIEW
+train,78b160542fea4c5bb30e5f62,根据课程知识，请说明1层数据流图的任务。,1层数据流图的任务是将顶层图的加工分解为主要的逻辑功能子系统或主业务模块。,"[""将顶层图的加工分解为主要的逻辑功能子系统或主业务模块""]",PENDING_HUMAN_REVIEW
+train,50c7b9090d47ae477f2e1286,F12-34:Liner的属性是什么？,F12-34:Liner的属性是aid=F2-34，name=China Eastern Airlines，departure=HangZhou，destination=ShangHai，seating=200，price=666。,"[""aid=F2-34，name=China Eastern Airlines，departure=HangZhou，destination=ShangHai，seating=200，price=666""]",PENDING_HUMAN_REVIEW
+train,c249a05a0bb9d42dc4ba5662,根据课程知识，请说明F12-34:Liner的属性。,F12-34:Liner的属性是aid=F2-34，name=China Eastern Airlines，departure=HangZhou，destination=ShangHai，seating=200，price=666。,"[""aid=F2-34，name=China Eastern Airlines，departure=HangZhou，destination=ShangHai，seating=200，price=666""]",PENDING_HUMAN_REVIEW
+train,ca91a77a760a58c0411a7fc1,Liner_Blanket_Aggregation的整体类是什么？,Liner_Blanket_Aggregation的整体类是航班类Liner。,"[""航班类Liner""]",PENDING_HUMAN_REVIEW
+train,a9f17c8e3d9ad3cedd9a852e,根据课程知识，请说明Liner_Blanket_Aggregation的整体类。,Liner_Blanket_Aggregation的整体类是航班类Liner。,"[""航班类Liner""]",PENDING_HUMAN_REVIEW
+train,02c37caf318048a0180892e7,Liner_Blanket_Aggregation的整体重数是什么？,Liner_Blanket_Aggregation的整体重数是1。,"[""1""]",PENDING_HUMAN_REVIEW
+train,a84ca15f3d256c3a76cf2a5f,根据课程知识，请说明Liner_Blanket_Aggregation的整体重数。,Liner_Blanket_Aggregation的整体重数是1。,"[""1""]",PENDING_HUMAN_REVIEW
+train,a6c2558a52635f1adba7a7eb,Liner_Blanket_Aggregation的部分类是什么？,Liner_Blanket_Aggregation的部分类是毛毯类Blanket。,"[""毛毯类Blanket""]",PENDING_HUMAN_REVIEW
+train,7090a5e92073c563d4c3fbe8,根据课程知识，请说明Liner_Blanket_Aggregation的部分类。,Liner_Blanket_Aggregation的部分类是毛毯类Blanket。,"[""毛毯类Blanket""]",PENDING_HUMAN_REVIEW
+train,c0434c8dacc0c5d68f9ad035,Liner_Blanket_Aggregation的部分重数是什么？,Liner_Blanket_Aggregation的部分重数是0..*。,"[""0..*""]",PENDING_HUMAN_REVIEW
+train,ccd8112c502c8fab15c2efb7,根据课程知识，请说明Liner_Blanket_Aggregation的部分重数。,Liner_Blanket_Aggregation的部分重数是0..*。,"[""0..*""]",PENDING_HUMAN_REVIEW
+train,74ba0c0b85b5801641f762d0,Liner_Stewardess_Composition的整体类是什么？,Liner_Stewardess_Composition的整体类是航班类Liner。,"[""航班类Liner""]",PENDING_HUMAN_REVIEW
+train,20b4b28f4dec277443f6b332,根据课程知识，请说明Liner_Stewardess_Composition的整体类。,Liner_Stewardess_Composition的整体类是航班类Liner。,"[""航班类Liner""]",PENDING_HUMAN_REVIEW
+train,a170d0e39f248b61f8e4b222,Liner_Stewardess_Composition的整体重数是什么？,Liner_Stewardess_Composition的整体重数是1。,"[""1""]",PENDING_HUMAN_REVIEW
+train,7a3bfb4330984c5aafbf1929,根据课程知识，请说明Liner_Stewardess_Composition的整体重数。,Liner_Stewardess_Composition的整体重数是1。,"[""1""]",PENDING_HUMAN_REVIEW
+train,0bcd5693ef619c7ebdf9e73e,Liner_Stewardess_Composition的部分类是什么？,Liner_Stewardess_Composition的部分类是空姐类Stewardess。,"[""空姐类Stewardess""]",PENDING_HUMAN_REVIEW
+train,48e4bd94483de20514db24eb,根据课程知识，请说明Liner_Stewardess_Composition的部分类。,Liner_Stewardess_Composition的部分类是空姐类Stewardess。,"[""空姐类Stewardess""]",PENDING_HUMAN_REVIEW
+train,1b5ae3a6592d7297e2291079,Liner_Stewardess_Composition的部分重数是什么？,Liner_Stewardess_Composition的部分重数是0..*。,"[""0..*""]",PENDING_HUMAN_REVIEW
+train,e1a73d9c1c2daeda04edcd0f,根据课程知识，请说明Liner_Stewardess_Composition的部分重数。,Liner_Stewardess_Composition的部分重数是0..*。,"[""0..*""]",PENDING_HUMAN_REVIEW
+train,4c9330670835826de19d93c9,UML包含哪些内容？,UML包含公共机制；构架；构造块。,"[""公共机制"", ""构架"", ""构造块""]",PENDING_HUMAN_REVIEW
+train,b63b0cb19d6a73e6ea9bc667,根据课程知识，请列出UML包含的内容。,UML包含公共机制；构架；构造块。,"[""公共机制"", ""构架"", ""构造块""]",PENDING_HUMAN_REVIEW
+train,6d870b00949f5ed83cbd263c,UML的地位是什么？,UML的地位是面向对象分析与设计的统一符号表示。,"[""面向对象分析与设计的统一符号表示""]",PENDING_HUMAN_REVIEW
+train,a9fef9485ef2a073c7725bcb,根据课程知识，请说明UML的地位。,UML的地位是面向对象分析与设计的统一符号表示。,"[""面向对象分析与设计的统一符号表示""]",PENDING_HUMAN_REVIEW
+train,5c859f5a5cd2464d1dc1af25,UML的性质是什么？,UML的性质是基于面向对象技术的标准建模语言。,"[""基于面向对象技术的标准建模语言""]",PENDING_HUMAN_REVIEW
+train,4bebb518152618ccec3f70a1,根据课程知识，请说明UML的性质。,UML的性质是基于面向对象技术的标准建模语言。,"[""基于面向对象技术的标准建模语言""]",PENDING_HUMAN_REVIEW
+train,3e4cf642c504dbfbca4a1f0d,UML的特征是什么？,UML的特征是支持 OOA 中的封装、继承、多态等核心概念的可视化。,"[""支持 OOA 中的封装、继承、多态等核心概念的可视化""]",PENDING_HUMAN_REVIEW
+train,e575f685b9242a7b7eaba572,根据课程知识，请说明UML的特征。,UML的特征是支持 OOA 中的封装、继承、多态等核心概念的可视化。,"[""支持 OOA 中的封装、继承、多态等核心概念的可视化""]",PENDING_HUMAN_REVIEW
+train,ff749ff5847eb9bc3261103f,UML图分为哪些类别？,UML图分为动态图；静态图。,"[""动态图"", ""静态图""]",PENDING_HUMAN_REVIEW
+train,00cbb7d43b241d5ea40be540,根据课程知识，请说明UML图的分类。,UML图分为动态图；静态图。,"[""动态图"", ""静态图""]",PENDING_HUMAN_REVIEW
+train,a0aba5c2f0185cccd56ee9ca,UML构造块包含哪些内容？,UML构造块包含UML图；事物；关系。,"[""UML图"", ""事物"", ""关系""]",PENDING_HUMAN_REVIEW
+train,25259f3d0720a47a3b17b747,根据课程知识，请列出UML构造块包含的内容。,UML构造块包含UML图；事物；关系。,"[""UML图"", ""事物"", ""关系""]",PENDING_HUMAN_REVIEW
+train,a38fee7d7122c7e4df886965,first:OnLine的属性是什么？,first:OnLine的属性是date=2025-10-01，number=2。,"[""date=2025-10-01，number=2""]",PENDING_HUMAN_REVIEW
+train,ba7aa347768c6e17b9530000,根据课程知识，请说明first:OnLine的属性。,first:OnLine的属性是date=2025-10-01，number=2。,"[""date=2025-10-01，number=2""]",PENDING_HUMAN_REVIEW
+train,7cfd93601ea122bd153bf350,xiaoZhang:Passenger的属性是什么？,xiaoZhang:Passenger的属性是pid=330102199001010000。,"[""pid=330102199001010000""]",PENDING_HUMAN_REVIEW
+train,e74a00e92d4a113ed88ea35d,根据课程知识，请说明xiaoZhang:Passenger的属性。,xiaoZhang:Passenger的属性是pid=330102199001010000。,"[""pid=330102199001010000""]",PENDING_HUMAN_REVIEW
+train,0b497c4b981ab7bf2ce25b72,xiaoZhang:User的属性是什么？,xiaoZhang:User的属性是Username=xiaoZhang，pwd=123456。,"[""Username=xiaoZhang，pwd=123456""]",PENDING_HUMAN_REVIEW
+train,83486eb78277e1a69ddde21c,根据课程知识，请说明xiaoZhang:User的属性。,xiaoZhang:User的属性是Username=xiaoZhang，pwd=123456。,"[""Username=xiaoZhang，pwd=123456""]",PENDING_HUMAN_REVIEW
+train,b204af7aa7c16f00bfcd85e1,下层数据流图的任务是什么？,下层数据流图的任务是对上层图中较复杂的加工进行细化分解，直到加工足够简单。,"[""对上层图中较复杂的加工进行细化分解，直到加工足够简单""]",PENDING_HUMAN_REVIEW
+train,33cd9b3171af7fe4996a0217,根据课程知识，请说明下层数据流图的任务。,下层数据流图的任务是对上层图中较复杂的加工进行细化分解，直到加工足够简单。,"[""对上层图中较复杂的加工进行细化分解，直到加工足够简单""]",PENDING_HUMAN_REVIEW
+train,c9e66f071bc61a4bea44a5e6,不为空的后续动作是什么？,不为空的后续动作是输入错误。,"[""输入错误""]",PENDING_HUMAN_REVIEW
+train,6af7267b1125e16dd3eb979f,根据课程知识，请说明不为空的后续动作。,不为空的后续动作是输入错误。,"[""输入错误""]",PENDING_HUMAN_REVIEW
+train,4674f20a95544c723fa8c7ae,不超过3次的后续动作是什么？,不超过3次的后续动作是输入用户名和密码。,"[""输入用户名和密码""]",PENDING_HUMAN_REVIEW
+train,d038964c37615e069836eeed,根据课程知识，请说明不超过3次的后续动作。,不超过3次的后续动作是输入用户名和密码。,"[""输入用户名和密码""]",PENDING_HUMAN_REVIEW
+train,420a82cbd329958e33e1c0cd,为空的后续动作是什么？,为空的后续动作是不能为空；设置输入用户名和密码的次数加1。,"[""不能为空"", ""设置输入用户名和密码的次数加1""]",PENDING_HUMAN_REVIEW
+train,c5ec270999910fb23a118b5b,根据课程知识，请说明为空的后续动作。,为空的后续动作是不能为空；设置输入用户名和密码的次数加1。,"[""不能为空"", ""设置输入用户名和密码的次数加1""]",PENDING_HUMAN_REVIEW
+train,81dbfc280677330a45a92928,事件的定义是什么？,事件的定义是引起状态转移的触发信号或动作。,"[""引起状态转移的触发信号或动作""]",PENDING_HUMAN_REVIEW
+train,a72102d1a1afca83426adf88,根据课程知识，请说明事件的定义。,事件的定义是引起状态转移的触发信号或动作。,"[""引起状态转移的触发信号或动作""]",PENDING_HUMAN_REVIEW
+train,617527748c343cc8d0c74cd5,事件的语法表示方法是什么？,事件的语法表示方法是动作表达式；条件表达式。,"[""动作表达式"", ""条件表达式""]",PENDING_HUMAN_REVIEW
+train,826740661dae66df9fe0f2d4,根据课程知识，请说明事件的语法表示方法。,事件的语法表示方法是动作表达式；条件表达式。,"[""动作表达式"", ""条件表达式""]",PENDING_HUMAN_REVIEW
+train,2372d84b6129c76abef4b11e,事物分为哪些类别？,事物分为分组事物；注释事物；结构事物；行为事物。,"[""分组事物"", ""注释事物"", ""结构事物"", ""行为事物""]",PENDING_HUMAN_REVIEW
+train,259cf3b47e7eaa56ac3a4bd5,根据课程知识，请说明事物的分类。,事物分为分组事物；注释事物；结构事物；行为事物。,"[""分组事物"", ""注释事物"", ""结构事物"", ""行为事物""]",PENDING_HUMAN_REVIEW
+train,942d5a28bbadd6a3d300e2ca,事物的定义是什么？,事物的定义是模型中最基本的面向对象的原子元素。,"[""模型中最基本的面向对象的原子元素""]",PENDING_HUMAN_REVIEW
+train,f8e957e4d46915e4ce6f187c,根据课程知识，请说明事物的定义。,事物的定义是模型中最基本的面向对象的原子元素。,"[""模型中最基本的面向对象的原子元素""]",PENDING_HUMAN_REVIEW
+train,bb2adf8d4386a65842e66457,依赖关系的定义是什么？,依赖关系的定义是如果元素A的变化会引起元素B的变化，则称元素B信赖于元素A，使用带箭头的虚线表示，指向元素A。,"[""如果元素A的变化会引起元素B的变化，则称元素B信赖于元素A，使用带箭头的虚线表示，指向元素A""]",PENDING_HUMAN_REVIEW
+train,19384f01a74720de5038b305,根据课程知识，请说明依赖关系的定义。,依赖关系的定义是如果元素A的变化会引起元素B的变化，则称元素B信赖于元素A，使用带箭头的虚线表示，指向元素A。,"[""如果元素A的变化会引起元素B的变化，则称元素B信赖于元素A，使用带箭头的虚线表示，指向元素A""]",PENDING_HUMAN_REVIEW
+train,351568012ed1891af2a671b9,关联的功能是什么？,关联的功能是参与者与其参与执行的用例之间的通信路径，用不带箭头的实线表示。,"[""参与者与其参与执行的用例之间的通信路径，用不带箭头的实线表示""]",PENDING_HUMAN_REVIEW
+train,a95daebba6d620e44a7654a8,根据课程知识，请说明关联的功能。,关联的功能是参与者与其参与执行的用例之间的通信路径，用不带箭头的实线表示。,"[""参与者与其参与执行的用例之间的通信路径，用不带箭头的实线表示""]",PENDING_HUMAN_REVIEW
+train,5dee5e32a73d5fb933965a51,内部活动do的描述是什么？,内部活动do描述在状态持续期间占有时间间隔的连续操作。,"[""在状态持续期间占有时间间隔的连续操作""]",PENDING_HUMAN_REVIEW
+train,91de303fdc374a9162ed0eac,根据课程知识，请说明内部活动do的描述。,内部活动do描述在状态持续期间占有时间间隔的连续操作。,"[""在状态持续期间占有时间间隔的连续操作""]",PENDING_HUMAN_REVIEW
+train,65bcb8c14649990a2b11d0f9,分析属性的途径是什么？,分析属性的途径是需求陈述中的名词词组及领域知识和常识。,"[""需求陈述中的名词词组及领域知识和常识""]",PENDING_HUMAN_REVIEW
+train,3a6e151b3b2fe2e4c25a1ae4,根据课程知识，请说明分析属性的途径。,分析属性的途径是需求陈述中的名词词组及领域知识和常识。,"[""需求陈述中的名词词组及领域知识和常识""]",PENDING_HUMAN_REVIEW
+train,2f8e5042956df1009068dcc7,分组事物的主要形式是什么？,分组事物的主要形式是包。,"[""包""]",PENDING_HUMAN_REVIEW
+train,12630593c8a9c18dd66ce90a,根据课程知识，请说明分组事物的主要形式。,分组事物的主要形式是包。,"[""包""]",PENDING_HUMAN_REVIEW
+train,c5ed1770c44cff5d055c12a4,初始状态的定义是什么？,初始状态的定义是又称为初态，用实心圆点表示，一张图中只能有一个初始状态。,"[""又称为初态，用实心圆点表示，一张图中只能有一个初始状态""]",PENDING_HUMAN_REVIEW
+train,3297770d30ebb01fa8a386cc,根据课程知识，请说明初始状态的定义。,初始状态的定义是又称为初态，用实心圆点表示，一张图中只能有一个初始状态。,"[""又称为初态，用实心圆点表示，一张图中只能有一个初始状态""]",PENDING_HUMAN_REVIEW
+train,43f782f9c0e082025fb220fd,判断用户名和密码是否为空的分支1是什么？,判断用户名和密码是否为空的分支1是不为空。,"[""不为空""]",PENDING_HUMAN_REVIEW
+train,61ead4b785900b7b9e12a7cf,根据课程知识，请说明判断用户名和密码是否为空的分支1。,判断用户名和密码是否为空的分支1是不为空。,"[""不为空""]",PENDING_HUMAN_REVIEW
+train,e61764340a19ff9569acba8a,判断用户名和密码是否为空的分支2是什么？,判断用户名和密码是否为空的分支2是为空。,"[""为空""]",PENDING_HUMAN_REVIEW
+train,4715ccc228d3f6debe303958,根据课程知识，请说明判断用户名和密码是否为空的分支2。,判断用户名和密码是否为空的分支2是为空。,"[""为空""]",PENDING_HUMAN_REVIEW
+train,70f1a190a06a68bc79ddfb4a,判断输入次数是否超过3次的分支1是什么？,判断输入次数是否超过3次的分支1是不超过3次。,"[""不超过3次""]",PENDING_HUMAN_REVIEW
+train,fb71e8b320c1bfa6edceedf8,根据课程知识，请说明判断输入次数是否超过3次的分支1。,判断输入次数是否超过3次的分支1是不超过3次。,"[""不超过3次""]",PENDING_HUMAN_REVIEW
+train,cd8a52c685df88f3fbea5cdd,判断输入次数是否超过3次的分支2是什么？,判断输入次数是否超过3次的分支2是超过3次。,"[""超过3次""]",PENDING_HUMAN_REVIEW
+train,dff75cab60b3faf42b632a12,根据课程知识，请说明判断输入次数是否超过3次的分支2。,判断输入次数是否超过3次的分支2是超过3次。,"[""超过3次""]",PENDING_HUMAN_REVIEW
+train,979d07bd7d01546c19fd244a,判断输入次数是否超过3次的判断框是什么？,判断输入次数是否超过3次的判断框是条件。,"[""条件""]",PENDING_HUMAN_REVIEW
+train,7179f3127d7048595946e974,根据课程知识，请说明判断输入次数是否超过3次的判断框。,判断输入次数是否超过3次的判断框是条件。,"[""条件""]",PENDING_HUMAN_REVIEW
+train,73db002b57f83e38f240dd76,功能模型使用哪些工具？,功能模型的使用工具是机票预定系统数据流图。,"[""机票预定系统数据流图""]",PENDING_HUMAN_REVIEW
+train,9dc16dae3c9b58e3d623e14c,根据课程知识，请列出功能模型使用的工具。,功能模型的使用工具是机票预定系统数据流图。,"[""机票预定系统数据流图""]",PENDING_HUMAN_REVIEW
+train,9672fdd07acce3a540af554e,功能模型的定义是什么？,功能模型的定义是指明系统应该’做什么’，描述了对象模型中操作的含义、动态模型中动作的意义，以及对象模型中约束的意义。,"[""指明系统应该’做什么’，描述了对象模型中操作的含义、动态模型中动作的意义，以及对象模型中约束的意义""]",PENDING_HUMAN_REVIEW
+train,47a77fcc6668e76985ca4a15,根据课程知识，请说明功能模型的定义。,功能模型的定义是指明系统应该’做什么’，描述了对象模型中操作的含义、动态模型中动作的意义，以及对象模型中约束的意义。,"[""指明系统应该’做什么’，描述了对象模型中操作的含义、动态模型中动作的意义，以及对象模型中约束的意义""]",PENDING_HUMAN_REVIEW
+train,1ca99bd6ee4535bf205e766d,功能模型的工具是什么？,功能模型的工具是数据流图DFD——描述变换和加工逻辑；用例图——描述系统与外部参与者的交互及需求。,"[""数据流图DFD——描述变换和加工逻辑"", ""用例图——描述系统与外部参与者的交互及需求""]",PENDING_HUMAN_REVIEW
+train,f8af5a0c61e63ee150d9f3fe,根据课程知识，请说明功能模型的工具。,功能模型的工具是数据流图DFD——描述变换和加工逻辑；用例图——描述系统与外部参与者的交互及需求。,"[""数据流图DFD——描述变换和加工逻辑"", ""用例图——描述系统与外部参与者的交互及需求""]",PENDING_HUMAN_REVIEW
+train,87a0d99cfd0fece1daa50f4e,加工包含哪些内容？,加工包含加工命名；加工编号。,"[""加工命名"", ""加工编号""]",PENDING_HUMAN_REVIEW
+train,f7301d9fa4a58eabec920caf,根据课程知识，请列出加工包含的内容。,加工包含加工命名；加工编号。,"[""加工命名"", ""加工编号""]",PENDING_HUMAN_REVIEW
+train,70312c32b6e5097a69ba0ac8,加工的定义是什么？,加工的定义是对数据进行处理，它接收一定的数据输入，对其进行处理，并产生输出。,"[""对数据进行处理，它接收一定的数据输入，对其进行处理，并产生输出""]",PENDING_HUMAN_REVIEW
+train,c487ff2399d6c3e7a639bea8,根据课程知识，请说明加工的定义。,加工的定义是对数据进行处理，它接收一定的数据输入，对其进行处理，并产生输出。,"[""对数据进行处理，它接收一定的数据输入，对其进行处理，并产生输出""]",PENDING_HUMAN_REVIEW
+train,074a00393ddb30094a8c30e7,加工的符号是什么？,加工的符号是圆角矩形或圆形。,"[""圆角矩形或圆形""]",PENDING_HUMAN_REVIEW
+train,0c96e24a85aa2578887dfa3f,根据课程知识，请说明加工的符号。,加工的符号是圆角矩形或圆形。,"[""圆角矩形或圆形""]",PENDING_HUMAN_REVIEW
+train,fb9fccb9efb838bf23f6af16,加工命名的语法结构是什么？,加工命名的语法结构是必须采用动词+宾语的动宾短语形式，如校验权限、生成报表。,"[""必须采用动词+宾语的动宾短语形式，如校验权限、生成报表""]",PENDING_HUMAN_REVIEW
+train,fe2142ac9c8487ef44c35e31,根据课程知识，请说明加工命名的语法结构。,加工命名的语法结构是必须采用动词+宾语的动宾短语形式，如校验权限、生成报表。,"[""必须采用动词+宾语的动宾短语形式，如校验权限、生成报表""]",PENDING_HUMAN_REVIEW
+train,cbd6ae80a3b932116055f8c6,加工的命名的规则是什么？,加工的命名规则应使用动宾短语描述处理逻辑。,"[""应使用动宾短语描述处理逻辑""]",PENDING_HUMAN_REVIEW
+train,65ea1166abd9fcb9e1a7623e,根据课程知识，请说明加工的命名的规则。,加工的命名规则应使用动宾短语描述处理逻辑。,"[""应使用动宾短语描述处理逻辑""]",PENDING_HUMAN_REVIEW
+train,c2848cf220c268a689211810,动作的位置是什么？,动作的位置是位于状态圆角矩形的下部区域。,"[""位于状态圆角矩形的下部区域""]",PENDING_HUMAN_REVIEW
+train,cd3dbe328ca5b44da6d00da7,根据课程知识，请说明动作的位置。,动作的位置是位于状态圆角矩形的下部区域。,"[""位于状态圆角矩形的下部区域""]",PENDING_HUMAN_REVIEW
+train,5901812fd7f1982e6dea0c90,动作的类型是什么？,动作的类型是内部活动do；退出动作exit。,"[""内部活动do"", ""退出动作exit""]",PENDING_HUMAN_REVIEW
+train,b892ed702dc17c9d1e6b9724,根据课程知识，请说明动作的类型。,动作的类型是内部活动do；退出动作exit。,"[""内部活动do"", ""退出动作exit""]",PENDING_HUMAN_REVIEW
+train,332c13c8665ec3d2d0a8adfe,动态模型的定义是什么？,动态模型的定义是描述了对象的控制结构，它明确规定了’什么时候做’，即在何种状态下接受什么事件的触发。,"[""描述了对象的控制结构，它明确规定了’什么时候做’，即在何种状态下接受什么事件的触发""]",PENDING_HUMAN_REVIEW
+train,603f9bd14017ca0de06a8f62,根据课程知识，请说明动态模型的定义。,动态模型的定义是描述了对象的控制结构，它明确规定了’什么时候做’，即在何种状态下接受什么事件的触发。,"[""描述了对象的控制结构，它明确规定了’什么时候做’，即在何种状态下接受什么事件的触发""]",PENDING_HUMAN_REVIEW
+train,e3b279687fe4fa3c7c844a63,动态模型的工具是什么？,动态模型的工具是顺序图/状态图——描述对象间的消息传递和状态变化。,"[""顺序图/状态图——描述对象间的消息传递和状态变化""]",PENDING_HUMAN_REVIEW
+train,9330ab30a013c20cbcf530fb,根据课程知识，请说明动态模型的工具。,动态模型的工具是顺序图/状态图——描述对象间的消息传递和状态变化。,"[""顺序图/状态图——描述对象间的消息传递和状态变化""]",PENDING_HUMAN_REVIEW
+train,3885772305e4ab0a1e4c7f3e,包含关系的功能是什么？,包含关系的功能是被包含用例对基用例来说是必须的，用带箭头的虚线和<<include>>表示，箭头指向被包含用例。,"[""被包含用例对基用例来说是必须的，用带箭头的虚线和<<include>>表示，箭头指向被包含用例""]",PENDING_HUMAN_REVIEW
+train,68faceaea1cee2e53728612c,根据课程知识，请说明包含关系的功能。,包含关系的功能是被包含用例对基用例来说是必须的，用带箭头的虚线和<<include>>表示，箭头指向被包含用例。,"[""被包含用例对基用例来说是必须的，用带箭头的虚线和<<include>>表示，箭头指向被包含用例""]",PENDING_HUMAN_REVIEW
+train,d9eb64854e421e1d8228dd75,单元测试的交付文档是什么？,单元测试的交付文档是单元测试报告。,"[""单元测试报告""]",PENDING_HUMAN_REVIEW
+train,6ecec3d14461b1e89f05c003,根据课程知识，请说明单元测试的交付文档。,单元测试的交付文档是单元测试报告。,"[""单元测试报告""]",PENDING_HUMAN_REVIEW
+train,ffbce1ce8bb8fa8e0babc47a,单元测试的依据是什么？,单元测试的依据是详细设计说明书。,"[""详细设计说明书""]",PENDING_HUMAN_REVIEW
+train,4f19701a8fa7daa1309a4866,根据课程知识，请说明单元测试的依据。,单元测试的依据是详细设计说明书。,"[""详细设计说明书""]",PENDING_HUMAN_REVIEW
+train,5d8a5e13d1d888893c3e7307,单击“返回”或“重新搜索”按钮的语法表示是什么？,单击“返回”或“重新搜索”按钮的语法表示是动作表达式。,"[""动作表达式""]",PENDING_HUMAN_REVIEW
+train,fabbe90318a9be6a81e4c8af,根据课程知识，请说明单击“返回”或“重新搜索”按钮的语法表示。,单击“返回”或“重新搜索”按钮的语法表示是动作表达式。,"[""动作表达式""]",PENDING_HUMAN_REVIEW
+train,a26b6d9693ecdcfc537079d4,单击搜索按钮的语法表示是什么？,单击搜索按钮的语法表示是动作表达式。,"[""动作表达式""]",PENDING_HUMAN_REVIEW
+train,b053b8cc22de13e8b771f2cc,根据课程知识，请说明单击搜索按钮的语法表示。,单击搜索按钮的语法表示是动作表达式。,"[""动作表达式""]",PENDING_HUMAN_REVIEW
+train,edf385c9ed3ef9f227250830,反映机票业务流程的数据流图DFD的任务是什么？,反映机票业务流程的数据流图DFD的任务是识别“旅客”外部实体及“航班表”、“订票表”数据存储、定义“审核信息”、“订票”、“退票”等核心加工过程。,"[""识别“旅客”外部实体及“航班表”、“订票表”数据存储、定义“审核信息”、“订票”、“退票”等核心加工过程""]",PENDING_HUMAN_REVIEW
+train,8c5dd20459bf8e2a89b7ccfa,根据课程知识，请说明反映机票业务流程的数据流图DFD的任务。,反映机票业务流程的数据流图DFD的任务是识别“旅客”外部实体及“航班表”、“订票表”数据存储、定义“审核信息”、“订票”、“退票”等核心加工过程。,"[""识别“旅客”外部实体及“航班表”、“订票表”数据存储、定义“审核信息”、“订票”、“退票”等核心加工过程""]",PENDING_HUMAN_REVIEW
+train,d2301fed0365cbdbc1440a2e,取票通知的组成是什么？,取票通知的组成是身份证号码+姓名+手机号码+出发时间+到达时间+航班号+出发地+目的地。,"[""身份证号码+姓名+手机号码+出发时间+到达时间+航班号+出发地+目的地""]",PENDING_HUMAN_REVIEW
+train,a10c7736bf5f5eb19ed356b0,根据课程知识，请说明取票通知的组成。,取票通知的组成是身份证号码+姓名+手机号码+出发时间+到达时间+航班号+出发地+目的地。,"[""身份证号码+姓名+手机号码+出发时间+到达时间+航班号+出发地+目的地""]",PENDING_HUMAN_REVIEW
+train,dfcb993f3d49a47d050a217f,可行性研究的交付文档是什么？,可行性研究的交付文档是可行性研究报告。,"[""可行性研究报告""]",PENDING_HUMAN_REVIEW
+train,33282aaca89afccc17ab166b,根据课程知识，请说明可行性研究的交付文档。,可行性研究的交付文档是可行性研究报告。,"[""可行性研究报告""]",PENDING_HUMAN_REVIEW
+train,66fca929e45e2b3168a6422a,可行性研究的关键任务是什么？,可行性研究的关键任务是确定工程可行性、导出实现工程的策略、估计资源和成本、制定工程进度表。,"[""确定工程可行性、导出实现工程的策略、估计资源和成本、制定工程进度表""]",PENDING_HUMAN_REVIEW
+train,65796b38fdbc347b2c8f5454,根据课程知识，请说明可行性研究的关键任务。,可行性研究的关键任务是确定工程可行性、导出实现工程的策略、估计资源和成本、制定工程进度表。,"[""确定工程可行性、导出实现工程的策略、估计资源和成本、制定工程进度表""]",PENDING_HUMAN_REVIEW
+train,c06441ed6c934ad8bd2bd456,可行性研究的关键结论是什么？,可行性研究的关键结论是软件项目是否值得开发。,"[""软件项目是否值得开发""]",PENDING_HUMAN_REVIEW
+train,9d932adfdf9e38e1145f6dab,根据课程知识，请说明可行性研究的关键结论。,可行性研究的关键结论是软件项目是否值得开发。,"[""软件项目是否值得开发""]",PENDING_HUMAN_REVIEW
+train,95b5b2b9b9bc4e6ddc59769e,可行性研究前置于哪些知识点或对象？,可行性研究前置于需求分析。,"[""需求分析""]",PENDING_HUMAN_REVIEW
+train,cf5022ef2c92f28257ed3d9f,课程图谱中，可行性研究的“前置于”关系指向哪些对象？,可行性研究前置于需求分析。,"[""需求分析""]",PENDING_HUMAN_REVIEW
+train,e67bd84b1c0f27358fc79bc0,可行性研究包含哪些内容？,可行性研究包含技术可行性；操作可行性；社会可行性；经济可行性。,"[""技术可行性"", ""操作可行性"", ""社会可行性"", ""经济可行性""]",PENDING_HUMAN_REVIEW
+train,230816df7d98b7b9f8ad30da,根据课程知识，请列出可行性研究包含的内容。,可行性研究包含技术可行性；操作可行性；社会可行性；经济可行性。,"[""技术可行性"", ""操作可行性"", ""社会可行性"", ""经济可行性""]",PENDING_HUMAN_REVIEW
+train,de96b3f8a86807c295144984,可行性研究的实质是什么？,可行性研究的实质是大大压缩简化了的系统分析和设计过程。,"[""大大压缩简化了的系统分析和设计过程""]",PENDING_HUMAN_REVIEW
+train,6a0dc0cb5eb75f49fe0d8722,根据课程知识，请说明可行性研究的实质。,可行性研究的实质是大大压缩简化了的系统分析和设计过程。,"[""大大压缩简化了的系统分析和设计过程""]",PENDING_HUMAN_REVIEW
+train,eb1a90cbeb4417769a77668b,可行性研究的目标是什么？,可行性研究的目标是用最小代价在尽可能短的时间内确定问题是否值得解决。,"[""用最小代价在尽可能短的时间内确定问题是否值得解决""]",PENDING_HUMAN_REVIEW
+train,9a8ccf0b7289cf4f59b7c183,根据课程知识，请说明可行性研究的目标。,可行性研究的目标是用最小代价在尽可能短的时间内确定问题是否值得解决。,"[""用最小代价在尽可能短的时间内确定问题是否值得解决""]",PENDING_HUMAN_REVIEW
+train,76eb95ec42c0a79d508dfee7,可行性研究的过程是什么？,可行性研究的过程是可行性研究最后一步；可行性研究第一步；可行性研究第三步；可行性研究第二步；可行性研究第五步；可行性研究第四步。,"[""可行性研究最后一步"", ""可行性研究第一步"", ""可行性研究第三步"", ""可行性研究第二步"", ""可行性研究第五步"", ""可行性研究第四步""]",PENDING_HUMAN_REVIEW
+train,6ca31d9ed2464603dbe5d908,根据课程知识，请说明可行性研究的过程。,可行性研究的过程是可行性研究最后一步；可行性研究第一步；可行性研究第三步；可行性研究第二步；可行性研究第五步；可行性研究第四步。,"[""可行性研究最后一步"", ""可行性研究第一步"", ""可行性研究第三步"", ""可行性研究第二步"", ""可行性研究第五步"", ""可行性研究第四步""]",PENDING_HUMAN_REVIEW
+train,ab9b4e2e8f3d1b18d9768657,可行性研究报告包含哪些内容？,可行性研究报告包含对现有系统的分析、目标系统的可行性分析、成本效益分析。,"[""对现有系统的分析、目标系统的可行性分析、成本效益分析""]",PENDING_HUMAN_REVIEW
+train,a6bec93e20a201c552b19a0b,根据课程知识，请列出可行性研究报告包含的内容。,可行性研究报告包含对现有系统的分析、目标系统的可行性分析、成本效益分析。,"[""对现有系统的分析、目标系统的可行性分析、成本效益分析""]",PENDING_HUMAN_REVIEW
+train,6854442ebd8820dae9c76681,可行性研究最后一步的任务是什么？,可行性研究最后一步的任务是产出可行性研究报告、为决策者提供项目是否继续的依据。,"[""产出可行性研究报告、为决策者提供项目是否继续的依据""]",PENDING_HUMAN_REVIEW
+train,6490fc8a4a8d48f94300aaae,根据课程知识，请说明可行性研究最后一步的任务。,可行性研究最后一步的任务是产出可行性研究报告、为决策者提供项目是否继续的依据。,"[""产出可行性研究报告、为决策者提供项目是否继续的依据""]",PENDING_HUMAN_REVIEW
+train,0033d7666f1ab557ca8587a3,可行性研究第一步的动作是什么？,可行性研究第一步的动作是复查问题定义。,"[""复查问题定义""]",PENDING_HUMAN_REVIEW
+train,b61a61f230650c2056130fa2,根据课程知识，请说明可行性研究第一步的动作。,可行性研究第一步的动作是复查问题定义。,"[""复查问题定义""]",PENDING_HUMAN_REVIEW
+train,3ab56d81992f111d66ac3617,可行性研究第三步的任务是什么？,可行性研究第三步的任务是从系统逻辑模型出发探索并推导出包含不同系统规模、开发进度及技术路线的低、中、高三种备选物理方案。,"[""从系统逻辑模型出发探索并推导出包含不同系统规模、开发进度及技术路线的低、中、高三种备选物理方案""]",PENDING_HUMAN_REVIEW
+train,4aedbaa7c98b4e0774740853,根据课程知识，请说明可行性研究第三步的任务。,可行性研究第三步的任务是从系统逻辑模型出发探索并推导出包含不同系统规模、开发进度及技术路线的低、中、高三种备选物理方案。,"[""从系统逻辑模型出发探索并推导出包含不同系统规模、开发进度及技术路线的低、中、高三种备选物理方案""]",PENDING_HUMAN_REVIEW
+train,b3bf18352801983a80b546c6,可行性研究第二步的导出是什么？,可行性研究第二步导出系统的逻辑模型。,"[""系统的逻辑模型""]",PENDING_HUMAN_REVIEW
+train,9a2e970be0522d676ffea9ff,根据课程知识，请说明可行性研究第二步的导出。,可行性研究第二步导出系统的逻辑模型。,"[""系统的逻辑模型""]",PENDING_HUMAN_REVIEW
+train,af50dd4938a6d53e1afade55,可行性研究第五步的任务是什么？,可行性研究第五步的任务是推荐最佳方案并写出理由。,"[""推荐最佳方案并写出理由""]",PENDING_HUMAN_REVIEW
+train,74c3608bbe1d6cc0b03bce41,根据课程知识，请说明可行性研究第五步的任务。,可行性研究第五步的任务是推荐最佳方案并写出理由。,"[""推荐最佳方案并写出理由""]",PENDING_HUMAN_REVIEW
+train,293afc07d02b96cde72aa734,可行性研究第四步的任务是什么？,可行性研究第四步的任务是从技术可行性、经济可行性、操作可行性、社会可行性方面研究每种方案的可行性。,"[""从技术可行性、经济可行性、操作可行性、社会可行性方面研究每种方案的可行性""]",PENDING_HUMAN_REVIEW
+train,69284121c1845fd98e06a104,根据课程知识，请说明可行性研究第四步的任务。,可行性研究第四步的任务是从技术可行性、经济可行性、操作可行性、社会可行性方面研究每种方案的可行性。,"[""从技术可行性、经济可行性、操作可行性、社会可行性方面研究每种方案的可行性""]",PENDING_HUMAN_REVIEW
+train,6f87634ced809247960d04b0,名词解析法的依据是什么？,名词解析法的依据是自然语言书写的需求陈述。,"[""自然语言书写的需求陈述""]",PENDING_HUMAN_REVIEW
+train,304f01131fae05fcd7a206cd,根据课程知识，请说明名词解析法的依据。,名词解析法的依据是自然语言书写的需求陈述。,"[""自然语言书写的需求陈述""]",PENDING_HUMAN_REVIEW
+train,7dba75088f3128c7927881ec,名词解析法的操作是什么？,名词解析法的操作是从陈述中找出所有名词作为类和对象的候选者；把动词作为服务的候选者；用形容词作为确定属性的线索。,"[""从陈述中找出所有名词作为类和对象的候选者"", ""把动词作为服务的候选者"", ""用形容词作为确定属性的线索""]",PENDING_HUMAN_REVIEW
+train,753872de9725f9a4195b751b,根据课程知识，请说明名词解析法的操作。,名词解析法的操作是从陈述中找出所有名词作为类和对象的候选者；把动词作为服务的候选者；用形容词作为确定属性的线索。,"[""从陈述中找出所有名词作为类和对象的候选者"", ""把动词作为服务的候选者"", ""用形容词作为确定属性的线索""]",PENDING_HUMAN_REVIEW
+train,be25bc1118ad1dcc43f934ca,图的定义是什么？,图的定义是聚集相关的事物及其关系的可视化表现。,"[""聚集相关的事物及其关系的可视化表现""]",PENDING_HUMAN_REVIEW
+train,7f0f4e2a6a06163e1ef0270f,根据课程知识，请说明图的定义。,图的定义是聚集相关的事物及其关系的可视化表现。,"[""聚集相关的事物及其关系的可视化表现""]",PENDING_HUMAN_REVIEW
+train,e45a91c1f1a480c1c6e2fcac,在线订票类OnLine关联哪些知识点或对象？,在线订票类OnLine关联旅客类Passenger；航班类Liner。,"[""旅客类Passenger"", ""航班类Liner""]",PENDING_HUMAN_REVIEW
+train,1fe98d20d074a92a8f95bd2b,课程图谱中，在线订票类OnLine的“关联”关系指向哪些对象？,在线订票类OnLine关联旅客类Passenger；航班类Liner。,"[""旅客类Passenger"", ""航班类Liner""]",PENDING_HUMAN_REVIEW
+train,0dc3db767a36326258e424ab,在线订票类OnLine的属性是什么？,在线订票类OnLine的属性是“订票日期date+订票数量number”。,"[""“订票日期date+订票数量number”""]",PENDING_HUMAN_REVIEW
+train,01f33a73744052843052c806,根据课程知识，请说明在线订票类OnLine的属性。,在线订票类OnLine的属性是“订票日期date+订票数量number”。,"[""“订票日期date+订票数量number”""]",PENDING_HUMAN_REVIEW
+train,b919c7e74408af670be0056b,填写乘客信息前置于哪些知识点或对象？,填写乘客信息前置于确认订单。,"[""确认订单""]",PENDING_HUMAN_REVIEW
+train,8634561cb721f6fe8b8701dd,课程图谱中，填写乘客信息的“前置于”关系指向哪些对象？,填写乘客信息前置于确认订单。,"[""确认订单""]",PENDING_HUMAN_REVIEW
+train,0937a45900275b70fb63ec66,处理框的功能是什么？,处理框的功能是表示一个操作或赋值。,"[""表示一个操作或赋值""]",PENDING_HUMAN_REVIEW
+train,03c1f8ad0ecb75bddf424b2a,根据课程知识，请说明处理框的功能。,处理框的功能是表示一个操作或赋值。,"[""表示一个操作或赋值""]",PENDING_HUMAN_REVIEW
+train,f02cf4fd5872cf56a963f36f,处理框的图形表示是什么？,处理框的图形表示是矩形。,"[""矩形""]",PENDING_HUMAN_REVIEW
+train,e545b11fd4182a5b8639583a,根据课程知识，请说明处理框的图形表示。,处理框的图形表示是矩形。,"[""矩形""]",PENDING_HUMAN_REVIEW
+train,cb12b10082811999bf6af721,复查问题定义的任务是什么？,复查问题定义的任务是访问关键用户并进行初步调研。,"[""访问关键用户并进行初步调研""]",PENDING_HUMAN_REVIEW
+train,1d35491dd264817b2d7a2190,根据课程知识，请说明复查问题定义的任务。,复查问题定义的任务是访问关键用户并进行初步调研。,"[""访问关键用户并进行初步调研""]",PENDING_HUMAN_REVIEW
+train,3c964181f29a560fd2900f02,复查问题定义的目标是什么？,复查问题定义的目标是确保分析员与用户对项目目标达成共识。,"[""确保分析员与用户对项目目标达成共识""]",PENDING_HUMAN_REVIEW
+train,9c3122a57ea1d1053e8a6583,根据课程知识，请说明复查问题定义的目标。,复查问题定义的目标是确保分析员与用户对项目目标达成共识。,"[""确保分析员与用户对项目目标达成共识""]",PENDING_HUMAN_REVIEW
+train,3d1567b3f335f7581740a00c,失败的语法表示是什么？,失败的语法表示是条件表达式。,"[""条件表达式""]",PENDING_HUMAN_REVIEW
+train,48149613ac12d600f79fe6c5,根据课程知识，请说明失败的语法表示。,失败的语法表示是条件表达式。,"[""条件表达式""]",PENDING_HUMAN_REVIEW
+train,1f62bec949cc4e44368b097b,完善性维护的定义是什么？,完善性维护的定义是根据用户要求修改已有功能或增加新功能，使系统更完善。,"[""根据用户要求修改已有功能或增加新功能，使系统更完善""]",PENDING_HUMAN_REVIEW
+train,ede501df569bbc95f22c30e3,根据课程知识，请说明完善性维护的定义。,完善性维护的定义是根据用户要求修改已有功能或增加新功能，使系统更完善。,"[""根据用户要求修改已有功能或增加新功能，使系统更完善""]",PENDING_HUMAN_REVIEW
+train,0c66d3d24ab68e6dbb2b4e6e,实现关系的定义是什么？,实现关系的定义是类与接口之间的关系，类负责执行接口定义的所有操作，用带空心三角形箭头的实线表示，箭头从实现类指向被实现接口。,"[""类与接口之间的关系，类负责执行接口定义的所有操作，用带空心三角形箭头的实线表示，箭头从实现类指向被实现接口""]",PENDING_HUMAN_REVIEW
+train,4cd5649b6200dd4554654931,根据课程知识，请说明实现关系的定义。,实现关系的定义是类与接口之间的关系，类负责执行接口定义的所有操作，用带空心三角形箭头的实线表示，箭头从实现类指向被实现接口。,"[""类与接口之间的关系，类负责执行接口定义的所有操作，用带空心三角形箭头的实线表示，箭头从实现类指向被实现接口""]",PENDING_HUMAN_REVIEW
+train,b4fe882cb1e55297a9f8844b,审核信息的输入是什么？,审核信息的输入是旅客信息。,"[""旅客信息""]",PENDING_HUMAN_REVIEW
+train,aab60efd65236eeb4ac37656,根据课程知识，请说明审核信息的输入。,审核信息的输入是旅客信息。,"[""旅客信息""]",PENDING_HUMAN_REVIEW
+train,4603e0370986ba22890da69a,审核信息的输出是什么？,审核信息的输出是旅客表。,"[""旅客表""]",PENDING_HUMAN_REVIEW
+train,2fd48a2fa3f3ad0fa86773fa,根据课程知识，请说明审核信息的输出。,审核信息的输出是旅客表。,"[""旅客表""]",PENDING_HUMAN_REVIEW
+train,6c14b9742ca921b67a61ac4d,对象图的定义是什么？,对象图的定义是是类图的一个实例，常用于表示复杂的类图的一个实例。,"[""是类图的一个实例，常用于表示复杂的类图的一个实例""]",PENDING_HUMAN_REVIEW
+train,7dd396fa3e3c0e0078ea7c23,根据课程知识，请说明对象图的定义。,对象图的定义是是类图的一个实例，常用于表示复杂的类图的一个实例。,"[""是类图的一个实例，常用于表示复杂的类图的一个实例""]",PENDING_HUMAN_REVIEW
+train,24334b693d178f9c8586e21e,对象设计的定义是什么？,对象设计的定义是确定解空间中的类、关联、接口形式以及实现服务的算法等。,"[""确定解空间中的类、关联、接口形式以及实现服务的算法等""]",PENDING_HUMAN_REVIEW
+train,19e9fff03d46b55dd2ba0bfe,根据课程知识，请说明对象设计的定义。,对象设计的定义是确定解空间中的类、关联、接口形式以及实现服务的算法等。,"[""确定解空间中的类、关联、接口形式以及实现服务的算法等""]",PENDING_HUMAN_REVIEW
+train,f005f4702b2737f31dd3e298,对象设计的工具是什么？,对象设计的工具是程序流程图。,"[""程序流程图""]",PENDING_HUMAN_REVIEW
+train,1744c16e7a865073af439014,根据课程知识，请说明对象设计的工具。,对象设计的工具是程序流程图。,"[""程序流程图""]",PENDING_HUMAN_REVIEW
+train,5b6b79dc877da7729ce13166,开始节点的后续动作是什么？,开始节点的后续动作是设置输入用户名和密码的次数为1。,"[""设置输入用户名和密码的次数为1""]",PENDING_HUMAN_REVIEW
+train,80e46966778692876bb72d96,根据课程知识，请说明开始节点的后续动作。,开始节点的后续动作是设置输入用户名和密码的次数为1。,"[""设置输入用户名和密码的次数为1""]",PENDING_HUMAN_REVIEW
+train,bac92b9618361e5762d46d6e,张三的发送消息是什么？,张三发送消息输入出发地和目的地。,"[""输入出发地和目的地""]",PENDING_HUMAN_REVIEW
+train,f37be707ed8cf71c80299e84,根据课程知识，请说明张三的发送消息。,张三发送消息输入出发地和目的地。,"[""输入出发地和目的地""]",PENDING_HUMAN_REVIEW
+train,3994c09aaf1843d3f93f1884,总体设计的交付文档是什么？,总体设计的交付文档是概要设计说明书。,"[""概要设计说明书""]",PENDING_HUMAN_REVIEW
+train,f2f083e66140d10751c4e8e3,根据课程知识，请说明总体设计的交付文档。,总体设计的交付文档是概要设计说明书。,"[""概要设计说明书""]",PENDING_HUMAN_REVIEW
+train,08b3f3ca5a910f907a50b6a6,总体设计的关键任务是什么？,总体设计的关键任务是设计程序的体系结构、定义模块间的接口。,"[""设计程序的体系结构、定义模块间的接口""]",PENDING_HUMAN_REVIEW
+train,43d750f0d9f6b2c49c727877,根据课程知识，请说明总体设计的关键任务。,总体设计的关键任务是设计程序的体系结构、定义模块间的接口。,"[""设计程序的体系结构、定义模块间的接口""]",PENDING_HUMAN_REVIEW
+train,c78e49c93d2d0e27580e9bec,成功的语法表示是什么？,成功的语法表示是条件表达式。,"[""条件表达式""]",PENDING_HUMAN_REVIEW
+train,a71576aef9ef36f6bd4740f3,根据课程知识，请说明成功的语法表示。,成功的语法表示是条件表达式。,"[""条件表达式""]",PENDING_HUMAN_REVIEW
+train,89640768c7fd38e8b5abf783,执行者的定义是什么？,执行者的定义是位于系统之外并与系统交互的人、设备或其他系统。,"[""位于系统之外并与系统交互的人、设备或其他系统""]",PENDING_HUMAN_REVIEW
+train,db7b5a9d25f75eb07b8da264,根据课程知识，请说明执行者的定义。,执行者的定义是位于系统之外并与系统交互的人、设备或其他系统。,"[""位于系统之外并与系统交互的人、设备或其他系统""]",PENDING_HUMAN_REVIEW
+train,41790601b23d431970a05ac8,执行者的符号是什么？,执行者的符号是小人形状的图标。,"[""小人形状的图标""]",PENDING_HUMAN_REVIEW
+train,f39299a8fe4789251b0fb592,根据课程知识，请说明执行者的符号。,执行者的符号是小人形状的图标。,"[""小人形状的图标""]",PENDING_HUMAN_REVIEW
+train,0a98668471c254afeb8d53f5,技术可行性的研究内容是什么？,技术可行性的研究内容是开发风险、资源有效性、技术能力。,"[""开发风险、资源有效性、技术能力""]",PENDING_HUMAN_REVIEW
+train,516736ed25df021208d2bc89,根据课程知识，请说明技术可行性的研究内容。,技术可行性的研究内容是开发风险、资源有效性、技术能力。,"[""开发风险、资源有效性、技术能力""]",PENDING_HUMAN_REVIEW
+train,ccaa417881eff21a1dea05ce,技术可行性的评估标准是什么？,技术可行性的评估标准是在现有技术条件下能否实现目标系统。,"[""在现有技术条件下能否实现目标系统""]",PENDING_HUMAN_REVIEW
+train,3191a62b40ef6c65393f709b,根据课程知识，请说明技术可行性的评估标准。,技术可行性的评估标准是在现有技术条件下能否实现目标系统。,"[""在现有技术条件下能否实现目标系统""]",PENDING_HUMAN_REVIEW
+train,a46e1c752cbeed1d0727417f,描述数据细节的数据字典DD的任务是什么？,描述数据细节的数据字典DD的任务是精确定义’机票’数据流的组成，如：旅客姓名+航班号+座位号+金额；规范’订票’加工的逻辑，如：校验余票后更新订票表并产生取票通知。,"[""精确定义’机票’数据流的组成，如：旅客姓名+航班号+座位号+金额；规范’订票’加工的逻辑，如：校验余票后更新订票表并产生取票通知""]",PENDING_HUMAN_REVIEW
+train,2c694a68147de22014e334dc,根据课程知识，请说明描述数据细节的数据字典DD的任务。,描述数据细节的数据字典DD的任务是精确定义’机票’数据流的组成，如：旅客姓名+航班号+座位号+金额；规范’订票’加工的逻辑，如：校验余票后更新订票表并产生取票通知。,"[""精确定义’机票’数据流的组成，如：旅客姓名+航班号+座位号+金额；规范’订票’加工的逻辑，如：校验余票后更新订票表并产生取票通知""]",PENDING_HUMAN_REVIEW
+train,87e286e07719828228437cde,提交订单类PlaceOrder的实现是什么？,提交订单类PlaceOrder实现在线订票类OnLine。,"[""在线订票类OnLine""]",PENDING_HUMAN_REVIEW
+train,12f397e3e73366662df51cf4,根据课程知识，请说明提交订单类PlaceOrder的实现。,提交订单类PlaceOrder实现在线订票类OnLine。,"[""在线订票类OnLine""]",PENDING_HUMAN_REVIEW
+train,479861baf83665af7bfcb38f,提交订单类PlaceOrder的服务是什么？,提交订单类PlaceOrder的服务是“+placeOrder(。,"[""“+placeOrder(""]",PENDING_HUMAN_REVIEW
+train,867c6e09deb897fb49703cbb,根据课程知识，请说明提交订单类PlaceOrder的服务。,提交订单类PlaceOrder的服务是“+placeOrder(。,"[""“+placeOrder(""]",PENDING_HUMAN_REVIEW
+train,1049835054413a3ecf7dee3a,操作可行性的研究内容是什么？,操作可行性的研究内容是系统运行方式、用户组织结构、管理体制。,"[""系统运行方式、用户组织结构、管理体制""]",PENDING_HUMAN_REVIEW
+train,d4c413d68ec9224fa1cef574,根据课程知识，请说明操作可行性的研究内容。,操作可行性的研究内容是系统运行方式、用户组织结构、管理体制。,"[""系统运行方式、用户组织结构、管理体制""]",PENDING_HUMAN_REVIEW
+train,9fbbee81e5c836ff7190debf,操作可行性的评估标准是什么？,操作可行性的评估标准是系统的操作方式在用户组织内是否行得通。,"[""系统的操作方式在用户组织内是否行得通""]",PENDING_HUMAN_REVIEW
+train,ceda36337263f30cb1b82980,根据课程知识，请说明操作可行性的评估标准。,操作可行性的评估标准是系统的操作方式在用户组织内是否行得通。,"[""系统的操作方式在用户组织内是否行得通""]",PENDING_HUMAN_REVIEW
+train,0a5df6548a417640151e8011,操作可行性研究涵盖哪些内容？,操作可行性研究涵盖机场工作人员是否能快速上手新订票终端及现有的财务结算流程是否与系统支付接口匹配。,"[""机场工作人员是否能快速上手新订票终端及现有的财务结算流程是否与系统支付接口匹配""]",PENDING_HUMAN_REVIEW
+train,998ba34dd6240ead7c4b9d6d,根据课程知识，请列出操作可行性研究涵盖的内容。,操作可行性研究涵盖机场工作人员是否能快速上手新订票终端及现有的财务结算流程是否与系统支付接口匹配。,"[""机场工作人员是否能快速上手新订票终端及现有的财务结算流程是否与系统支付接口匹配""]",PENDING_HUMAN_REVIEW
+train,c9e915a6fa5f5dfef19af183,改正性维护的定义是什么？,改正性维护的定义是诊断和改正在使用过程中发现的软件错误。,"[""诊断和改正在使用过程中发现的软件错误""]",PENDING_HUMAN_REVIEW
+train,13c9ca1efe184b5412240a33,根据课程知识，请说明改正性维护的定义。,改正性维护的定义是诊断和改正在使用过程中发现的软件错误。,"[""诊断和改正在使用过程中发现的软件错误""]",PENDING_HUMAN_REVIEW
+train,b4393542e014c80234f02a24,数据字典DD的定义是什么？,数据字典DD的定义是对数据流图中所有元素进行精确定义。,"[""对数据流图中所有元素进行精确定义""]",PENDING_HUMAN_REVIEW
+train,b8ee1fb27a842f88a36f5e90,根据课程知识，请说明数据字典DD的定义。,数据字典DD的定义是对数据流图中所有元素进行精确定义。,"[""对数据流图中所有元素进行精确定义""]",PENDING_HUMAN_REVIEW
+train,2c36184eaed7d4eef2ff459a,数据存储的命名规则是什么？,数据存储命名规则应采用描述存储内容的名词，如库存清单、历史档案。,"[""应采用描述存储内容的名词，如库存清单、历史档案""]",PENDING_HUMAN_REVIEW
+train,1ecf4f91569bbf48828eba9e,根据课程知识，请说明数据存储的命名规则。,数据存储命名规则应采用描述存储内容的名词，如库存清单、历史档案。,"[""应采用描述存储内容的名词，如库存清单、历史档案""]",PENDING_HUMAN_REVIEW
+train,990f2c52c821812e502ead5d,数据存储的定义是什么？,数据存储的定义是信息的静态存储，可以代表文件、文件的一部分、数据库的元素等。,"[""信息的静态存储，可以代表文件、文件的一部分、数据库的元素等""]",PENDING_HUMAN_REVIEW
+train,a448198d5e29c66fbc4fa5a8,根据课程知识，请说明数据存储的定义。,数据存储的定义是信息的静态存储，可以代表文件、文件的一部分、数据库的元素等。,"[""信息的静态存储，可以代表文件、文件的一部分、数据库的元素等""]",PENDING_HUMAN_REVIEW
+train,4a2f26f8bc23505ebd2b80a6,数据存储的符号是什么？,数据存储的符号是开口矩形或平行线。,"[""开口矩形或平行线""]",PENDING_HUMAN_REVIEW
+train,6ce5c7480d23d842177a3c34,根据课程知识，请说明数据存储的符号。,数据存储的符号是开口矩形或平行线。,"[""开口矩形或平行线""]",PENDING_HUMAN_REVIEW
+train,e207b0230b163157cfbf29cc,数据模型的工具是什么？,数据模型的工具是实体关系图E-R图——描述数据对象关系。,"[""实体关系图E-R图——描述数据对象关系""]",PENDING_HUMAN_REVIEW
+train,bc4a9e2ea8dd79e061a90c8c,根据课程知识，请说明数据模型的工具。,数据模型的工具是实体关系图E-R图——描述数据对象关系。,"[""实体关系图E-R图——描述数据对象关系""]",PENDING_HUMAN_REVIEW
+train,a8f16313b0bf8e1297f86ed8,数据流的命名规则是什么？,数据流命名规则必须采用名词或名词短语，如用户信息、交易凭证。,"[""必须采用名词或名词短语，如用户信息、交易凭证""]",PENDING_HUMAN_REVIEW
+train,5d3362a8fe5cd65186817245,根据课程知识，请说明数据流的命名规则。,数据流命名规则必须采用名词或名词短语，如用户信息、交易凭证。,"[""必须采用名词或名词短语，如用户信息、交易凭证""]",PENDING_HUMAN_REVIEW
+train,ab0cedfedf6436024f368782,数据流的定义是什么？,数据流的定义是数据在系统内传播的路径。,"[""数据在系统内传播的路径""]",PENDING_HUMAN_REVIEW
+train,31b5264afdeec69242863f54,根据课程知识，请说明数据流的定义。,数据流的定义是数据在系统内传播的路径。,"[""数据在系统内传播的路径""]",PENDING_HUMAN_REVIEW
+train,dfe97d97b58ff0d59b7f5afc,数据流的符号是什么？,数据流的符号是箭头线。,"[""箭头线""]",PENDING_HUMAN_REVIEW
+train,305d5c17e350e3a8fa836bb5,根据课程知识，请说明数据流的符号。,数据流的符号是箭头线。,"[""箭头线""]",PENDING_HUMAN_REVIEW
+train,dabc2067b1dafb0c5518a455,数据流的组成是什么？,数据流的组成是一组成分固定的数据。,"[""一组成分固定的数据""]",PENDING_HUMAN_REVIEW
+train,ae3ff2c4c34bcfb63cfd3052,根据课程知识，请说明数据流的组成。,数据流的组成是一组成分固定的数据。,"[""一组成分固定的数据""]",PENDING_HUMAN_REVIEW
+train,00b0de862cc7b39961da7c3e,数据源或终点的定义是什么？,数据源或终点的定义是系统之外的实体，可以是人、物或其他软件系统。,"[""系统之外的实体，可以是人、物或其他软件系统""]",PENDING_HUMAN_REVIEW
+train,f50e0af2ca6e001f919f5a0b,根据课程知识，请说明数据源或终点的定义。,数据源或终点的定义是系统之外的实体，可以是人、物或其他软件系统。,"[""系统之外的实体，可以是人、物或其他软件系统""]",PENDING_HUMAN_REVIEW
+train,e5654191e05594d7f8d0e272,数据源或终点的符号是什么？,数据源或终点的符号是正方形或立方体。,"[""正方形或立方体""]",PENDING_HUMAN_REVIEW
+train,73c27fe27e7434da43b8d6e0,根据课程知识，请说明数据源或终点的符号。,数据源或终点的符号是正方形或立方体。,"[""正方形或立方体""]",PENDING_HUMAN_REVIEW
+train,40c8673b687ce59897643bf2,旅客关联哪些知识点或对象？,旅客关联查询航班；查询订票信息；注册会员；登录系统；订票。,"[""查询航班"", ""查询订票信息"", ""注册会员"", ""登录系统"", ""订票""]",PENDING_HUMAN_REVIEW
+train,f157813f23d6c69fea284d76,课程图谱中，旅客的“关联”关系指向哪些对象？,旅客关联查询航班；查询订票信息；注册会员；登录系统；订票。,"[""查询航班"", ""查询订票信息"", ""注册会员"", ""登录系统"", ""订票""]",PENDING_HUMAN_REVIEW
+train,fb12b852a1f2b9c63e23d861,旅客信息的组成是什么？,旅客信息的组成是姓名+身份证号码 +出发时间+出发地+目的地。,"[""姓名+身份证号码 +出发时间+出发地+目的地""]",PENDING_HUMAN_REVIEW
+train,0f5c586e60a55682dbf725b6,根据课程知识，请说明旅客信息的组成。,旅客信息的组成是姓名+身份证号码 +出发时间+出发地+目的地。,"[""姓名+身份证号码 +出发时间+出发地+目的地""]",PENDING_HUMAN_REVIEW
+train,c50d11df3f6d4ce2e84f2207,旅客用例图的用例是什么？,旅客用例图的用例是查询航班信息；查询订票信息；注册会员；登录系统；订票；退票。,"[""查询航班信息"", ""查询订票信息"", ""注册会员"", ""登录系统"", ""订票"", ""退票""]",PENDING_HUMAN_REVIEW
+train,8928ab5a29c602278e4d8c8a,根据课程知识，请说明旅客用例图的用例。,旅客用例图的用例是查询航班信息；查询订票信息；注册会员；登录系统；订票；退票。,"[""查询航班信息"", ""查询订票信息"", ""注册会员"", ""登录系统"", ""订票"", ""退票""]",PENDING_HUMAN_REVIEW
+train,cd2663ce9d0ff21b731e1d79,旅客用例图的角色是什么？,旅客用例图的角色是旅客。,"[""旅客""]",PENDING_HUMAN_REVIEW
+train,150bf80112ebd5dafedf9bb5,根据课程知识，请说明旅客用例图的角色。,旅客用例图的角色是旅客。,"[""旅客""]",PENDING_HUMAN_REVIEW
+train,046e4366dd3c8aba7726d6a9,旅客类Passenger依赖哪些知识点或对象？,旅客类Passenger依赖机场巴士类AirportBus。,"[""机场巴士类AirportBus""]",PENDING_HUMAN_REVIEW
+train,3b320ca0f2df93c51c1b5a60,课程图谱中，旅客类Passenger的“依赖”关系指向哪些对象？,旅客类Passenger依赖机场巴士类AirportBus。,"[""机场巴士类AirportBus""]",PENDING_HUMAN_REVIEW
+train,7a09a9fcc058321be9d06f12,旅客类Passenger的属性是什么？,旅客类Passenger的属性是“旅客身份证号pid”。,"[""“旅客身份证号pid”""]",PENDING_HUMAN_REVIEW
+train,c1a8b2ef376038c4106a9820,根据课程知识，请说明旅客类Passenger的属性。,旅客类Passenger的属性是“旅客身份证号pid”。,"[""“旅客身份证号pid”""]",PENDING_HUMAN_REVIEW
+train,08e2374b8700b8a26aef8d2b,旅客类Passenger的泛化是什么？,旅客类Passenger的泛化是用户类User；管理员类Administrator。,"[""用户类User"", ""管理员类Administrator""]",PENDING_HUMAN_REVIEW
+train,a4308af520a1f3a31c5d66dc,根据课程知识，请说明旅客类Passenger的泛化。,旅客类Passenger的泛化是用户类User；管理员类Administrator。,"[""用户类User"", ""管理员类Administrator""]",PENDING_HUMAN_REVIEW
+train,55f2c6996e57328c921dd465,旅客表的组成是什么？,旅客表的组成是姓名+手机号码+身份证号码+出发时间+到达时间+出发地+目的地。,"[""姓名+手机号码+身份证号码+出发时间+到达时间+出发地+目的地""]",PENDING_HUMAN_REVIEW
+train,f4d72da71751597a28710f7b,根据课程知识，请说明旅客表的组成。,旅客表的组成是姓名+手机号码+身份证号码+出发时间+到达时间+出发地+目的地。,"[""姓名+手机号码+身份证号码+出发时间+到达时间+出发地+目的地""]",PENDING_HUMAN_REVIEW
+train,ee2d0ba4d717b8233ffb4a78,服务的定义是什么？,服务的定义是施加在类属性上的一组操作，服务的对象可以是本类中的数据，也可以是别的相关类中的数据，便于实现类与类之间的通信。,"[""施加在类属性上的一组操作，服务的对象可以是本类中的数据，也可以是别的相关类中的数据，便于实现类与类之间的通信""]",PENDING_HUMAN_REVIEW
+train,c223316949e018a173cce9a9,根据课程知识，请说明服务的定义。,服务的定义是施加在类属性上的一组操作，服务的对象可以是本类中的数据，也可以是别的相关类中的数据，便于实现类与类之间的通信。,"[""施加在类属性上的一组操作，服务的对象可以是本类中的数据，也可以是别的相关类中的数据，便于实现类与类之间的通信""]",PENDING_HUMAN_REVIEW
+train,c90375b13a7a701542db3fbb,服务的访问权限是什么？,服务的访问权限是private，用-表示；protected，用#表示；public，用+表示。,"[""private，用-表示"", ""protected，用#表示"", ""public，用+表示""]",PENDING_HUMAN_REVIEW
+train,ddbe82b069664960725b895b,根据课程知识，请说明服务的访问权限。,服务的访问权限是private，用-表示；protected，用#表示；public，用+表示。,"[""private，用-表示"", ""protected，用#表示"", ""public，用+表示""]",PENDING_HUMAN_REVIEW
+train,5d172431b17fa84f95b56644,机场巴士类AirportBus的属性是什么？,机场巴士类AirportBus的属性是“巴士线路编号bid+站点stop+票价fare”。,"[""“巴士线路编号bid+站点stop+票价fare”""]",PENDING_HUMAN_REVIEW
+train,63bb9589ddb2c1f1261b8c2a,根据课程知识，请说明机场巴士类AirportBus的属性。,机场巴士类AirportBus的属性是“巴士线路编号bid+站点stop+票价fare”。,"[""“巴士线路编号bid+站点stop+票价fare”""]",PENDING_HUMAN_REVIEW
+train,5abba624ce014a103729a66a,机票的组成是什么？,机票的组成是姓名+出发时间+到达时间+航班号+出发地+目的地+单价。,"[""姓名+出发时间+到达时间+航班号+出发地+目的地+单价""]",PENDING_HUMAN_REVIEW
+train,ea338363c1081f1aa27eef56,根据课程知识，请说明机票的组成。,机票的组成是姓名+出发时间+到达时间+航班号+出发地+目的地+单价。,"[""姓名+出发时间+到达时间+航班号+出发地+目的地+单价""]",PENDING_HUMAN_REVIEW
+train,961c54ae65814048e07f5691,机票预定系统包含哪些内容？,机票预定系统包含机票预定系统可行性研究；机票预定系统设计；机票预定系统问题定义；机票预定系统需求分析。,"[""机票预定系统可行性研究"", ""机票预定系统设计"", ""机票预定系统问题定义"", ""机票预定系统需求分析""]",PENDING_HUMAN_REVIEW
+train,70bd6ec645e7d4479a05b14d,根据课程知识，请列出机票预定系统包含的内容。,机票预定系统包含机票预定系统可行性研究；机票预定系统设计；机票预定系统问题定义；机票预定系统需求分析。,"[""机票预定系统可行性研究"", ""机票预定系统设计"", ""机票预定系统问题定义"", ""机票预定系统需求分析""]",PENDING_HUMAN_REVIEW
+train,0a9125205a6c5cc074ff407d,机票预定系统的是是什么？,机票预定系统是软件。,"[""软件""]",PENDING_HUMAN_REVIEW
+train,84a623c8167ec5dd49abc3fd,根据课程知识，请说明机票预定系统的是。,机票预定系统是软件。,"[""软件""]",PENDING_HUMAN_REVIEW
+train,3d4a9ec6e01f961adcff887a,机票预定系统的遵循是什么？,机票预定系统遵循软件生命周期。,"[""软件生命周期""]",PENDING_HUMAN_REVIEW
+train,85d08ff86133b8a1ef5bf0a6,根据课程知识，请说明机票预定系统的遵循。,机票预定系统遵循软件生命周期。,"[""软件生命周期""]",PENDING_HUMAN_REVIEW
+train,14cff97867268f02405c0002,机票预定系统1层DFD的加工1是什么？,机票预定系统1层DFD的加工1是安排航班。,"[""安排航班""]",PENDING_HUMAN_REVIEW
+train,2c0b0633328af7ad33a0629b,根据课程知识，请说明机票预定系统1层DFD的加工1。,机票预定系统1层DFD的加工1是安排航班。,"[""安排航班""]",PENDING_HUMAN_REVIEW
+train,cd038ef46df42765ded66e04,机票预定系统1层DFD的加工2是什么？,机票预定系统1层DFD的加工2是产生机票。,"[""产生机票""]",PENDING_HUMAN_REVIEW
+train,77ed431bdadca0b4ea931524,根据课程知识，请说明机票预定系统1层DFD的加工2。,机票预定系统1层DFD的加工2是产生机票。,"[""产生机票""]",PENDING_HUMAN_REVIEW
+train,9a5fad838c52737fcad772bd,机票预定系统1层DFD的数据存储是什么？,机票预定系统1层DFD的数据存储是旅客表；航班表；订票表。,"[""旅客表"", ""航班表"", ""订票表""]",PENDING_HUMAN_REVIEW
+train,7fb4284b8f96b38b74a42234,根据课程知识，请说明机票预定系统1层DFD的数据存储。,机票预定系统1层DFD的数据存储是旅客表；航班表；订票表。,"[""旅客表"", ""航班表"", ""订票表""]",PENDING_HUMAN_REVIEW
+train,d9815d8f78bb86eeb423ec64,机票预定系统1层DFD的数据流是什么？,机票预定系统1层DFD的数据流是加工1调用“航班表”数据并更新“订票表”；加工2提取“订票表”信息并向旅客输出“机票”、“账单”及“取票通知”；旅客信息输入加工1后存入“旅客表”。,"[""加工1调用“航班表”数据并更新“订票表”"", ""加工2提取“订票表”信息并向旅客输出“机票”、“账单”及“取票通知”"", ""旅客信息输入加工1后存入“旅客表”""]",PENDING_HUMAN_REVIEW
+train,7c4b1d5056020de8551c13e8,根据课程知识，请说明机票预定系统1层DFD的数据流。,机票预定系统1层DFD的数据流是加工1调用“航班表”数据并更新“订票表”；加工2提取“订票表”信息并向旅客输出“机票”、“账单”及“取票通知”；旅客信息输入加工1后存入“旅客表”。,"[""加工1调用“航班表”数据并更新“订票表”"", ""加工2提取“订票表”信息并向旅客输出“机票”、“账单”及“取票通知”"", ""旅客信息输入加工1后存入“旅客表”""]",PENDING_HUMAN_REVIEW
+train,e763f10d81b04c532c4bdb4e,机票预定系统2层DFD的加工1.1是什么？,机票预定系统2层DFD的加工1.1是审核信息。,"[""审核信息""]",PENDING_HUMAN_REVIEW
+train,667acf09d57c08840858c562,根据课程知识，请说明机票预定系统2层DFD的加工1.1。,机票预定系统2层DFD的加工1.1是审核信息。,"[""审核信息""]",PENDING_HUMAN_REVIEW
+train,f613891dadee126b4385b2f3,机票预定系统2层DFD的加工1.2是什么？,机票预定系统2层DFD的加工1.2是订票。,"[""订票""]",PENDING_HUMAN_REVIEW
+train,179f79161e939a88bd0eb32f,根据课程知识，请说明机票预定系统2层DFD的加工1.2。,机票预定系统2层DFD的加工1.2是订票。,"[""订票""]",PENDING_HUMAN_REVIEW
+train,79b50458cc11da88e03a7bed,机票预定系统2层DFD的加工1.3是什么？,机票预定系统2层DFD的加工1.3是退票。,"[""退票""]",PENDING_HUMAN_REVIEW
+train,e379cede3692041616d6fa88,根据课程知识，请说明机票预定系统2层DFD的加工1.3。,机票预定系统2层DFD的加工1.3是退票。,"[""退票""]",PENDING_HUMAN_REVIEW
+train,6f26100707ce0d04b5cc6124,机票预定系统2层DFD的加工1.4是什么？,机票预定系统2层DFD的加工1.4是查询订单。,"[""查询订单""]",PENDING_HUMAN_REVIEW
+train,a1b6416ad2719129f3dc57f8,根据课程知识，请说明机票预定系统2层DFD的加工1.4。,机票预定系统2层DFD的加工1.4是查询订单。,"[""查询订单""]",PENDING_HUMAN_REVIEW
+train,cd875757940906402204e893,机票预定系统功能模型使用哪些工具？,机票预定系统功能模型的使用工具是机票预定系统用例图。,"[""机票预定系统用例图""]",PENDING_HUMAN_REVIEW
+train,bb0ac523e646a1c07f7d5813,根据课程知识，请列出机票预定系统功能模型使用的工具。,机票预定系统功能模型的使用工具是机票预定系统用例图。,"[""机票预定系统用例图""]",PENDING_HUMAN_REVIEW
+train,dc7a2f9a4240269edf41e34e,机票预定系统动态模型使用哪些工具？,机票预定系统动态模型的使用工具是机票预定系统活动图；机票预定系统状态图；机票预定系统顺序图。,"[""机票预定系统活动图"", ""机票预定系统状态图"", ""机票预定系统顺序图""]",PENDING_HUMAN_REVIEW
+train,ca1fc3f058b277c1f4f85bec,根据课程知识，请列出机票预定系统动态模型使用的工具。,机票预定系统动态模型的使用工具是机票预定系统活动图；机票预定系统状态图；机票预定系统顺序图。,"[""机票预定系统活动图"", ""机票预定系统状态图"", ""机票预定系统顺序图""]",PENDING_HUMAN_REVIEW
+train,a534e145f7d8f73c3a32cc33,机票预定系统可行性研究前置于哪些知识点或对象？,机票预定系统可行性研究前置于机票预定系统需求分析。,"[""机票预定系统需求分析""]",PENDING_HUMAN_REVIEW
+train,6e6c974372f1c5210e8031f0,课程图谱中，机票预定系统可行性研究的“前置于”关系指向哪些对象？,机票预定系统可行性研究前置于机票预定系统需求分析。,"[""机票预定系统需求分析""]",PENDING_HUMAN_REVIEW
+train,9d88edef1016a8176e279223,机票预定系统可行性研究包含哪些内容？,机票预定系统可行性研究包含机票预定系统技术可行性；机票预定系统操作可行性；机票预定系统社会可行性；机票预定系统经济可行性。,"[""机票预定系统技术可行性"", ""机票预定系统操作可行性"", ""机票预定系统社会可行性"", ""机票预定系统经济可行性""]",PENDING_HUMAN_REVIEW
+train,c3f2c786a1572a9100741792,根据课程知识，请列出机票预定系统可行性研究包含的内容。,机票预定系统可行性研究包含机票预定系统技术可行性；机票预定系统操作可行性；机票预定系统社会可行性；机票预定系统经济可行性。,"[""机票预定系统技术可行性"", ""机票预定系统操作可行性"", ""机票预定系统社会可行性"", ""机票预定系统经济可行性""]",PENDING_HUMAN_REVIEW
+train,7150a2371f1b2ac559b1df4f,机票预定系统可行性研究的过程是什么？,机票预定系统可行性研究的过程是机票预定系统可行性研究最后一步；机票预定系统可行性研究第一步；机票预定系统可行性研究第三步；机票预定系统可行性研究第二步；机票预定系统可行性研究第五步；机票预定系统可行性研究第四步。,"[""机票预定系统可行性研究最后一步"", ""机票预定系统可行性研究第一步"", ""机票预定系统可行性研究第三步"", ""机票预定系统可行性研究第二步"", ""机票预定系统可行性研究第五步"", ""机票预定系统可行性研究第四步""]",PENDING_HUMAN_REVIEW
+train,916d8422b6edb74e77942098,根据课程知识，请说明机票预定系统可行性研究的过程。,机票预定系统可行性研究的过程是机票预定系统可行性研究最后一步；机票预定系统可行性研究第一步；机票预定系统可行性研究第三步；机票预定系统可行性研究第二步；机票预定系统可行性研究第五步；机票预定系统可行性研究第四步。,"[""机票预定系统可行性研究最后一步"", ""机票预定系统可行性研究第一步"", ""机票预定系统可行性研究第三步"", ""机票预定系统可行性研究第二步"", ""机票预定系统可行性研究第五步"", ""机票预定系统可行性研究第四步""]",PENDING_HUMAN_REVIEW
+train,268deeec26d38a19f730d813,机票预定系统可行性研究最后一步的任务是什么？,机票预定系统可行性研究最后一步的任务是产出《机票预定系统可行性研究报告》，为航空公司管理层提供该项目是否值得投入开发的最终决策依据。,"[""产出《机票预定系统可行性研究报告》，为航空公司管理层提供该项目是否值得投入开发的最终决策依据""]",PENDING_HUMAN_REVIEW
+train,8b1dbd1f102e3add2dc160a4,根据课程知识，请说明机票预定系统可行性研究最后一步的任务。,机票预定系统可行性研究最后一步的任务是产出《机票预定系统可行性研究报告》，为航空公司管理层提供该项目是否值得投入开发的最终决策依据。,"[""产出《机票预定系统可行性研究报告》，为航空公司管理层提供该项目是否值得投入开发的最终决策依据""]",PENDING_HUMAN_REVIEW
+train,dfa064544b95e19880562ad5,机票预定系统可行性研究第一步的任务是什么？,机票预定系统可行性研究第一步的任务是复查机票预定系统问题定义、实地走访航空公司售票处与机场值机柜台、调研旅客对实时余票查询、在线支付及自助退改签的具体需求、确保开发团队与民航业务人员对“系统需支持高并发在线订票”核心目标达成共识。,"[""复查机票预定系统问题定义、实地走访航空公司售票处与机场值机柜台、调研旅客对实时余票查询、在线支付及自助退改签的具体需求、确保开发团队与民航业务人员对“系统需支持高并发在线订票”核心目标达成共识""]",PENDING_HUMAN_REVIEW
+train,d22b3edcd8acf4106cca3294,根据课程知识，请说明机票预定系统可行性研究第一步的任务。,机票预定系统可行性研究第一步的任务是复查机票预定系统问题定义、实地走访航空公司售票处与机场值机柜台、调研旅客对实时余票查询、在线支付及自助退改签的具体需求、确保开发团队与民航业务人员对“系统需支持高并发在线订票”核心目标达成共识。,"[""复查机票预定系统问题定义、实地走访航空公司售票处与机场值机柜台、调研旅客对实时余票查询、在线支付及自助退改签的具体需求、确保开发团队与民航业务人员对“系统需支持高并发在线订票”核心目标达成共识""]",PENDING_HUMAN_REVIEW
+train,2585d0146716231cf67ff96d,机票预定系统可行性研究第三步的任务是什么？,机票预定系统可行性研究第三步的任务是从业务逻辑模型出发推导出涵盖低成本局域网版、标准云服务B/S版及高并发全自动高级版三种方案，并明确各方案在服务器、技术选型、进度及人力投入上的具体差异。,"[""从业务逻辑模型出发推导出涵盖低成本局域网版、标准云服务B/S版及高并发全自动高级版三种方案，并明确各方案在服务器、技术选型、进度及人力投入上的具体差异""]",PENDING_HUMAN_REVIEW
+train,83fbec6c0e144f99fd418770,根据课程知识，请说明机票预定系统可行性研究第三步的任务。,机票预定系统可行性研究第三步的任务是从业务逻辑模型出发推导出涵盖低成本局域网版、标准云服务B/S版及高并发全自动高级版三种方案，并明确各方案在服务器、技术选型、进度及人力投入上的具体差异。,"[""从业务逻辑模型出发推导出涵盖低成本局域网版、标准云服务B/S版及高并发全自动高级版三种方案，并明确各方案在服务器、技术选型、进度及人力投入上的具体差异""]",PENDING_HUMAN_REVIEW
+train,6f3ff88a08d6c2c7ba47736d,机票预定系统可行性研究第二步的导出是什么？,机票预定系统可行性研究第二步导出机票预定系统逻辑模型。,"[""机票预定系统逻辑模型""]",PENDING_HUMAN_REVIEW
+train,b34fff1181d6821fdd533e31,根据课程知识，请说明机票预定系统可行性研究第二步的导出。,机票预定系统可行性研究第二步导出机票预定系统逻辑模型。,"[""机票预定系统逻辑模型""]",PENDING_HUMAN_REVIEW
+train,d9234efbb177b3c313f7ef5d,机票预定系统可行性研究第五步的任务是什么？,机票预定系统可行性研究第五步的任务是对比三种方案的利弊，推荐具备高扩展性的标准云服务B/S架构方案，并以平衡成本与性能作为主要推荐理由。,"[""对比三种方案的利弊，推荐具备高扩展性的标准云服务B/S架构方案，并以平衡成本与性能作为主要推荐理由""]",PENDING_HUMAN_REVIEW
+train,d83ef9f6a66b4b1c19baff57,根据课程知识，请说明机票预定系统可行性研究第五步的任务。,机票预定系统可行性研究第五步的任务是对比三种方案的利弊，推荐具备高扩展性的标准云服务B/S架构方案，并以平衡成本与性能作为主要推荐理由。,"[""对比三种方案的利弊，推荐具备高扩展性的标准云服务B/S架构方案，并以平衡成本与性能作为主要推荐理由""]",PENDING_HUMAN_REVIEW
+train,7ea122d45fa53043af5fa48f,机票预定系统可行性研究第四步的任务是什么？,机票预定系统可行性研究第四步的任务是从技术支持高并发能力、系统维护与效益对比、机场操作流程适配度、以及旅客隐私法律合规性四个维度研究三种备选方案的可行性。,"[""从技术支持高并发能力、系统维护与效益对比、机场操作流程适配度、以及旅客隐私法律合规性四个维度研究三种备选方案的可行性""]",PENDING_HUMAN_REVIEW
+train,25f686807ec41cfd903a413b,根据课程知识，请说明机票预定系统可行性研究第四步的任务。,机票预定系统可行性研究第四步的任务是从技术支持高并发能力、系统维护与效益对比、机场操作流程适配度、以及旅客隐私法律合规性四个维度研究三种备选方案的可行性。,"[""从技术支持高并发能力、系统维护与效益对比、机场操作流程适配度、以及旅客隐私法律合规性四个维度研究三种备选方案的可行性""]",PENDING_HUMAN_REVIEW
+train,35686aa742c4193a8dbc6e3b,机票预定系统对象图包括哪些内容？,机票预定系统对象图包括F12-34:Liner；first:OnLine；xiaoZhang:Passenger；xiaoZhang:User。,"[""F12-34:Liner"", ""first:OnLine"", ""xiaoZhang:Passenger"", ""xiaoZhang:User""]",PENDING_HUMAN_REVIEW
+train,151874ad3febf4afa1e876b9,根据课程知识，请列出机票预定系统对象图包括的内容。,机票预定系统对象图包括F12-34:Liner；first:OnLine；xiaoZhang:Passenger；xiaoZhang:User。,"[""F12-34:Liner"", ""first:OnLine"", ""xiaoZhang:Passenger"", ""xiaoZhang:User""]",PENDING_HUMAN_REVIEW
+train,143e80314b9d6f2e01bed0d5,机票预定系统对象模型使用哪些工具？,机票预定系统对象模型的使用工具是机票预定系统对象图；机票预定系统类图。,"[""机票预定系统对象图"", ""机票预定系统类图""]",PENDING_HUMAN_REVIEW
+train,0bc44fedac047e120852a6c2,根据课程知识，请列出机票预定系统对象模型使用的工具。,机票预定系统对象模型的使用工具是机票预定系统对象图；机票预定系统类图。,"[""机票预定系统对象图"", ""机票预定系统类图""]",PENDING_HUMAN_REVIEW
+train,0647c16796330623403f54f5,机票预定系统对象设计的实例是什么？,机票预定系统对象设计的实例是登录功能程序流程图。,"[""登录功能程序流程图""]",PENDING_HUMAN_REVIEW
+train,5c160695a3855183e53320bf,根据课程知识，请说明机票预定系统对象设计的实例。,机票预定系统对象设计的实例是登录功能程序流程图。,"[""登录功能程序流程图""]",PENDING_HUMAN_REVIEW
+train,1229db287a21afe5693c504b,机票预定系统数据流图的第一层级是什么？,机票预定系统数据流图的第一层级是机票预定系统顶层DFD。,"[""机票预定系统顶层DFD""]",PENDING_HUMAN_REVIEW
+train,95ea244a6e20251a9272cdb5,根据课程知识，请说明机票预定系统数据流图的第一层级。,机票预定系统数据流图的第一层级是机票预定系统顶层DFD。,"[""机票预定系统顶层DFD""]",PENDING_HUMAN_REVIEW
+train,e62df6f0302e0a44ace0a5fd,机票预定系统数据流图的第三层级是什么？,机票预定系统数据流图的第三层级是机票预定系统2层DFD。,"[""机票预定系统2层DFD""]",PENDING_HUMAN_REVIEW
+train,138e400dd861e07aec8fe0b0,根据课程知识，请说明机票预定系统数据流图的第三层级。,机票预定系统数据流图的第三层级是机票预定系统2层DFD。,"[""机票预定系统2层DFD""]",PENDING_HUMAN_REVIEW
+train,4a45b718b0c8f3925dd99210,机票预定系统数据流图的第二层级是什么？,机票预定系统数据流图的第二层级是机票预定系统1层DFD。,"[""机票预定系统1层DFD""]",PENDING_HUMAN_REVIEW
+train,b7b50444026fb7c2e5cb372f,根据课程知识，请说明机票预定系统数据流图的第二层级。,机票预定系统数据流图的第二层级是机票预定系统1层DFD。,"[""机票预定系统1层DFD""]",PENDING_HUMAN_REVIEW
+train,bcbcf0158794b06ad12adb1c,机票预定系统状态图包含哪些内容？,机票预定系统状态图包含查询航班状态图。,"[""查询航班状态图""]",PENDING_HUMAN_REVIEW
+train,f3dc22feee57a1d1f763fe4e,根据课程知识，请列出机票预定系统状态图包含的内容。,机票预定系统状态图包含查询航班状态图。,"[""查询航班状态图""]",PENDING_HUMAN_REVIEW
+train,936d171561a694dc6399c267,机票预定系统用例图包含哪些内容？,机票预定系统用例图包含旅客用例图；管理员用例图。,"[""旅客用例图"", ""管理员用例图""]",PENDING_HUMAN_REVIEW
+train,ba5536c6bf83d024d47bbfcd,根据课程知识，请列出机票预定系统用例图包含的内容。,机票预定系统用例图包含旅客用例图；管理员用例图。,"[""旅客用例图"", ""管理员用例图""]",PENDING_HUMAN_REVIEW
+train,511e44f8565aebbc5cde3f5c,机票预定系统设计包含哪些内容？,机票预定系统设计包含机票预定系统对象设计。,"[""机票预定系统对象设计""]",PENDING_HUMAN_REVIEW
+train,5d83f2f1148dde794e71a8fa,根据课程知识，请列出机票预定系统设计包含的内容。,机票预定系统设计包含机票预定系统对象设计。,"[""机票预定系统对象设计""]",PENDING_HUMAN_REVIEW
+train,3195adfb1eac4fb9495f3009,机票预定系统逻辑模型包含哪些内容？,机票预定系统逻辑模型包含机票预定系统数据流图。,"[""机票预定系统数据流图""]",PENDING_HUMAN_REVIEW
+train,c5380941dc8d1b183b64178c,根据课程知识，请列出机票预定系统逻辑模型包含的内容。,机票预定系统逻辑模型包含机票预定系统数据流图。,"[""机票预定系统数据流图""]",PENDING_HUMAN_REVIEW
+train,167291a68058f87ab39c9663,机票预定系统逻辑模型的绘制是什么？,机票预定系统逻辑模型绘制反映机票业务流程的数据流图DFD。,"[""反映机票业务流程的数据流图DFD""]",PENDING_HUMAN_REVIEW
+train,8ad66e1ac513ce06d27f1faf,根据课程知识，请说明机票预定系统逻辑模型的绘制。,机票预定系统逻辑模型绘制反映机票业务流程的数据流图DFD。,"[""反映机票业务流程的数据流图DFD""]",PENDING_HUMAN_REVIEW
+train,44a4c773d3aae984e73786e7,机票预定系统逻辑模型的编写是什么？,机票预定系统逻辑模型编写描述数据细节的数据字典DD。,"[""描述数据细节的数据字典DD""]",PENDING_HUMAN_REVIEW
+train,228ac22e2a31cd2b70a47695,根据课程知识，请说明机票预定系统逻辑模型的编写。,机票预定系统逻辑模型编写描述数据细节的数据字典DD。,"[""描述数据细节的数据字典DD""]",PENDING_HUMAN_REVIEW
+train,4bcf3b127712f2917de6bf87,机票预定系统问题定义的关键任务是什么？,机票预定系统问题定义的关键任务是明确旅客通过互联网实时查询航班、预订机票、支付款项及办理退票的业务需求，并评估服务器性能与开发预算的匹配度。,"[""明确旅客通过互联网实时查询航班、预订机票、支付款项及办理退票的业务需求，并评估服务器性能与开发预算的匹配度""]",PENDING_HUMAN_REVIEW
+train,86c66855ad793cd50ba76fc7,根据课程知识，请说明机票预定系统问题定义的关键任务。,机票预定系统问题定义的关键任务是明确旅客通过互联网实时查询航班、预订机票、支付款项及办理退票的业务需求，并评估服务器性能与开发预算的匹配度。,"[""明确旅客通过互联网实时查询航班、预订机票、支付款项及办理退票的业务需求，并评估服务器性能与开发预算的匹配度""]",PENDING_HUMAN_REVIEW
+train,f61173b9840593a0b008fc9c,机票预定系统问题定义前置于哪些知识点或对象？,机票预定系统问题定义前置于机票预定系统可行性研究。,"[""机票预定系统可行性研究""]",PENDING_HUMAN_REVIEW
+train,879a8f27ea3d3f96be06ba3e,课程图谱中，机票预定系统问题定义的“前置于”关系指向哪些对象？,机票预定系统问题定义前置于机票预定系统可行性研究。,"[""机票预定系统可行性研究""]",PENDING_HUMAN_REVIEW
+train,1a02ac609926962ac6157812,机票预定系统需求分析的前置是什么？,机票预定系统需求分析的前置是机票预定系统设计。,"[""机票预定系统设计""]",PENDING_HUMAN_REVIEW
+train,882700450bcb713709b8b872,根据课程知识，请说明机票预定系统需求分析的前置。,机票预定系统需求分析的前置是机票预定系统设计。,"[""机票预定系统设计""]",PENDING_HUMAN_REVIEW
+train,af6a04105a709f0eaaee9ea8,机票预定系统需求分析包含哪些内容？,机票预定系统需求分析包含结构化分析SA；面向对象分析OOA。,"[""结构化分析SA"", ""面向对象分析OOA""]",PENDING_HUMAN_REVIEW
+train,7e9f8a9798fc4f52b240d420,根据课程知识，请列出机票预定系统需求分析包含的内容。,机票预定系统需求分析包含结构化分析SA；面向对象分析OOA。,"[""结构化分析SA"", ""面向对象分析OOA""]",PENDING_HUMAN_REVIEW
+train,0746e4d03d3921286750b6a2,机票预定系统顶层DFD的加工是什么？,机票预定系统顶层DFD的加工是机票预定系统。,"[""机票预定系统""]",PENDING_HUMAN_REVIEW
+train,26fe51ad7f6c389542d5897a,根据课程知识，请说明机票预定系统顶层DFD的加工。,机票预定系统顶层DFD的加工是机票预定系统。,"[""机票预定系统""]",PENDING_HUMAN_REVIEW
+train,44835ffba1060925981eeac6,机票预定系统顶层DFD的外部实体是什么？,机票预定系统顶层DFD的外部实体是旅客。,"[""旅客""]",PENDING_HUMAN_REVIEW
+train,3475300f50fbb04c6860c20a,根据课程知识，请说明机票预定系统顶层DFD的外部实体。,机票预定系统顶层DFD的外部实体是旅客。,"[""旅客""]",PENDING_HUMAN_REVIEW
+train,db5cd602c13a9f603c2aacb2,机票预定系统顶层DFD的输入数据流是什么？,机票预定系统顶层DFD的输入数据流是旅客信息。,"[""旅客信息""]",PENDING_HUMAN_REVIEW
+train,d02989215663385d8353e2c2,根据课程知识，请说明机票预定系统顶层DFD的输入数据流。,机票预定系统顶层DFD的输入数据流是旅客信息。,"[""旅客信息""]",PENDING_HUMAN_REVIEW
+train,f6ec88bfd5aef05ea51b1eaf,机票预定系统顶层DFD的输出数据流是什么？,机票预定系统顶层DFD的输出数据流是取票通知；机票；账单。,"[""取票通知"", ""机票"", ""账单""]",PENDING_HUMAN_REVIEW
+train,22a7e88a6a5f7eccab42339d,根据课程知识，请说明机票预定系统顶层DFD的输出数据流。,机票预定系统顶层DFD的输出数据流是取票通知；机票；账单。,"[""取票通知"", ""机票"", ""账单""]",PENDING_HUMAN_REVIEW
+train,9d8c2dd7bbc2eef5cb7196df,机票预定系统顺序图的交互对象是什么？,机票预定系统顺序图的交互对象是查询页面对象’:Search Page’；结果列表页面对象’:List Page’；航班对象’:Liner’；航班控制器对象’:Liner Controller’。,"[""查询页面对象’:Search Page’"", ""结果列表页面对象’:List Page’"", ""航班对象’:Liner’"", ""航班控制器对象’:Liner Controller’""]",PENDING_HUMAN_REVIEW
+train,1a080770f5b5ddec58f6220c,根据课程知识，请说明机票预定系统顺序图的交互对象。,机票预定系统顺序图的交互对象是查询页面对象’:Search Page’；结果列表页面对象’:List Page’；航班对象’:Liner’；航班控制器对象’:Liner Controller’。,"[""查询页面对象’:Search Page’"", ""结果列表页面对象’:List Page’"", ""航班对象’:Liner’"", ""航班控制器对象’:Liner Controller’""]",PENDING_HUMAN_REVIEW
+train,18a2e46fca3e2ec8f2ec8123,机票预定系统顺序图的活动者是什么？,机票预定系统顺序图的活动者是张三。,"[""张三""]",PENDING_HUMAN_REVIEW
+train,ec10ffbd1f5dbeaf3a5b79b5,根据课程知识，请说明机票预定系统顺序图的活动者。,机票预定系统顺序图的活动者是张三。,"[""张三""]",PENDING_HUMAN_REVIEW
+train,232a6290f895432aed42a0b8,机票预定系统顺序图的表示用例是什么？,机票预定系统顺序图的表示用例是查询航班信息。,"[""查询航班信息""]",PENDING_HUMAN_REVIEW
+train,d1f3b1eb992e8c33a6dfc391,根据课程知识，请说明机票预定系统顺序图的表示用例。,机票预定系统顺序图的表示用例是查询航班信息。,"[""查询航班信息""]",PENDING_HUMAN_REVIEW
+train,304c761ca1af07ca66767395,查询航班状态图包含哪些内容？,查询航班状态图包含状态GettingSearchInfo；状态ListingSearchResult；状态SearchFailure；状态Searching。,"[""状态GettingSearchInfo"", ""状态ListingSearchResult"", ""状态SearchFailure"", ""状态Searching""]",PENDING_HUMAN_REVIEW
+train,b75cdd5d06e6d74bda238bb9,根据课程知识，请列出查询航班状态图包含的内容。,查询航班状态图包含状态GettingSearchInfo；状态ListingSearchResult；状态SearchFailure；状态Searching。,"[""状态GettingSearchInfo"", ""状态ListingSearchResult"", ""状态SearchFailure"", ""状态Searching""]",PENDING_HUMAN_REVIEW
+train,c52995437d30b708ea16db2c,查询航班状态图的描述对象是什么？,查询航班状态图的描述对象是航班查询交互过程。,"[""航班查询交互过程""]",PENDING_HUMAN_REVIEW
+train,fe5d82edbd7958436574950a,根据课程知识，请说明查询航班状态图的描述对象。,查询航班状态图的描述对象是航班查询交互过程。,"[""航班查询交互过程""]",PENDING_HUMAN_REVIEW
+train,b2ca0cf5bab7378b4fac957b,查询订票信息包含哪些内容？,查询订票信息包含登录系统。,"[""登录系统""]",PENDING_HUMAN_REVIEW
+train,3fcee90ee757a9685339822b,根据课程知识，请列出查询订票信息包含的内容。,查询订票信息包含登录系统。,"[""登录系统""]",PENDING_HUMAN_REVIEW
+train,4767c1b826e71527339e8da6,查询页面对象’:Search Page’的发送消息是什么？,查询页面对象’:Search Page’发送消息搜索请求。,"[""搜索请求""]",PENDING_HUMAN_REVIEW
+train,1a03fe721eaf723f16b1ac96,根据课程知识，请说明查询页面对象’:Search Page’的发送消息。,查询页面对象’:Search Page’发送消息搜索请求。,"[""搜索请求""]",PENDING_HUMAN_REVIEW
+train,26918bef1a51e09d84f3adf9,查询页面对象’:Search Page’的接收消息是什么？,查询页面对象’:Search Page’接收消息输入出发地和目的地。,"[""输入出发地和目的地""]",PENDING_HUMAN_REVIEW
+train,b7013a332dabec2fbd77afb8,根据课程知识，请说明查询页面对象’:Search Page’的接收消息。,查询页面对象’:Search Page’接收消息输入出发地和目的地。,"[""输入出发地和目的地""]",PENDING_HUMAN_REVIEW
+train,0c5a3ffcf78c83655dcc528d,概要设计说明书包含哪些内容？,概要设计说明书包含程序的体系结构和模块间的接口定义。,"[""程序的体系结构和模块间的接口定义""]",PENDING_HUMAN_REVIEW
+train,673c96460b874ac790868ce9,根据课程知识，请列出概要设计说明书包含的内容。,概要设计说明书包含程序的体系结构和模块间的接口定义。,"[""程序的体系结构和模块间的接口定义""]",PENDING_HUMAN_REVIEW
+train,341ff86ce0961ad56d18ec56,模块开发说明包含哪些内容？,模块开发说明包含模块的源代码实现细节。,"[""模块的源代码实现细节""]",PENDING_HUMAN_REVIEW
+train,ef4b51200ea5b386291d5e0c,根据课程知识，请列出模块开发说明包含的内容。,模块开发说明包含模块的源代码实现细节。,"[""模块的源代码实现细节""]",PENDING_HUMAN_REVIEW
+train,d9b27327a536ceb15e517c88,正确分支的后续动作是什么？,正确分支的后续动作是登录成功。,"[""登录成功""]",PENDING_HUMAN_REVIEW
+train,dfd33eae9d1797c9e6731faf,根据课程知识，请说明正确分支的后续动作。,正确分支的后续动作是登录成功。,"[""登录成功""]",PENDING_HUMAN_REVIEW
+train,a45bbe48d203070353a582a4,毯子类Blanket的属性是什么？,毯子类Blanket的属性是“毛毯编号bid+颜色color”。,"[""“毛毯编号bid+颜色color”""]",PENDING_HUMAN_REVIEW
+train,03dc89a8a60d2c143d793062,根据课程知识，请说明毯子类Blanket的属性。,毯子类Blanket的属性是“毛毯编号bid+颜色color”。,"[""“毛毯编号bid+颜色color”""]",PENDING_HUMAN_REVIEW
+train,7843d1970d4efaea1b29570a,泛化关系的功能是什么？,泛化关系的功能是用例之间的一般和特殊关系，特殊用例继承了一般用例的特性，并增加了新的特性，用带空心三角形箭头的实线表示。,"[""用例之间的一般和特殊关系，特殊用例继承了一般用例的特性，并增加了新的特性，用带空心三角形箭头的实线表示""]",PENDING_HUMAN_REVIEW
+train,0944ca1caad77ea5b7ac336d,根据课程知识，请说明泛化关系的功能。,泛化关系的功能是用例之间的一般和特殊关系，特殊用例继承了一般用例的特性，并增加了新的特性，用带空心三角形箭头的实线表示。,"[""用例之间的一般和特殊关系，特殊用例继承了一般用例的特性，并增加了新的特性，用带空心三角形箭头的实线表示""]",PENDING_HUMAN_REVIEW
+train,a826b8d0c8d3f8c38d50f68a,泛化关系的定义是什么？,泛化关系的定义是描述一般事物与该事物特殊种类之间的关系，即子类继承父类的特性，用带空心三角箭头的实线表示，从子类指向父类。,"[""描述一般事物与该事物特殊种类之间的关系，即子类继承父类的特性，用带空心三角箭头的实线表示，从子类指向父类""]",PENDING_HUMAN_REVIEW
+train,9059768b48138671884e3a47,根据课程知识，请说明泛化关系的定义。,泛化关系的定义是描述一般事物与该事物特殊种类之间的关系，即子类继承父类的特性，用带空心三角箭头的实线表示，从子类指向父类。,"[""描述一般事物与该事物特殊种类之间的关系，即子类继承父类的特性，用带空心三角箭头的实线表示，从子类指向父类""]",PENDING_HUMAN_REVIEW
+train,5e612061b71cd7c41c21ebc5,注册会员的扩展是什么？,注册会员扩展登录系统。,"[""登录系统""]",PENDING_HUMAN_REVIEW
+train,e32f0d30ef3cfef108e6ddec,根据课程知识，请说明注册会员的扩展。,注册会员扩展登录系统。,"[""登录系统""]",PENDING_HUMAN_REVIEW
+train,22cc0dc1375867e328f559c2,活动者的定义是什么？,活动者的定义是交互活动的发起者，用’小人’表示。,"[""交互活动的发起者，用’小人’表示""]",PENDING_HUMAN_REVIEW
+train,ec52516e2f1f36f88321c5c8,根据课程知识，请说明活动者的定义。,活动者的定义是交互活动的发起者，用’小人’表示。,"[""交互活动的发起者，用’小人’表示""]",PENDING_HUMAN_REVIEW
+train,e716ee104e4a422c051273cb,流程线的功能是什么？,流程线的功能是表示控制流向。,"[""表示控制流向""]",PENDING_HUMAN_REVIEW
+train,019aa28591bfc63a3706b26b,根据课程知识，请说明流程线的功能。,流程线的功能是表示控制流向。,"[""表示控制流向""]",PENDING_HUMAN_REVIEW
+train,b7c2928230d2be3c8ec0753b,流程线的图形表示是什么？,流程线的图形表示是箭头线。,"[""箭头线""]",PENDING_HUMAN_REVIEW
+train,bf6c0ec3300332c059e5241e,根据课程知识，请说明流程线的图形表示。,流程线的图形表示是箭头线。,"[""箭头线""]",PENDING_HUMAN_REVIEW
+train,d6ad3efab15c96c6231ce581,状态的定义是什么？,状态的定义是又称为中间状态，用圆角矩形表示。,"[""又称为中间状态，用圆角矩形表示""]",PENDING_HUMAN_REVIEW
+train,149858c58bca6ec2fbde905e,根据课程知识，请说明状态的定义。,状态的定义是又称为中间状态，用圆角矩形表示。,"[""又称为中间状态，用圆角矩形表示""]",PENDING_HUMAN_REVIEW
+train,39de609b4d7c766ed181fa05,状态的组成元素是什么？,状态的组成元素是动作；状态名。,"[""动作"", ""状态名""]",PENDING_HUMAN_REVIEW
+train,29a8ab2d5b4badf4735a2c9c,根据课程知识，请说明状态的组成元素。,状态的组成元素是动作；状态名。,"[""动作"", ""状态名""]",PENDING_HUMAN_REVIEW
+train,11b74140e15077de2f0d5f09,状态GettingSearchInfo的动作是什么？,状态GettingSearchInfo的动作是进入动作”entry/输入出发地和目的地“。,"[""进入动作”entry/输入出发地和目的地“""]",PENDING_HUMAN_REVIEW
+train,593270a25416ea280d9946e3,根据课程知识，请说明状态GettingSearchInfo的动作。,状态GettingSearchInfo的动作是进入动作”entry/输入出发地和目的地“。,"[""进入动作”entry/输入出发地和目的地“""]",PENDING_HUMAN_REVIEW
+train,f906deb0189bd114fcbed88f,状态GettingSearchInfo的单击搜索按钮是什么？,状态GettingSearchInfo的单击搜索按钮是状态SearchFailure。,"[""状态SearchFailure""]",PENDING_HUMAN_REVIEW
+train,3742a84a29950b46c462a9fb,根据课程知识，请说明状态GettingSearchInfo的单击搜索按钮。,状态GettingSearchInfo的单击搜索按钮是状态SearchFailure。,"[""状态SearchFailure""]",PENDING_HUMAN_REVIEW
+train,c41c4359eb3524c86451edfe,状态ListingSearchResult的动作是什么？,状态ListingSearchResult的动作是退出动作“exit/显示搜索结果”。,"[""退出动作“exit/显示搜索结果”""]",PENDING_HUMAN_REVIEW
+train,fe524d6f436452378cb68f9a,根据课程知识，请说明状态ListingSearchResult的动作。,状态ListingSearchResult的动作是退出动作“exit/显示搜索结果”。,"[""退出动作“exit/显示搜索结果”""]",PENDING_HUMAN_REVIEW
+train,3acfe2ccb6b3eee9da5f1156,状态SearchFailure的动作是什么？,状态SearchFailure的动作是内部活动”do/重新搜索“。,"[""内部活动”do/重新搜索“""]",PENDING_HUMAN_REVIEW
+train,c94aeeb4b81e356debc5a30d,根据课程知识，请说明状态SearchFailure的动作。,状态SearchFailure的动作是内部活动”do/重新搜索“。,"[""内部活动”do/重新搜索“""]",PENDING_HUMAN_REVIEW
+train,1b4d3c5208cde243138fda30,状态SearchFailure的单击“返回”或“重新搜索”按钮是什么？,状态SearchFailure的单击“返回”或“重新搜索”按钮是状态GettingSearchInfo。,"[""状态GettingSearchInfo""]",PENDING_HUMAN_REVIEW
+train,a6a3b52229cdbb079075ce4c,根据课程知识，请说明状态SearchFailure的单击“返回”或“重新搜索”按钮。,状态SearchFailure的单击“返回”或“重新搜索”按钮是状态GettingSearchInfo。,"[""状态GettingSearchInfo""]",PENDING_HUMAN_REVIEW
+train,d1a62f267ea52143858853f7,状态Searching的动作是什么？,状态Searching的动作是内部活动”do/搜索航班“。,"[""内部活动”do/搜索航班“""]",PENDING_HUMAN_REVIEW
+train,d9548777ff10e2d208c19b7a,根据课程知识，请说明状态Searching的动作。,状态Searching的动作是内部活动”do/搜索航班“。,"[""内部活动”do/搜索航班“""]",PENDING_HUMAN_REVIEW
+train,32f290f139345f4a9c495956,状态Searching的失败是什么？,状态Searching的失败是状态SearchFailure。,"[""状态SearchFailure""]",PENDING_HUMAN_REVIEW
+train,3202314f2901f85c5b6e8f05,根据课程知识，请说明状态Searching的失败。,状态Searching的失败是状态SearchFailure。,"[""状态SearchFailure""]",PENDING_HUMAN_REVIEW
+train,677b9d90c6538d7dce931e94,状态Searching的成功是什么？,状态Searching的成功是状态ListingSearchResult。,"[""状态ListingSearchResult""]",PENDING_HUMAN_REVIEW
+train,416786b039c614737151bf4f,根据课程知识，请说明状态Searching的成功。,状态Searching的成功是状态ListingSearchResult。,"[""状态ListingSearchResult""]",PENDING_HUMAN_REVIEW
+train,da89a27cd6d491ec3a3e6125,状态名的位置是什么？,状态名的位置是位于状态圆角矩形的上部区域。,"[""位于状态圆角矩形的上部区域""]",PENDING_HUMAN_REVIEW
+train,d9bea8df8d61f883e909d55a,根据课程知识，请说明状态名的位置。,状态名的位置是位于状态圆角矩形的上部区域。,"[""位于状态圆角矩形的上部区域""]",PENDING_HUMAN_REVIEW
+train,daaf77e7ec96a96dbe12ce68,状态图的定义是什么？,状态图的定义是描述了一个特定对象所有可能状态以及由各类事件触发的状态转移，它强调对象按事件次序发生的行为。,"[""描述了一个特定对象所有可能状态以及由各类事件触发的状态转移，它强调对象按事件次序发生的行为""]",PENDING_HUMAN_REVIEW
+train,69128ae4d7178167ee41494d,根据课程知识，请说明状态图的定义。,状态图的定义是描述了一个特定对象所有可能状态以及由各类事件触发的状态转移，它强调对象按事件次序发生的行为。,"[""描述了一个特定对象所有可能状态以及由各类事件触发的状态转移，它强调对象按事件次序发生的行为""]",PENDING_HUMAN_REVIEW
+train,554c79e846b87ce4bc469e36,状态图的组成元素是什么？,状态图的组成元素是初始状态；状态；状态转移；结束状态。,"[""初始状态"", ""状态"", ""状态转移"", ""结束状态""]",PENDING_HUMAN_REVIEW
+train,16cfccb0621fdd752e038a20,根据课程知识，请说明状态图的组成元素。,状态图的组成元素是初始状态；状态；状态转移；结束状态。,"[""初始状态"", ""状态"", ""状态转移"", ""结束状态""]",PENDING_HUMAN_REVIEW
+train,aa50ea19e1ab234158da8aa7,状态转移的定义是什么？,状态转移的定义是两个状态之间的关系，表示对象在接收到事件后从旧状态进入新状态，用带箭头的实线表示，箭头指向目标状态。,"[""两个状态之间的关系，表示对象在接收到事件后从旧状态进入新状态，用带箭头的实线表示，箭头指向目标状态""]",PENDING_HUMAN_REVIEW
+train,3dca0420c465a7b64dfa26ff,根据课程知识，请说明状态转移的定义。,状态转移的定义是两个状态之间的关系，表示对象在接收到事件后从旧状态进入新状态，用带箭头的实线表示，箭头指向目标状态。,"[""两个状态之间的关系，表示对象在接收到事件后从旧状态进入新状态，用带箭头的实线表示，箭头指向目标状态""]",PENDING_HUMAN_REVIEW
+train,9288487a343a8f26c1542b93,状态转移的触发方式是什么？,状态转移的触发方式是事件触发。,"[""事件触发""]",PENDING_HUMAN_REVIEW
+train,a115a4861484d6677a150cf1,根据课程知识，请说明状态转移的触发方式。,状态转移的触发方式是事件触发。,"[""事件触发""]",PENDING_HUMAN_REVIEW
+train,de58a0790dcda80f11f3ffa7,生命线的定义是什么？,生命线的定义是与交互对象相连，是顺序图中的垂直轴，表示时间，代表对象的生命期，用虚线表示。,"[""与交互对象相连，是顺序图中的垂直轴，表示时间，代表对象的生命期，用虚线表示""]",PENDING_HUMAN_REVIEW
+train,5a6170b99a3e176c12ca942a,根据课程知识，请说明生命线的定义。,生命线的定义是与交互对象相连，是顺序图中的垂直轴，表示时间，代表对象的生命期，用虚线表示。,"[""与交互对象相连，是顺序图中的垂直轴，表示时间，代表对象的生命期，用虚线表示""]",PENDING_HUMAN_REVIEW
+train,5d1744453a1380d87a73d242,用例的定义是什么？,用例的定义是系统为执行者提供的一组完整的、有价值的功能序列。,"[""系统为执行者提供的一组完整的、有价值的功能序列""]",PENDING_HUMAN_REVIEW
+train,cca4288e9560846e1afc4699,根据课程知识，请说明用例的定义。,用例的定义是系统为执行者提供的一组完整的、有价值的功能序列。,"[""系统为执行者提供的一组完整的、有价值的功能序列""]",PENDING_HUMAN_REVIEW
+train,2fa03d87832b271ac96defd5,用例的符号是什么？,用例的符号是椭圆形，内部标注用例名称。,"[""椭圆形，内部标注用例名称""]",PENDING_HUMAN_REVIEW
+train,3b1c06226e443f1fe8203c83,根据课程知识，请说明用例的符号。,用例的符号是椭圆形，内部标注用例名称。,"[""椭圆形，内部标注用例名称""]",PENDING_HUMAN_REVIEW
+train,14650bce8e41de258d5b046a,用例图的作用是什么？,用例图的作用是捕获用户需求并确定系统的功能边界。,"[""捕获用户需求并确定系统的功能边界""]",PENDING_HUMAN_REVIEW
+train,ad6afefacbdabff07cb5cf72,根据课程知识，请说明用例图的作用。,用例图的作用是捕获用户需求并确定系统的功能边界。,"[""捕获用户需求并确定系统的功能边界""]",PENDING_HUMAN_REVIEW
+train,46863be1fdbcb0a66b860288,用例图的地位是什么？,用例图的地位是UML建模中用例视图的主要工具。,"[""UML建模中用例视图的主要工具""]",PENDING_HUMAN_REVIEW
+train,14e19f575e23ed71d11444e1,根据课程知识，请说明用例图的地位。,用例图的地位是UML建模中用例视图的主要工具。,"[""UML建模中用例视图的主要工具""]",PENDING_HUMAN_REVIEW
+train,5573fd95aa4d9238fc280d54,用例图的定义是什么？,用例图的定义是描述外部执行者与系统提供的用例之间的交互关系。,"[""描述外部执行者与系统提供的用例之间的交互关系""]",PENDING_HUMAN_REVIEW
+train,fde5c29350d6cb84554bfd37,根据课程知识，请说明用例图的定义。,用例图的定义是描述外部执行者与系统提供的用例之间的交互关系。,"[""描述外部执行者与系统提供的用例之间的交互关系""]",PENDING_HUMAN_REVIEW
+train,247d8af3d82db0459e234500,用例图的组成是什么？,用例图的组成是关系；执行者；用例。,"[""关系"", ""执行者"", ""用例""]",PENDING_HUMAN_REVIEW
+train,17885ea6100d86fae0f13b88,根据课程知识，请说明用例图的组成。,用例图的组成是关系；执行者；用例。,"[""关系"", ""执行者"", ""用例""]",PENDING_HUMAN_REVIEW
+train,0e24da234f040aac1c88549e,用例图的视角是什么？,用例图的视角是从用户的角度描述系统的功能需求。,"[""从用户的角度描述系统的功能需求""]",PENDING_HUMAN_REVIEW
+train,b9f1064a7154772dac0c5712,根据课程知识，请说明用例图的视角。,用例图的视角是从用户的角度描述系统的功能需求。,"[""从用户的角度描述系统的功能需求""]",PENDING_HUMAN_REVIEW
+train,e1faded21334b88527a0a8cd,用户类User的属性是什么？,用户类User的属性是“用户名Username+密码pwd”。,"[""“用户名Username+密码pwd”""]",PENDING_HUMAN_REVIEW
+train,1ae6600836b60865ba068403,根据课程知识，请说明用户类User的属性。,用户类User的属性是“用户名Username+密码pwd”。,"[""“用户名Username+密码pwd”""]",PENDING_HUMAN_REVIEW
+train,adfc33bc7bb4bffc0e2ee3eb,登录功能程序流程图的起始框是什么？,登录功能程序流程图的起始框是开始节点。,"[""开始节点""]",PENDING_HUMAN_REVIEW
+train,a4114f8269e9e9f0f5e77c2d,根据课程知识，请说明登录功能程序流程图的起始框。,登录功能程序流程图的起始框是开始节点。,"[""开始节点""]",PENDING_HUMAN_REVIEW
+train,765a5ba1a415946932c14eae,确认订单前置于哪些知识点或对象？,确认订单前置于支付。,"[""支付""]",PENDING_HUMAN_REVIEW
+train,f7ff34ce692e235ab74a4a91,课程图谱中，确认订单的“前置于”关系指向哪些对象？,确认订单前置于支付。,"[""支付""]",PENDING_HUMAN_REVIEW
+train,7106e4cd239757806c30926d,社会可行性的研究内容是什么？,社会可行性的研究内容是法律因素、合同责任、侵权责任。,"[""法律因素、合同责任、侵权责任""]",PENDING_HUMAN_REVIEW
+train,e86b652ea643219a50fbb391,根据课程知识，请说明社会可行性的研究内容。,社会可行性的研究内容是法律因素、合同责任、侵权责任。,"[""法律因素、合同责任、侵权责任""]",PENDING_HUMAN_REVIEW
+train,3c75c4c67d0d7ade09c85d2c,社会可行性的评估标准是什么？,社会可行性的评估标准是系统开发是否违反法律、政策或道德规范。,"[""系统开发是否违反法律、政策或道德规范""]",PENDING_HUMAN_REVIEW
+train,79f348d9a7ce89e021431c78,根据课程知识，请说明社会可行性的评估标准。,社会可行性的评估标准是系统开发是否违反法律、政策或道德规范。,"[""系统开发是否违反法律、政策或道德规范""]",PENDING_HUMAN_REVIEW
+train,3eb29e390b355228510094e4,社会可行性研究涵盖哪些内容？,社会可行性研究涵盖旅客隐私数据保护是否符合国家数据安全法及机票信息展示是否违反反垄断或不正当竞争法。,"[""旅客隐私数据保护是否符合国家数据安全法及机票信息展示是否违反反垄断或不正当竞争法""]",PENDING_HUMAN_REVIEW
+train,636b3b43f389097ee87afb5a,根据课程知识，请列出社会可行性研究涵盖的内容。,社会可行性研究涵盖旅客隐私数据保护是否符合国家数据安全法及机票信息展示是否违反反垄断或不正当竞争法。,"[""旅客隐私数据保护是否符合国家数据安全法及机票信息展示是否违反反垄断或不正当竞争法""]",PENDING_HUMAN_REVIEW
+train,14b720702ad02efd0e9ca7d1,程序流程图的优点是什么？,程序流程图的优点是对控制流程的描绘直观，便于初学者掌握。,"[""对控制流程的描绘直观，便于初学者掌握""]",PENDING_HUMAN_REVIEW
+train,799a5b8ed672cdb24fa95477,根据课程知识，请说明程序流程图的优点。,程序流程图的优点是对控制流程的描绘直观，便于初学者掌握。,"[""对控制流程的描绘直观，便于初学者掌握""]",PENDING_HUMAN_REVIEW
+train,4ad9a1f08930553d7de9f2e4,程序流程图的组成元素是什么？,程序流程图的组成元素是判断框；处理框；流程线；终止框；起始框。,"[""判断框"", ""处理框"", ""流程线"", ""终止框"", ""起始框""]",PENDING_HUMAN_REVIEW
+train,ae835ffd456d86e37c2f7df6,根据课程知识，请说明程序流程图的组成元素。,程序流程图的组成元素是判断框；处理框；流程线；终止框；起始框。,"[""判断框"", ""处理框"", ""流程线"", ""终止框"", ""起始框""]",PENDING_HUMAN_REVIEW
+train,1e2ac7ffd50bd22ff29c5a5d,程序流程图的缺点是什么？,程序流程图的缺点是不是逐步求精的好工具，导致过早考虑程序的控制流程，忽略程序的全局结构，用箭头代表控制流导致随意转移控制，违反结构化程序设计原则，不易表示数据结构。,"[""不是逐步求精的好工具，导致过早考虑程序的控制流程，忽略程序的全局结构，用箭头代表控制流导致随意转移控制，违反结构化程序设计原则，不易表示数据结构""]",PENDING_HUMAN_REVIEW
+train,60203adc41ddfd585afaeaa9,根据课程知识，请说明程序流程图的缺点。,程序流程图的缺点是不是逐步求精的好工具，导致过早考虑程序的控制流程，忽略程序的全局结构，用箭头代表控制流导致随意转移控制，违反结构化程序设计原则，不易表示数据结构。,"[""不是逐步求精的好工具，导致过早考虑程序的控制流程，忽略程序的全局结构，用箭头代表控制流导致随意转移控制，违反结构化程序设计原则，不易表示数据结构""]",PENDING_HUMAN_REVIEW
+train,1a0fb47f680f3dcfb4c2244d,空姐类Stewardess的属性是什么？,空姐类Stewardess的属性是“sid+name”。,"[""“sid+name”""]",PENDING_HUMAN_REVIEW
+train,37f094d86b585e751ede14c0,根据课程知识，请说明空姐类Stewardess的属性。,空姐类Stewardess的属性是“sid+name”。,"[""“sid+name”""]",PENDING_HUMAN_REVIEW
+train,2453ae1d22503f7cf0910d6c,系统实现划分为哪些类别？,系统实现划分为综合测试；编码和单元测试。,"[""综合测试"", ""编码和单元测试""]",PENDING_HUMAN_REVIEW
+train,ed9d89a8640c0f76119b3b83,根据课程知识，请说明系统实现的分类。,系统实现划分为综合测试；编码和单元测试。,"[""综合测试"", ""编码和单元测试""]",PENDING_HUMAN_REVIEW
+train,f8ee49a3f32d10df375cbc30,系统实现前置于哪些知识点或对象？,系统实现前置于运行维护。,"[""运行维护""]",PENDING_HUMAN_REVIEW
+train,94cab2dec7f7aca175d59724,课程图谱中，系统实现的“前置于”关系指向哪些对象？,系统实现前置于运行维护。,"[""运行维护""]",PENDING_HUMAN_REVIEW
+train,20f968d1ae1712f7f4bcee07,系统的逻辑模型使用哪些工具？,系统的逻辑模型的使用工具是数据字典DD；数据流图DFD。,"[""数据字典DD"", ""数据流图DFD""]",PENDING_HUMAN_REVIEW
+train,e7974f655a75d004b4ac8916,根据课程知识，请列出系统的逻辑模型使用的工具。,系统的逻辑模型的使用工具是数据字典DD；数据流图DFD。,"[""数据字典DD"", ""数据流图DFD""]",PENDING_HUMAN_REVIEW
+train,bc83f601f875fb9bfe871d93,系统设计划分为哪些类别？,系统设计划分为总体设计；详细设计。,"[""总体设计"", ""详细设计""]",PENDING_HUMAN_REVIEW
+train,157afe9b0b7acbc77c9e61fe,根据课程知识，请说明系统设计的分类。,系统设计划分为总体设计；详细设计。,"[""总体设计"", ""详细设计""]",PENDING_HUMAN_REVIEW
+train,66acd85740679181d64bf55a,系统设计前置于哪些知识点或对象？,系统设计前置于系统实现。,"[""系统实现""]",PENDING_HUMAN_REVIEW
+train,4c6e64d4c3ff9a71b78bbc6c,课程图谱中，系统设计的“前置于”关系指向哪些对象？,系统设计前置于系统实现。,"[""系统实现""]",PENDING_HUMAN_REVIEW
+train,9e0cbace3da3639950016e4f,系统设计包括哪些内容？,系统设计包括面向对象设计。,"[""面向对象设计""]",PENDING_HUMAN_REVIEW
+train,120b78a63682d220f2c1bc54,根据课程知识，请列出系统设计包括的内容。,系统设计包括面向对象设计。,"[""面向对象设计""]",PENDING_HUMAN_REVIEW
+train,bf20927a6b9310b6699c9abf,系统设计的定义是什么？,系统设计的定义是确定实现系统的策略和目标系统的高层结构。,"[""确定实现系统的策略和目标系统的高层结构""]",PENDING_HUMAN_REVIEW
+train,0e9521bb758714ff1933fdd1,根据课程知识，请说明系统设计的定义。,系统设计的定义是确定实现系统的策略和目标系统的高层结构。,"[""确定实现系统的策略和目标系统的高层结构""]",PENDING_HUMAN_REVIEW
+train,30cd367506745e4afc41e942,组合关系的定义是什么？,组合关系的定义是极强的关联关系，比聚合更强，部分不可脱离整体独立存在，用一端是实心菱形，另一端是箭头的实线表示，箭头由整体类指向部分类。,"[""极强的关联关系，比聚合更强，部分不可脱离整体独立存在，用一端是实心菱形，另一端是箭头的实线表示，箭头由整体类指向部分类""]",PENDING_HUMAN_REVIEW
+train,53bc8a4b7e0dcb0b947612bb,根据课程知识，请说明组合关系的定义。,组合关系的定义是极强的关联关系，比聚合更强，部分不可脱离整体独立存在，用一端是实心菱形，另一端是箭头的实线表示，箭头由整体类指向部分类。,"[""极强的关联关系，比聚合更强，部分不可脱离整体独立存在，用一端是实心菱形，另一端是箭头的实线表示，箭头由整体类指向部分类""]",PENDING_HUMAN_REVIEW
+train,38048bec837c9fb9a57ea80d,终止框的功能是什么？,终止框的功能是表示程序结束。,"[""表示程序结束""]",PENDING_HUMAN_REVIEW
+train,739d05bc19a3496eab5e1ad6,根据课程知识，请说明终止框的功能。,终止框的功能是表示程序结束。,"[""表示程序结束""]",PENDING_HUMAN_REVIEW
+train,6ff311beb382f85023fdea4d,终止框的图形表示是什么？,终止框的图形表示是椭圆形或跑道形。,"[""椭圆形或跑道形""]",PENDING_HUMAN_REVIEW
+train,fc18127829fae902681065de,根据课程知识，请说明终止框的图形表示。,终止框的图形表示是椭圆形或跑道形。,"[""椭圆形或跑道形""]",PENDING_HUMAN_REVIEW
+train,40b06309f3324f4348362330,经济可行性的研究内容是什么？,经济可行性的研究内容是支出费用、预估效益、投资回报率。,"[""支出费用、预估效益、投资回报率""]",PENDING_HUMAN_REVIEW
+train,dce3563f835164102114dbf4,根据课程知识，请说明经济可行性的研究内容。,经济可行性的研究内容是支出费用、预估效益、投资回报率。,"[""支出费用、预估效益、投资回报率""]",PENDING_HUMAN_REVIEW
+train,2b843e7cf5f7628778ac8307,经济可行性的评估标准是什么？,经济可行性的评估标准是软件项目的经济效益是否超过开发成本。,"[""软件项目的经济效益是否超过开发成本""]",PENDING_HUMAN_REVIEW
+train,7f7873e07e188fed61843f8c,根据课程知识，请说明经济可行性的评估标准。,经济可行性的评估标准是软件项目的经济效益是否超过开发成本。,"[""软件项目的经济效益是否超过开发成本""]",PENDING_HUMAN_REVIEW
+train,6c66889b556ecc1755e5a1d8,经济可行性研究涵盖哪些内容？,经济可行性研究涵盖自动订票减少的人工成本是否大于系统维护费及系统上线后预期的客流量增长收益。,"[""自动订票减少的人工成本是否大于系统维护费及系统上线后预期的客流量增长收益""]",PENDING_HUMAN_REVIEW
+train,fee09a3cd1608fcf48c122ec,根据课程知识，请列出经济可行性研究涵盖的内容。,经济可行性研究涵盖自动订票减少的人工成本是否大于系统维护费及系统上线后预期的客流量增长收益。,"[""自动订票减少的人工成本是否大于系统维护费及系统上线后预期的客流量增长收益""]",PENDING_HUMAN_REVIEW
+train,76e59e419057bb714aa07374,结束状态的定义是什么？,结束状态的定义是又称为终态，用带圆圈的实心圆点表示，一张状态图中可能有多个结束状态。,"[""又称为终态，用带圆圈的实心圆点表示，一张状态图中可能有多个结束状态""]",PENDING_HUMAN_REVIEW
+train,b3777376e0c3643735c8a900,根据课程知识，请说明结束状态的定义。,结束状态的定义是又称为终态，用带圆圈的实心圆点表示，一张状态图中可能有多个结束状态。,"[""又称为终态，用带圆圈的实心圆点表示，一张状态图中可能有多个结束状态""]",PENDING_HUMAN_REVIEW
+train,dbbac596a392795a40ce3e0f,结构事物包含哪些内容？,结构事物包含类、接口、协作、用例、组件、节点。,"[""类、接口、协作、用例、组件、节点""]",PENDING_HUMAN_REVIEW
+train,33a08a9ec9011a8494b21a36,根据课程知识，请列出结构事物包含的内容。,结构事物包含类、接口、协作、用例、组件、节点。,"[""类、接口、协作、用例、组件、节点""]",PENDING_HUMAN_REVIEW
+train,4d16938d3b942be001b921f5,结构化分析SA的关注点是什么？,结构化分析SA的关注点是系统“做什么”以及数据如何被加工。,"[""系统“做什么”以及数据如何被加工""]",PENDING_HUMAN_REVIEW
+train,9eff7859b10e870880b927bb,根据课程知识，请说明结构化分析SA的关注点。,结构化分析SA的关注点是系统“做什么”以及数据如何被加工。,"[""系统“做什么”以及数据如何被加工""]",PENDING_HUMAN_REVIEW
+train,9ff68bbb569bec1f3626a519,结构化分析SA的建立是什么？,结构化分析SA建立功能模型；数据模型；行为模型。,"[""功能模型"", ""数据模型"", ""行为模型""]",PENDING_HUMAN_REVIEW
+train,c81c68fbb3a2352d4f9f0cd0,根据课程知识，请说明结构化分析SA的建立。,结构化分析SA建立功能模型；数据模型；行为模型。,"[""功能模型"", ""数据模型"", ""行为模型""]",PENDING_HUMAN_REVIEW
+train,0beaed13e0d8892eabf121e2,结构化分析SA的核心思想是什么？,结构化分析SA的核心思想是自顶向下、逐层分解、面向数据流。,"[""自顶向下、逐层分解、面向数据流""]",PENDING_HUMAN_REVIEW
+train,c64dd7ddbff5576b762b3837,根据课程知识，请说明结构化分析SA的核心思想。,结构化分析SA的核心思想是自顶向下、逐层分解、面向数据流。,"[""自顶向下、逐层分解、面向数据流""]",PENDING_HUMAN_REVIEW
+train,1072f291c90a97dc9f43041a,结果列表页面对象’:List Page’的发送消息是什么？,结果列表页面对象’:List Page’发送消息张三。,"[""张三""]",PENDING_HUMAN_REVIEW
+train,c601dc8f05098bc8f79ad9b1,根据课程知识，请说明结果列表页面对象’:List Page’的发送消息。,结果列表页面对象’:List Page’发送消息张三。,"[""张三""]",PENDING_HUMAN_REVIEW
+train,3280027827f94180e22eea00,结果列表页面对象’:List Page’的接收消息是什么？,结果列表页面对象’:List Page’接收消息getAllLiner(。,"[""getAllLiner(""]",PENDING_HUMAN_REVIEW
+train,c8f97d4b13d99693483f119e,根据课程知识，请说明结果列表页面对象’:List Page’的接收消息。,结果列表页面对象’:List Page’接收消息getAllLiner(。,"[""getAllLiner(""]",PENDING_HUMAN_REVIEW
+train,0b833474a8b80fdfa8f25414,编码的交付文档是什么？,编码的交付文档是模块开发说明。,"[""模块开发说明""]",PENDING_HUMAN_REVIEW
+train,960d24bbac2716627fd860fe,根据课程知识，请说明编码的交付文档。,编码的交付文档是模块开发说明。,"[""模块开发说明""]",PENDING_HUMAN_REVIEW
+train,3538404b77f0e619467c5b4a,编码和单元测试的关键任务是什么？,编码和单元测试的关键任务是将设计的模块算法和数据结构翻译成程序。,"[""将设计的模块算法和数据结构翻译成程序""]",PENDING_HUMAN_REVIEW
+train,6476120700a6f811796e3f56,根据课程知识，请说明编码和单元测试的关键任务。,编码和单元测试的关键任务是将设计的模块算法和数据结构翻译成程序。,"[""将设计的模块算法和数据结构翻译成程序""]",PENDING_HUMAN_REVIEW
+train,128f9fc33b0147a3266e5dd4,聚合关系的定义是什么？,聚合关系的定义是是一种特殊的关联关系，表示整体与部分的关系，且部分可以脱离整体独立存在，用一端是空心菱形，另一端是箭头的实线表示，箭头从整体类指向部分类。,"[""是一种特殊的关联关系，表示整体与部分的关系，且部分可以脱离整体独立存在，用一端是空心菱形，另一端是箭头的实线表示，箭头从整体类指向部分类""]",PENDING_HUMAN_REVIEW
+train,853de4cd0690bd7ed21f9b98,根据课程知识，请说明聚合关系的定义。,聚合关系的定义是是一种特殊的关联关系，表示整体与部分的关系，且部分可以脱离整体独立存在，用一端是空心菱形，另一端是箭头的实线表示，箭头从整体类指向部分类。,"[""是一种特殊的关联关系，表示整体与部分的关系，且部分可以脱离整体独立存在，用一端是空心菱形，另一端是箭头的实线表示，箭头从整体类指向部分类""]",PENDING_HUMAN_REVIEW
+train,0c2a3f28f323558153ec50db,自底向上的过程是什么？,自底向上的过程是抽象出现有类的共同性质泛化出基类。,"[""抽象出现有类的共同性质泛化出基类""]",PENDING_HUMAN_REVIEW
+train,733c9d1bf25f771c1dc252d7,根据课程知识，请说明自底向上的过程。,自底向上的过程是抽象出现有类的共同性质泛化出基类。,"[""抽象出现有类的共同性质泛化出基类""]",PENDING_HUMAN_REVIEW
+train,7f1b6cd8cf8fe718d5f41060,自顶向下的过程是什么？,自顶向下的过程是把现有类细化成更具体的子类或从已知类派生新类。,"[""把现有类细化成更具体的子类或从已知类派生新类""]",PENDING_HUMAN_REVIEW
+train,63eebed916e099b87750970b,根据课程知识，请说明自顶向下的过程。,自顶向下的过程是把现有类细化成更具体的子类或从已知类派生新类。,"[""把现有类细化成更具体的子类或从已知类派生新类""]",PENDING_HUMAN_REVIEW
+train,cb74bdab56611a74f1b882ba,航班对象’:Liner’的发送消息是什么？,航班对象’:Liner’发送消息getAllLiner(。,"[""getAllLiner(""]",PENDING_HUMAN_REVIEW
+train,2db6818dd51251aeb2e572c3,根据课程知识，请说明航班对象’:Liner’的发送消息。,航班对象’:Liner’发送消息getAllLiner(。,"[""getAllLiner(""]",PENDING_HUMAN_REVIEW
+train,d98743265ad795bafe907eb0,航班对象’:Liner’的接收消息是什么？,航班对象’:Liner’接收消息findAllLiner(。,"[""findAllLiner(""]",PENDING_HUMAN_REVIEW
+train,f7bfd3455ae601027a8695b0,根据课程知识，请说明航班对象’:Liner’的接收消息。,航班对象’:Liner’接收消息findAllLiner(。,"[""findAllLiner(""]",PENDING_HUMAN_REVIEW
+train,1f0a92da7b6204f12fe4ab66,航班控制器对象’:Liner Controller’的发送消息是什么？,航班控制器对象’:Liner Controller’发送消息findAllLiner(。,"[""findAllLiner(""]",PENDING_HUMAN_REVIEW
+train,dc7d3b131e1e8b6e097fd037,根据课程知识，请说明航班控制器对象’:Liner Controller’的发送消息。,航班控制器对象’:Liner Controller’发送消息findAllLiner(。,"[""findAllLiner(""]",PENDING_HUMAN_REVIEW
+train,79cf74ee2f6beff77b957cbb,航班控制器对象’:Liner Controller’的接收消息是什么？,航班控制器对象’:Liner Controller’接收消息搜索请求。,"[""搜索请求""]",PENDING_HUMAN_REVIEW
+train,a6846e9151d7e34d0a47dc2f,根据课程知识，请说明航班控制器对象’:Liner Controller’的接收消息。,航班控制器对象’:Liner Controller’接收消息搜索请求。,"[""搜索请求""]",PENDING_HUMAN_REVIEW
+train,7f9230775ddc175d13f2a482,航班类Liner的具有组合关系是什么？,航班类Liner的具有组合关系是Liner_Stewardess_Composition。,"[""Liner_Stewardess_Composition""]",PENDING_HUMAN_REVIEW
+train,614d62f5c9b436c16580fb0e,根据课程知识，请说明航班类Liner的具有组合关系。,航班类Liner的具有组合关系是Liner_Stewardess_Composition。,"[""Liner_Stewardess_Composition""]",PENDING_HUMAN_REVIEW
+train,eb853cf1f936c88045be2e97,航班类Liner的具有聚合关系是什么？,航班类Liner的具有聚合关系是Liner_Blanket_Aggregation。,"[""Liner_Blanket_Aggregation""]",PENDING_HUMAN_REVIEW
+train,8aee778fe0f9fd595ba5ae17,根据课程知识，请说明航班类Liner的具有聚合关系。,航班类Liner的具有聚合关系是Liner_Blanket_Aggregation。,"[""Liner_Blanket_Aggregation""]",PENDING_HUMAN_REVIEW
+train,19b21bb1b06158a020b09e5e,航班类Liner的属性是什么？,航班类Liner的属性是“航班编号aid+航班名称name+航班出发地departure+航班目的地destination+座位数seating+票价price”。,"[""“航班编号aid+航班名称name+航班出发地departure+航班目的地destination+座位数seating+票价price”""]",PENDING_HUMAN_REVIEW
+train,e2277f68b4e473e18a206f6e,根据课程知识，请说明航班类Liner的属性。,航班类Liner的属性是“航班编号aid+航班名称name+航班出发地departure+航班目的地destination+座位数seating+票价price”。,"[""“航班编号aid+航班名称name+航班出发地departure+航班目的地destination+座位数seating+票价price”""]",PENDING_HUMAN_REVIEW
+train,e1207bf43bcd0d251e529240,航班表的组成是什么？,航班表的组成是航班号+航班名称+出发时间+到达时间+出发地+目的地+票数+余额+单价。,"[""航班号+航班名称+出发时间+到达时间+出发地+目的地+票数+余额+单价""]",PENDING_HUMAN_REVIEW
+train,ae78d03924dd38e76f085941,根据课程知识，请说明航班表的组成。,航班表的组成是航班号+航班名称+出发时间+到达时间+出发地+目的地+票数+余额+单价。,"[""航班号+航班名称+出发时间+到达时间+出发地+目的地+票数+余额+单价""]",PENDING_HUMAN_REVIEW
+train,7a2067716345830a7ccb37b1,行为事物包含哪些内容？,行为事物包含交互、状态机。,"[""交互、状态机""]",PENDING_HUMAN_REVIEW
+train,3eafde0c35153468443758f6,根据课程知识，请列出行为事物包含的内容。,行为事物包含交互、状态机。,"[""交互、状态机""]",PENDING_HUMAN_REVIEW
+train,4a9862be01a88ce3ec224a8f,行为模型的工具是什么？,行为模型的工具是状态转换图STD——描述系统状态演变。,"[""状态转换图STD——描述系统状态演变""]",PENDING_HUMAN_REVIEW
+train,8d719b53e31dda092eb9d439,根据课程知识，请说明行为模型的工具。,行为模型的工具是状态转换图STD——描述系统状态演变。,"[""状态转换图STD——描述系统状态演变""]",PENDING_HUMAN_REVIEW
+train,ccbf06ec1b5ccc655f37f2dc,订票包含哪些内容？,订票包含填写乘客信息；支付；登录系统；确认订单；选择航班。,"[""填写乘客信息"", ""支付"", ""登录系统"", ""确认订单"", ""选择航班""]",PENDING_HUMAN_REVIEW
+train,90cf125a37cd8a28f400a211,根据课程知识，请列出订票包含的内容。,订票包含填写乘客信息；支付；登录系统；确认订单；选择航班。,"[""填写乘客信息"", ""支付"", ""登录系统"", ""确认订单"", ""选择航班""]",PENDING_HUMAN_REVIEW
+train,444c59aa522c8eedd8e030a0,订票的输入是什么？,订票的输入是来自加工1.1的旅客表与航班表。,"[""来自加工1.1的旅客表与航班表""]",PENDING_HUMAN_REVIEW
+train,2b4b51a623d9c42ccae3813a,根据课程知识，请说明订票的输入。,订票的输入是来自加工1.1的旅客表与航班表。,"[""来自加工1.1的旅客表与航班表""]",PENDING_HUMAN_REVIEW
+train,7b264b2906afe9c54ed900a4,订票的输出是什么？,订票的输出是写入订票表并产生初始订单。,"[""写入订票表并产生初始订单""]",PENDING_HUMAN_REVIEW
+train,f610af03abf07b77b41f5260,根据课程知识，请说明订票的输出。,订票的输出是写入订票表并产生初始订单。,"[""写入订票表并产生初始订单""]",PENDING_HUMAN_REVIEW
+train,3bc85ae6741c55d67bbff63f,订票表的组成是什么？,订票表的组成是身份证号码+姓名+手机号码+出发时间+到达时间+航班号+航班名称+出发地+目的地+单价+票数+余额。,"[""身份证号码+姓名+手机号码+出发时间+到达时间+航班号+航班名称+出发地+目的地+单价+票数+余额""]",PENDING_HUMAN_REVIEW
+train,01ba99cc0441e2b15e56bdc0,根据课程知识，请说明订票表的组成。,订票表的组成是身份证号码+姓名+手机号码+出发时间+到达时间+航班号+航班名称+出发地+目的地+单价+票数+余额。,"[""身份证号码+姓名+手机号码+出发时间+到达时间+航班号+航班名称+出发地+目的地+单价+票数+余额""]",PENDING_HUMAN_REVIEW
+train,40791100f407c3cc431eb2cd,设置输入用户名和密码的次数为1的后续动作是什么？,设置输入用户名和密码的次数为1的后续动作是判断输入次数是否超过3次。,"[""判断输入次数是否超过3次""]",PENDING_HUMAN_REVIEW
+train,5fd043827f12f454bd8d518f,根据课程知识，请说明设置输入用户名和密码的次数为1的后续动作。,设置输入用户名和密码的次数为1的后续动作是判断输入次数是否超过3次。,"[""判断输入次数是否超过3次""]",PENDING_HUMAN_REVIEW
+train,2bf3396ab54f50011c3d2aa8,设置输入用户名和密码的次数加1的后续动作是什么？,设置输入用户名和密码的次数加1的后续动作是判断输入次数是否超过3次。,"[""判断输入次数是否超过3次""]",PENDING_HUMAN_REVIEW
+train,da9d5c13178f6298b4db0b18,根据课程知识，请说明设置输入用户名和密码的次数加1的后续动作。,设置输入用户名和密码的次数加1的后续动作是判断输入次数是否超过3次。,"[""判断输入次数是否超过3次""]",PENDING_HUMAN_REVIEW
+train,b434b38944d4aefef26a5966,详细设计的交付文档是什么？,详细设计的交付文档是详细设计说明书。,"[""详细设计说明书""]",PENDING_HUMAN_REVIEW
+train,8bcbac48c9a88be0c8c78f6b,根据课程知识，请说明详细设计的交付文档。,详细设计的交付文档是详细设计说明书。,"[""详细设计说明书""]",PENDING_HUMAN_REVIEW
+train,f525d49ba372f73ff38eb7db,详细设计的关键任务是什么？,详细设计的关键任务是设计每个模块的算法和数据结构。,"[""设计每个模块的算法和数据结构""]",PENDING_HUMAN_REVIEW
+train,19f48c2a81e69d3a738a0454,根据课程知识，请说明详细设计的关键任务。,详细设计的关键任务是设计每个模块的算法和数据结构。,"[""设计每个模块的算法和数据结构""]",PENDING_HUMAN_REVIEW
+train,3e655e7a5b08ce2a55a1cbca,详细设计说明书包含哪些内容？,详细设计说明书包含各个功能模块的逻辑结构、模块实现的算法、模块的数据结构。,"[""各个功能模块的逻辑结构、模块实现的算法、模块的数据结构""]",PENDING_HUMAN_REVIEW
+train,7c38e27ef0909f82ac489859,根据课程知识，请列出详细设计说明书包含的内容。,详细设计说明书包含各个功能模块的逻辑结构、模块实现的算法、模块的数据结构。,"[""各个功能模块的逻辑结构、模块实现的算法、模块的数据结构""]",PENDING_HUMAN_REVIEW
+train,66747ed1189269e805b4272f,账单的组成是什么？,账单的组成是身份证号码+姓名+手机号码+出发时间+到达时间+航班号+出发地+目的地+票数+余额。,"[""身份证号码+姓名+手机号码+出发时间+到达时间+航班号+出发地+目的地+票数+余额""]",PENDING_HUMAN_REVIEW
+train,c8e4bc2375f02f563925d762,根据课程知识，请说明账单的组成。,账单的组成是身份证号码+姓名+手机号码+出发时间+到达时间+航班号+出发地+目的地+票数+余额。,"[""身份证号码+姓名+手机号码+出发时间+到达时间+航班号+出发地+目的地+票数+余额""]",PENDING_HUMAN_REVIEW
+train,fff25d8f0eb6100ee772065b,起始框的功能是什么？,起始框的功能是表示程序开始。,"[""表示程序开始""]",PENDING_HUMAN_REVIEW
+train,2c17ee0b3bd857893ab8dd9e,根据课程知识，请说明起始框的功能。,起始框的功能是表示程序开始。,"[""表示程序开始""]",PENDING_HUMAN_REVIEW
+train,e82ce11be566804a968c1c9e,起始框的图形表示是什么？,起始框的图形表示是椭圆形或跑道形。,"[""椭圆形或跑道形""]",PENDING_HUMAN_REVIEW
+train,0b30d6d2addc811372bcd8ec,根据课程知识，请说明起始框的图形表示。,起始框的图形表示是椭圆形或跑道形。,"[""椭圆形或跑道形""]",PENDING_HUMAN_REVIEW
+train,b3603e3fc8e2cadc2f925417,软件的具有是什么？,软件具有软件生命周期。,"[""软件生命周期""]",PENDING_HUMAN_REVIEW
+train,4d524e8bc895d10d5315ae68,根据课程知识，请说明软件的具有。,软件具有软件生命周期。,"[""软件生命周期""]",PENDING_HUMAN_REVIEW
+train,6600b69810d025bf7faef7d8,软件定义时期划分为哪些类别？,软件定义时期划分为可行性研究；问题定义；需求分析。,"[""可行性研究"", ""问题定义"", ""需求分析""]",PENDING_HUMAN_REVIEW
+train,d066cbcecdc789841b65afd7,根据课程知识，请说明软件定义时期的分类。,软件定义时期划分为可行性研究；问题定义；需求分析。,"[""可行性研究"", ""问题定义"", ""需求分析""]",PENDING_HUMAN_REVIEW
+train,b6be5196ba2f7184b6361725,软件开发时期划分为哪些类别？,软件开发时期划分为系统实现；系统设计。,"[""系统实现"", ""系统设计""]",PENDING_HUMAN_REVIEW
+train,cdcd07e9c5b674e4438eaf7c,根据课程知识，请说明软件开发时期的分类。,软件开发时期划分为系统实现；系统设计。,"[""系统实现"", ""系统设计""]",PENDING_HUMAN_REVIEW
+train,e040869d74bb618b0bf00b3e,软件测试报告包含哪些内容？,软件测试报告包含详细测试方案和实际测试结果分析。,"[""详细测试方案和实际测试结果分析""]",PENDING_HUMAN_REVIEW
+train,29b32e565f733ea1fe79304d,根据课程知识，请列出软件测试报告包含的内容。,软件测试报告包含详细测试方案和实际测试结果分析。,"[""详细测试方案和实际测试结果分析""]",PENDING_HUMAN_REVIEW
+train,905571c41bd31ab40c27b923,软件测试计划包含哪些内容？,软件测试计划包含集成测试策略和验收测试标准。,"[""集成测试策略和验收测试标准""]",PENDING_HUMAN_REVIEW
+train,7766e636c5fcca8c7c82303a,根据课程知识，请列出软件测试计划包含的内容。,软件测试计划包含集成测试策略和验收测试标准。,"[""集成测试策略和验收测试标准""]",PENDING_HUMAN_REVIEW
+train,8f18751194a295a307905b66,软件生命周期包括哪些内容？,软件生命周期包括软件定义时期；软件开发时期；运行维护时期。,"[""软件定义时期"", ""软件开发时期"", ""运行维护时期""]",PENDING_HUMAN_REVIEW
+train,53c98267d71030481ba6fe3a,根据课程知识，请列出软件生命周期包括的内容。,软件生命周期包括软件定义时期；软件开发时期；运行维护时期。,"[""软件定义时期"", ""软件开发时期"", ""运行维护时期""]",PENDING_HUMAN_REVIEW
+train,1bca025c4eec19e5a547d7e7,软件生命周期的定义是什么？,软件生命周期的定义是软件从构思之日起到报废或停止使用的生命周期。,"[""软件从构思之日起到报废或停止使用的生命周期""]",PENDING_HUMAN_REVIEW
+train,35c63d816fc20b365c670bc8,根据课程知识，请说明软件生命周期的定义。,软件生命周期的定义是软件从构思之日起到报废或停止使用的生命周期。,"[""软件从构思之日起到报废或停止使用的生命周期""]",PENDING_HUMAN_REVIEW
+train,84224d2670b20846220792b3,软件维护包含哪些内容？,软件维护包含完善性维护；改正性维护；适应性维护；预防性维护。,"[""完善性维护"", ""改正性维护"", ""适应性维护"", ""预防性维护""]",PENDING_HUMAN_REVIEW
+train,5027a20608f6d753efd5a2ab,根据课程知识，请列出软件维护包含的内容。,软件维护包含完善性维护；改正性维护；适应性维护；预防性维护。,"[""完善性维护"", ""改正性维护"", ""适应性维护"", ""预防性维护""]",PENDING_HUMAN_REVIEW
+train,93d84abad6a860774f80deb6,软件维护的属于是什么？,软件维护属于运行维护时期。,"[""运行维护时期""]",PENDING_HUMAN_REVIEW
+train,4edf2a49970447c4a89eabec,根据课程知识，请说明软件维护的属于。,软件维护属于运行维护时期。,"[""运行维护时期""]",PENDING_HUMAN_REVIEW
+train,fc2fbe0ad591096c13ed3f48,软件维护的目标是什么？,软件维护的目标是通过各种必要的维护活动使软件持久地满足用户的需要。,"[""通过各种必要的维护活动使软件持久地满足用户的需要""]",PENDING_HUMAN_REVIEW
+train,8df0b9fea9c37e947e1189cd,根据课程知识，请说明软件维护的目标。,软件维护的目标是通过各种必要的维护活动使软件持久地满足用户的需要。,"[""通过各种必要的维护活动使软件持久地满足用户的需要""]",PENDING_HUMAN_REVIEW
+train,e28de6ba4c8e823fe3ffdc51,软件需求规格说明书包含哪些内容？,软件需求规格说明书包含系统的功能需求、系统的非功能要求及系统的运行环境。,"[""系统的功能需求、系统的非功能要求及系统的运行环境""]",PENDING_HUMAN_REVIEW
+train,c9c13a2b5290c1544f1b81f4,根据课程知识，请列出软件需求规格说明书包含的内容。,软件需求规格说明书包含系统的功能需求、系统的非功能要求及系统的运行环境。,"[""系统的功能需求、系统的非功能要求及系统的运行环境""]",PENDING_HUMAN_REVIEW
+train,562e55df6a52bc461dd2fd4f,输入用户名和密码的后续判断是什么？,输入用户名和密码的后续判断是判断用户名和密码是否正确。,"[""判断用户名和密码是否正确""]",PENDING_HUMAN_REVIEW
+train,a480acb60e5d75e0204590d2,根据课程知识，请说明输入用户名和密码的后续判断。,输入用户名和密码的后续判断是判断用户名和密码是否正确。,"[""判断用户名和密码是否正确""]",PENDING_HUMAN_REVIEW
+train,7dd363a72c26bec10fc133b5,输入用户名和密码是否正确的分支1是什么？,输入用户名和密码是否正确的分支1是正确分支。,"[""正确分支""]",PENDING_HUMAN_REVIEW
+train,535094fa8313ada6de5fba58,根据课程知识，请说明输入用户名和密码是否正确的分支1。,输入用户名和密码是否正确的分支1是正确分支。,"[""正确分支""]",PENDING_HUMAN_REVIEW
+train,af5c72a8dfd7daee0e918a06,输入用户名和密码是否正确的分支2是什么？,输入用户名和密码是否正确的分支2是错误分支。,"[""错误分支""]",PENDING_HUMAN_REVIEW
+train,5139ee4ea965285340747e57,根据课程知识，请说明输入用户名和密码是否正确的分支2。,输入用户名和密码是否正确的分支2是错误分支。,"[""错误分支""]",PENDING_HUMAN_REVIEW
+train,56f80bf3fdf70580bd7f2060,输入错误的后续动作是什么？,输入错误的后续动作是设置输入用户名和密码的次数加1。,"[""设置输入用户名和密码的次数加1""]",PENDING_HUMAN_REVIEW
+train,8358f201134cfcc0054a8c47,根据课程知识，请说明输入错误的后续动作。,输入错误的后续动作是设置输入用户名和密码的次数加1。,"[""设置输入用户名和密码的次数加1""]",PENDING_HUMAN_REVIEW
+train,bbba8d8ba3dd499356cf309e,进一步完善关联的方式是什么？,进一步完善关联的方式是“正名。使用含义更明确、有意义的名字作为关联名”；“补充。发现了遗漏的关联应该及时补上。”；分解。分解之前定义的类，使用于不同的关联，将该类进行分解，使每个关联使用更精确的类；标明重数。应该初步判定各个关联的类型，并粗略确定关联重数。。,"[""“正名。使用含义更明确、有意义的名字作为关联名”"", ""“补充。发现了遗漏的关联应该及时补上。”"", ""分解。分解之前定义的类，使用于不同的关联，将该类进行分解，使每个关联使用更精确的类"", ""标明重数。应该初步判定各个关联的类型，并粗略确定关联重数。""]",PENDING_HUMAN_REVIEW
+train,e828c8e64b8c98b7f0636fa4,根据课程知识，请说明进一步完善关联的方式。,进一步完善关联的方式是“正名。使用含义更明确、有意义的名字作为关联名”；“补充。发现了遗漏的关联应该及时补上。”；分解。分解之前定义的类，使用于不同的关联，将该类进行分解，使每个关联使用更精确的类；标明重数。应该初步判定各个关联的类型，并粗略确定关联重数。。,"[""“正名。使用含义更明确、有意义的名字作为关联名”"", ""“补充。发现了遗漏的关联应该及时补上。”"", ""分解。分解之前定义的类，使用于不同的关联，将该类进行分解，使每个关联使用更精确的类"", ""标明重数。应该初步判定各个关联的类型，并粗略确定关联重数。""]",PENDING_HUMAN_REVIEW
+train,bfbf2b5ea802ddc60147a994,进入动作entry的描述是什么？,进入动作entry描述在进入该状态时立即执行的操作。,"[""在进入该状态时立即执行的操作""]",PENDING_HUMAN_REVIEW
+train,fb725bf260700a4ed9a5055f,根据课程知识，请说明进入动作entry的描述。,进入动作entry描述在进入该状态时立即执行的操作。,"[""在进入该状态时立即执行的操作""]",PENDING_HUMAN_REVIEW
+train,6fee85f600dd73e410c2626b,退出动作exit的描述是什么？,退出动作exit描述在离开该状态前执行的清理或转换操作。,"[""在离开该状态前执行的清理或转换操作""]",PENDING_HUMAN_REVIEW
+train,4bdaaae68803d3d4e9fc391c,根据课程知识，请说明退出动作exit的描述。,退出动作exit描述在离开该状态前执行的清理或转换操作。,"[""在离开该状态前执行的清理或转换操作""]",PENDING_HUMAN_REVIEW
+train,c15f29257d4528cb80b1673b,退票的任务是什么？,退票的任务是对订票表进行读取与状态更新，以维持系统完整性。,"[""对订票表进行读取与状态更新，以维持系统完整性""]",PENDING_HUMAN_REVIEW
+train,7427e31550825d62b24a2d46,根据课程知识，请说明退票的任务。,退票的任务是对订票表进行读取与状态更新，以维持系统完整性。,"[""对订票表进行读取与状态更新，以维持系统完整性""]",PENDING_HUMAN_REVIEW
+train,1eea5f1afdbfdf45d764fe0d,退票包含哪些内容？,退票包含登录系统。,"[""登录系统""]",PENDING_HUMAN_REVIEW
+train,275524c6ea08e77f635c721d,根据课程知识，请列出退票包含的内容。,退票包含登录系统。,"[""登录系统""]",PENDING_HUMAN_REVIEW
+train,175be3b029e653db0072eb0f,适应性维护的定义是什么？,适应性维护的定义是修改软件以适应环境的变化。,"[""修改软件以适应环境的变化""]",PENDING_HUMAN_REVIEW
+train,f841f42eef964b61a18c7bd9,根据课程知识，请说明适应性维护的定义。,适应性维护的定义是修改软件以适应环境的变化。,"[""修改软件以适应环境的变化""]",PENDING_HUMAN_REVIEW
+train,15bf4b61b37239fb990cff73,选择属性的删除情形是什么？,选择属性的删除情形是存在不一致的属性；误把关联类的属性当作对象的属性；误把内部状态当作属性；误把对象当作属性；误把限定当作属性；过于细化。,"[""存在不一致的属性"", ""误把关联类的属性当作对象的属性"", ""误把内部状态当作属性"", ""误把对象当作属性"", ""误把限定当作属性"", ""过于细化""]",PENDING_HUMAN_REVIEW
+train,217fa72725e51a89ff68abe4,根据课程知识，请说明选择属性的删除情形。,选择属性的删除情形是存在不一致的属性；误把关联类的属性当作对象的属性；误把内部状态当作属性；误把对象当作属性；误把限定当作属性；过于细化。,"[""存在不一致的属性"", ""误把关联类的属性当作对象的属性"", ""误把内部状态当作属性"", ""误把对象当作属性"", ""误把限定当作属性"", ""过于细化""]",PENDING_HUMAN_REVIEW
+train,f704b848340f27b97f06cdb4,选择航班前置于哪些知识点或对象？,选择航班前置于填写乘客信息。,"[""填写乘客信息""]",PENDING_HUMAN_REVIEW
+train,86c34ffad7d1f4b64d08bb44,课程图谱中，选择航班的“前置于”关系指向哪些对象？,选择航班前置于填写乘客信息。,"[""填写乘客信息""]",PENDING_HUMAN_REVIEW
+train,7db7e3871def067537e337c3,错误分支的后续动作是什么？,错误分支的后续动作是判断用户名和密码是否为空。,"[""判断用户名和密码是否为空""]",PENDING_HUMAN_REVIEW
+train,cb3eac34dbe46e9e6508965b,根据课程知识，请说明错误分支的后续动作。,错误分支的后续动作是判断用户名和密码是否为空。,"[""判断用户名和密码是否为空""]",PENDING_HUMAN_REVIEW
+train,1f4296e6ff9e014b6033bf17,问题定义的交付文档是什么？,问题定义的交付文档是问题定义报告。,"[""问题定义报告""]",PENDING_HUMAN_REVIEW
+train,c5fdbe5fb568bb98a776ffbc,根据课程知识，请说明问题定义的交付文档。,问题定义的交付文档是问题定义报告。,"[""问题定义报告""]",PENDING_HUMAN_REVIEW
+train,c7bc5b920925c814308540ab,问题定义的关键任务是什么？,问题定义的关键任务是系统要解决的问题是什么。,"[""系统要解决的问题是什么""]",PENDING_HUMAN_REVIEW
+train,9d408d263efe49855457d515,根据课程知识，请说明问题定义的关键任务。,问题定义的关键任务是系统要解决的问题是什么。,"[""系统要解决的问题是什么""]",PENDING_HUMAN_REVIEW
+train,8dd1549a8452b77a461de76b,问题定义前置于哪些知识点或对象？,问题定义前置于可行性研究。,"[""可行性研究""]",PENDING_HUMAN_REVIEW
+train,dd649a3df1a531588c98bb21,课程图谱中，问题定义的“前置于”关系指向哪些对象？,问题定义前置于可行性研究。,"[""可行性研究""]",PENDING_HUMAN_REVIEW
+train,bd2ace8dc3f72045e1e2ae9e,问题定义报告包含哪些内容？,问题定义报告包含软件项目名称、项目提出的背景、软件目标、项目性质、基本需求、软件环境、主要技术等。,"[""软件项目名称、项目提出的背景、软件目标、项目性质、基本需求、软件环境、主要技术等""]",PENDING_HUMAN_REVIEW
+train,74f6471efa8aaaf6367099d6,根据课程知识，请列出问题定义报告包含的内容。,问题定义报告包含软件项目名称、项目提出的背景、软件目标、项目性质、基本需求、软件环境、主要技术等。,"[""软件项目名称、项目提出的背景、软件目标、项目性质、基本需求、软件环境、主要技术等""]",PENDING_HUMAN_REVIEW
+train,96fb8ab1d0874b0caf012c25,集成测试的依据是什么？,集成测试的依据是概要设计说明书。,"[""概要设计说明书""]",PENDING_HUMAN_REVIEW
+train,24c2e4c60fe20e653bca2f4d,根据课程知识，请说明集成测试的依据。,集成测试的依据是概要设计说明书。,"[""概要设计说明书""]",PENDING_HUMAN_REVIEW
+train,04d518a05f879e509c3f4388,需求分析的交付文档是什么？,需求分析的交付文档是软件需求规格说明书。,"[""软件需求规格说明书""]",PENDING_HUMAN_REVIEW
+train,af175d01d1e9f032a0ce53db,根据课程知识，请说明需求分析的交付文档。,需求分析的交付文档是软件需求规格说明书。,"[""软件需求规格说明书""]",PENDING_HUMAN_REVIEW
+train,af8fc58ee0e5914b596f4f68,需求分析的关键任务是什么？,需求分析的关键任务是为解决问题系统必须做什么，主要确定系统必须具备的功能。,"[""为解决问题系统必须做什么，主要确定系统必须具备的功能""]",PENDING_HUMAN_REVIEW
+train,88a5896122d38799939623cf,根据课程知识，请说明需求分析的关键任务。,需求分析的关键任务是为解决问题系统必须做什么，主要确定系统必须具备的功能。,"[""为解决问题系统必须做什么，主要确定系统必须具备的功能""]",PENDING_HUMAN_REVIEW
+train,00afaf118bf79118f0280496,需求分析前置于哪些知识点或对象？,需求分析前置于系统设计。,"[""系统设计""]",PENDING_HUMAN_REVIEW
+train,da877160225c364a32b3205a,课程图谱中，需求分析的“前置于”关系指向哪些对象？,需求分析前置于系统设计。,"[""系统设计""]",PENDING_HUMAN_REVIEW
+train,2b0442b8383d89163b6fcbe1,需求分析的方法是什么？,需求分析的方法是结构化分析SA；面向对象分析OOA。,"[""结构化分析SA"", ""面向对象分析OOA""]",PENDING_HUMAN_REVIEW
+train,9b49036524e96b2971f720d4,根据课程知识，请说明需求分析的方法。,需求分析的方法是结构化分析SA；面向对象分析OOA。,"[""结构化分析SA"", ""面向对象分析OOA""]",PENDING_HUMAN_REVIEW
+train,44abffc48f581f15d6c6a99b,面向对象分析OOA的关注点是什么？,面向对象分析OOA的关注点是现实世界实体的抽象及其相互交互。,"[""现实世界实体的抽象及其相互交互""]",PENDING_HUMAN_REVIEW
+train,12914ee06a96c7281468beae,根据课程知识，请说明面向对象分析OOA的关注点。,面向对象分析OOA的关注点是现实世界实体的抽象及其相互交互。,"[""现实世界实体的抽象及其相互交互""]",PENDING_HUMAN_REVIEW
+train,e541386582c9ce58f763e58a,面向对象分析OOA的建模工具是什么？,面向对象分析OOA的建模工具是UML。,"[""UML""]",PENDING_HUMAN_REVIEW
+train,7bf8b23b5dfe02a3708cd3e9,根据课程知识，请说明面向对象分析OOA的建模工具。,面向对象分析OOA的建模工具是UML。,"[""UML""]",PENDING_HUMAN_REVIEW
+train,0cda300c5f26aa7199aeedd8,面向对象分析OOA的建立是什么？,面向对象分析OOA建立功能模型；动态模型；对象模型；机票预定系统功能模型；机票预定系统动态模型；机票预定系统对象模型。,"[""功能模型"", ""动态模型"", ""对象模型"", ""机票预定系统功能模型"", ""机票预定系统动态模型"", ""机票预定系统对象模型""]",PENDING_HUMAN_REVIEW
+train,e699c12fb64eb7ca67ec7e5b,根据课程知识，请说明面向对象分析OOA的建立。,面向对象分析OOA建立功能模型；动态模型；对象模型；机票预定系统功能模型；机票预定系统动态模型；机票预定系统对象模型。,"[""功能模型"", ""动态模型"", ""对象模型"", ""机票预定系统功能模型"", ""机票预定系统动态模型"", ""机票预定系统对象模型""]",PENDING_HUMAN_REVIEW
+train,f172ee4eb04ad542d0f2db6b,面向对象分析OOA的核心思想是什么？,面向对象分析OOA的核心思想是基于类和对象、封装、继承、多态。,"[""基于类和对象、封装、继承、多态""]",PENDING_HUMAN_REVIEW
+train,1332bece00c8ed64895768d8,根据课程知识，请说明面向对象分析OOA的核心思想。,面向对象分析OOA的核心思想是基于类和对象、封装、继承、多态。,"[""基于类和对象、封装、继承、多态""]",PENDING_HUMAN_REVIEW
+train,16605ab643205695e6422d0a,面向对象分析OOA的过程是什么？,面向对象分析OOA的过程是“寻找类与对象、识别结构（类与类之间的关系。,"[""“寻找类与对象、识别结构（类与类之间的关系""]",PENDING_HUMAN_REVIEW
+train,fe108ae0f8c00707e2f3e16b,根据课程知识，请说明面向对象分析OOA的过程。,面向对象分析OOA的过程是“寻找类与对象、识别结构（类与类之间的关系。,"[""“寻找类与对象、识别结构（类与类之间的关系""]",PENDING_HUMAN_REVIEW
+train,05c7c1b8effec6f6f3dc584b,面向对象设计包括哪些内容？,面向对象设计包括对象设计；系统设计。,"[""对象设计"", ""系统设计""]",PENDING_HUMAN_REVIEW
+train,f688e06106b84dbe2083963a,根据课程知识，请列出面向对象设计包括的内容。,面向对象设计包括对象设计；系统设计。,"[""对象设计"", ""系统设计""]",PENDING_HUMAN_REVIEW
+train,bc061bb96d53361d59eae7a9,顺序图的定义是什么？,顺序图的定义是表示交互对象如何进行协作，通常用来表示和说明一个用例的行为，将交互关系表示为一张二维图，强调对象间消息发送的时间顺序。,"[""表示交互对象如何进行协作，通常用来表示和说明一个用例的行为，将交互关系表示为一张二维图，强调对象间消息发送的时间顺序""]",PENDING_HUMAN_REVIEW
+train,b9f786e042af44d3dab11744,根据课程知识，请说明顺序图的定义。,顺序图的定义是表示交互对象如何进行协作，通常用来表示和说明一个用例的行为，将交互关系表示为一张二维图，强调对象间消息发送的时间顺序。,"[""表示交互对象如何进行协作，通常用来表示和说明一个用例的行为，将交互关系表示为一张二维图，强调对象间消息发送的时间顺序""]",PENDING_HUMAN_REVIEW
+train,b574ef32ec2cda9983629e1b,顺序图的组成元素是什么？,顺序图的组成元素是交互对象；活动者；消息；激活条；生命线。,"[""交互对象"", ""活动者"", ""消息"", ""激活条"", ""生命线""]",PENDING_HUMAN_REVIEW
+train,d457dcf2689e41e21809c12d,根据课程知识，请说明顺序图的组成元素。,顺序图的组成元素是交互对象；活动者；消息；激活条；生命线。,"[""交互对象"", ""活动者"", ""消息"", ""激活条"", ""生命线""]",PENDING_HUMAN_REVIEW
+train,ded6959bf6388f0f407cfceb,验收测试的依据是什么？,验收测试的依据是软件需求规格说明书。,"[""软件需求规格说明书""]",PENDING_HUMAN_REVIEW
+train,04079e8dfeb2127d22c17c4c,根据课程知识，请说明验收测试的依据。,验收测试的依据是软件需求规格说明书。,"[""软件需求规格说明书""]",PENDING_HUMAN_REVIEW
+train,2ec4599261950b890d9e6027,（动作的类型是什么？,（动作的类型是进入动作entry。,"[""进入动作entry""]",PENDING_HUMAN_REVIEW
+train,195e346e166ed531fa6d95fb,根据课程知识，请说明（动作的类型。,（动作的类型是进入动作entry。,"[""进入动作entry""]",PENDING_HUMAN_REVIEW
+validation,d74ce6ac1084759998e94890,交互对象的定义是什么？,交互对象的定义是参与交互的对象，可以是类实例、界面对象，也可以是实现交互时参与的某类职责对象，如控制对象、服务对象以及数据库访问接口等，交互对象一般按交互时间顺序排列，构成顺序图的水平轴，用矩形框表示，内部标注’：类名’。,"[""参与交互的对象，可以是类实例、界面对象，也可以是实现交互时参与的某类职责对象，如控制对象、服务对象以及数据库访问接口等，交互对象一般按交互时间顺序排列，构成顺序图的水平轴，用矩形框表示，内部标注’：类名’""]",PENDING_HUMAN_REVIEW
+validation,3115029198c68759cc8b3e29,根据课程知识，请说明交互对象的定义。,交互对象的定义是参与交互的对象，可以是类实例、界面对象，也可以是实现交互时参与的某类职责对象，如控制对象、服务对象以及数据库访问接口等，交互对象一般按交互时间顺序排列，构成顺序图的水平轴，用矩形框表示，内部标注’：类名’。,"[""参与交互的对象，可以是类实例、界面对象，也可以是实现交互时参与的某类职责对象，如控制对象、服务对象以及数据库访问接口等，交互对象一般按交互时间顺序排列，构成顺序图的水平轴，用矩形框表示，内部标注’：类名’""]",PENDING_HUMAN_REVIEW
+validation,32417e9eda0c5673ca26d62c,关系分为哪些类别？,关系分为依赖；关联；实现；泛化；组合；聚合。,"[""依赖"", ""关联"", ""实现"", ""泛化"", ""组合"", ""聚合""]",PENDING_HUMAN_REVIEW
+validation,a0781a5526abdbe44063c964,根据课程知识，请说明关系的分类。,关系分为依赖；关联；实现；泛化；组合；聚合。,"[""依赖"", ""关联"", ""实现"", ""泛化"", ""组合"", ""聚合""]",PENDING_HUMAN_REVIEW
+validation,146a66c36a26c05911549c82,关系包含哪些内容？,关系包含关联；扩展关系；泛化关系。,"[""关联"", ""扩展关系"", ""泛化关系""]",PENDING_HUMAN_REVIEW
+validation,b5d6f362e31d2eb48264ef64,根据课程知识，请列出关系包含的内容。,关系包含关联；扩展关系；泛化关系。,"[""关联"", ""扩展关系"", ""泛化关系""]",PENDING_HUMAN_REVIEW
+validation,f96406f22c7fe13f385ef3fe,关系包括哪些内容？,关系包括包含关系。,"[""包含关系""]",PENDING_HUMAN_REVIEW
+validation,dc4d547242659059e42052e7,根据课程知识，请列出关系包括的内容。,关系包括包含关系。,"[""包含关系""]",PENDING_HUMAN_REVIEW
+validation,9b0ea64fc94832bb1f1ec14b,关系的定义是什么？,关系的定义是将事物结合在一起的逻辑纽带。,"[""将事物结合在一起的逻辑纽带""]",PENDING_HUMAN_REVIEW
+validation,23f56ce2a47799be6e0b7630,根据课程知识，请说明关系的定义。,关系的定义是将事物结合在一起的逻辑纽带。,"[""将事物结合在一起的逻辑纽带""]",PENDING_HUMAN_REVIEW
+validation,755f48e490b8d7cc20c2d474,关联关系分为哪些类别？,关联关系分为组合关系；聚合关系。,"[""组合关系"", ""聚合关系""]",PENDING_HUMAN_REVIEW
+validation,63eaa9459ce329e91bf10a49,根据课程知识，请说明关联关系的分类。,关联关系分为组合关系；聚合关系。,"[""组合关系"", ""聚合关系""]",PENDING_HUMAN_REVIEW
+validation,6413d5f574a19d88825aff6b,关联关系的定义是什么？,关联关系的定义是表示两个类的实例之间存在某种语义上的联系，用带箭头的实线表示。A类关联B类，则实线由A类出发，箭头指向B类，B类成为A类的一个数据成员。,"[""表示两个类的实例之间存在某种语义上的联系，用带箭头的实线表示。A类关联B类，则实线由A类出发，箭头指向B类，B类成为A类的一个数据成员""]",PENDING_HUMAN_REVIEW
+validation,3443392db66eebddfe39ffc6,根据课程知识，请说明关联关系的定义。,关联关系的定义是表示两个类的实例之间存在某种语义上的联系，用带箭头的实线表示。A类关联B类，则实线由A类出发，箭头指向B类，B类成为A类的一个数据成员。,"[""表示两个类的实例之间存在某种语义上的联系，用带箭头的实线表示。A类关联B类，则实线由A类出发，箭头指向B类，B类成为A类的一个数据成员""]",PENDING_HUMAN_REVIEW
+validation,cf8cb936191c530d5b46fa87,属性的定义是什么？,属性的定义是描述类的所有对象共同特征的一个数据项，位于矩形框中层。,"[""描述类的所有对象共同特征的一个数据项，位于矩形框中层""]",PENDING_HUMAN_REVIEW
+validation,e834120111e7c86cbe599fa2,根据课程知识，请说明属性的定义。,属性的定义是描述类的所有对象共同特征的一个数据项，位于矩形框中层。,"[""描述类的所有对象共同特征的一个数据项，位于矩形框中层""]",PENDING_HUMAN_REVIEW
+validation,3229d4fed0098c0db0cd1510,扩展关系的功能是什么？,扩展关系的功能是扩展用例在特定条件下，对基用例功能进行补充或增强，用带箭头虚线+<<extend>>表示，箭头指向基用例。,"[""扩展用例在特定条件下，对基用例功能进行补充或增强，用带箭头虚线+<<extend>>表示，箭头指向基用例""]",PENDING_HUMAN_REVIEW
+validation,6cf481190347945f67960c6f,根据课程知识，请说明扩展关系的功能。,扩展关系的功能是扩展用例在特定条件下，对基用例功能进行补充或增强，用带箭头虚线+<<extend>>表示，箭头指向基用例。,"[""扩展用例在特定条件下，对基用例功能进行补充或增强，用带箭头虚线+<<extend>>表示，箭头指向基用例""]",PENDING_HUMAN_REVIEW
+validation,cb2ceaac675ff3c7e7563b5b,数据流图DFD的定义是什么？,数据流图DFD的定义是描述数据在系统中流动和处理的逻辑过程。,"[""描述数据在系统中流动和处理的逻辑过程""]",PENDING_HUMAN_REVIEW
+validation,be1044edd455be5698fb68dd,根据课程知识，请说明数据流图DFD的定义。,数据流图DFD的定义是描述数据在系统中流动和处理的逻辑过程。,"[""描述数据在系统中流动和处理的逻辑过程""]",PENDING_HUMAN_REVIEW
+validation,3a36bf3c926dc1e6568f511c,数据流图DFD的组成元素是什么？,数据流图DFD的组成元素是加工；数据存储；数据流；数据源或终点。,"[""加工"", ""数据存储"", ""数据流"", ""数据源或终点""]",PENDING_HUMAN_REVIEW
+validation,564cf12e7e898a51a6a1e3bf,根据课程知识，请说明数据流图DFD的组成元素。,数据流图DFD的组成元素是加工；数据存储；数据流；数据源或终点。,"[""加工"", ""数据存储"", ""数据流"", ""数据源或终点""]",PENDING_HUMAN_REVIEW
+validation,bdbf89d488063f42b4e1295a,数据流图DFD的绘制原则是什么？,数据流图DFD的绘制原则是“自顶向下、从左到右、由粗到细、逐步求精“。,"[""“自顶向下、从左到右、由粗到细、逐步求精“""]",PENDING_HUMAN_REVIEW
+validation,0a17b931387332c967cc4612,根据课程知识，请说明数据流图DFD的绘制原则。,数据流图DFD的绘制原则是“自顶向下、从左到右、由粗到细、逐步求精“。,"[""“自顶向下、从左到右、由粗到细、逐步求精“""]",PENDING_HUMAN_REVIEW
+validation,9f401aa89a3b57ba055ec914,数据流图DFD的绘制注意事项1是什么？,数据流图DFD的绘制注意事项1是父图与子图的平衡。,"[""父图与子图的平衡""]",PENDING_HUMAN_REVIEW
+validation,d70c0a8a945f730cc4249083,根据课程知识，请说明数据流图DFD的绘制注意事项1。,数据流图DFD的绘制注意事项1是父图与子图的平衡。,"[""父图与子图的平衡""]",PENDING_HUMAN_REVIEW
+validation,5095c27f072fdf97af9854d7,数据流图DFD的绘制注意事项2是什么？,数据流图DFD的绘制注意事项2是加工的命名。,"[""加工的命名""]",PENDING_HUMAN_REVIEW
+validation,65685fa88c19199cf85a4c2c,根据课程知识，请说明数据流图DFD的绘制注意事项2。,数据流图DFD的绘制注意事项2是加工的命名。,"[""加工的命名""]",PENDING_HUMAN_REVIEW
+validation,4f68e0463260205c5fe7d384,数据流图DFD的绘制注意事项3是什么？,数据流图DFD的绘制注意事项3是避免非法流向，要求外部实体之间、外部实体与数据存储之间、数据存储之间不能直接产生数据流。,"[""避免非法流向，要求外部实体之间、外部实体与数据存储之间、数据存储之间不能直接产生数据流""]",PENDING_HUMAN_REVIEW
+validation,01fd69466ba46aa4e5135894,根据课程知识，请说明数据流图DFD的绘制注意事项3。,数据流图DFD的绘制注意事项3是避免非法流向，要求外部实体之间、外部实体与数据存储之间、数据存储之间不能直接产生数据流。,"[""避免非法流向，要求外部实体之间、外部实体与数据存储之间、数据存储之间不能直接产生数据流""]",PENDING_HUMAN_REVIEW
+validation,af37894d8752de0663bdbec9,数据流图DFD的绘制注意事项4是什么？,数据流图DFD的绘制注意事项4是任何数据流的产生或消失都必须通过加工实现。,"[""任何数据流的产生或消失都必须通过加工实现""]",PENDING_HUMAN_REVIEW
+validation,159179c86143e071591674f2,根据课程知识，请说明数据流图DFD的绘制注意事项4。,数据流图DFD的绘制注意事项4是任何数据流的产生或消失都必须通过加工实现。,"[""任何数据流的产生或消失都必须通过加工实现""]",PENDING_HUMAN_REVIEW
+validation,502df9258fb4d779ef1d357e,数据流图DFD的绘制第一步是什么？,数据流图DFD的绘制第一步是顶层数据流图。,"[""顶层数据流图""]",PENDING_HUMAN_REVIEW
+validation,8d8a5e5de594812fcb6f3fca,根据课程知识，请说明数据流图DFD的绘制第一步。,数据流图DFD的绘制第一步是顶层数据流图。,"[""顶层数据流图""]",PENDING_HUMAN_REVIEW
+validation,85a79d13e1c2ad4977d877f3,数据流图DFD的绘制第三步是什么？,数据流图DFD的绘制第三步是下层数据流图。,"[""下层数据流图""]",PENDING_HUMAN_REVIEW
+validation,457fa9c6349ade6470ec7f4d,根据课程知识，请说明数据流图DFD的绘制第三步。,数据流图DFD的绘制第三步是下层数据流图。,"[""下层数据流图""]",PENDING_HUMAN_REVIEW
+validation,bc81876d003b1b763d345004,数据流图DFD的绘制第二步是什么？,数据流图DFD的绘制第二步是1层数据流图。,"[""1层数据流图""]",PENDING_HUMAN_REVIEW
+validation,d731a966cf50f7d0d90aec32,根据课程知识，请说明数据流图DFD的绘制第二步。,数据流图DFD的绘制第二步是1层数据流图。,"[""1层数据流图""]",PENDING_HUMAN_REVIEW
+validation,fedd1e86038154c624a37fcc,条件表达式的类型是什么？,条件表达式的类型是布尔表达式。,"[""布尔表达式""]",PENDING_HUMAN_REVIEW
+validation,816cded976c2689fa67a58ab,根据课程知识，请说明条件表达式的类型。,条件表达式的类型是布尔表达式。,"[""布尔表达式""]",PENDING_HUMAN_REVIEW
+validation,ccdc237802dc0e26737c59ae,注释事物的主要形式是什么？,注释事物的主要形式是注解。,"[""注解""]",PENDING_HUMAN_REVIEW
+validation,4f21fd89b8636afd1b4cd1e7,根据课程知识，请说明注释事物的主要形式。,注释事物的主要形式是注解。,"[""注解""]",PENDING_HUMAN_REVIEW
+validation,acefe8e2999777ebd26fcd9f,消息的定义是什么？,消息的定义是是交互对象之间通信的一种机制，用从一个对象的生命线到另一个对象的生命线的箭头表示，箭头以时间顺序在图中上下、左右排列。消息需要命名，可以是一个事件，或者一个具体的服务。,"[""是交互对象之间通信的一种机制，用从一个对象的生命线到另一个对象的生命线的箭头表示，箭头以时间顺序在图中上下、左右排列。消息需要命名，可以是一个事件，或者一个具体的服务""]",PENDING_HUMAN_REVIEW
+validation,dd2021e9e8777f2f8bbda198,根据课程知识，请说明消息的定义。,消息的定义是是交互对象之间通信的一种机制，用从一个对象的生命线到另一个对象的生命线的箭头表示，箭头以时间顺序在图中上下、左右排列。消息需要命名，可以是一个事件，或者一个具体的服务。,"[""是交互对象之间通信的一种机制，用从一个对象的生命线到另一个对象的生命线的箭头表示，箭头以时间顺序在图中上下、左右排列。消息需要命名，可以是一个事件，或者一个具体的服务""]",PENDING_HUMAN_REVIEW
+validation,962fe375f79e479fc3dd4c67,父图与子图的平衡的要求是什么？,父图与子图的平衡的要求是子图的输入/输出数据流必须与父图中对应加工的输入/输出一致。,"[""子图的输入/输出数据流必须与父图中对应加工的输入/输出一致""]",PENDING_HUMAN_REVIEW
+validation,053285de11175b293f15e53b,根据课程知识，请说明父图与子图的平衡的要求。,父图与子图的平衡的要求是子图的输入/输出数据流必须与父图中对应加工的输入/输出一致。,"[""子图的输入/输出数据流必须与父图中对应加工的输入/输出一致""]",PENDING_HUMAN_REVIEW
+validation,68b534347bcfdef1aac11f8b,筛选关联的删除标准是什么？,筛选关联的删除标准是三元关联；与问题无关的或在实现阶段考虑的关联；已删去的类之间的关联；派生关联；瞬时事件。,"[""三元关联"", ""与问题无关的或在实现阶段考虑的关联"", ""已删去的类之间的关联"", ""派生关联"", ""瞬时事件""]",PENDING_HUMAN_REVIEW
+validation,1391e393f1cd9bd248a57c1a,根据课程知识，请说明筛选关联的删除标准。,筛选关联的删除标准是三元关联；与问题无关的或在实现阶段考虑的关联；已删去的类之间的关联；派生关联；瞬时事件。,"[""三元关联"", ""与问题无关的或在实现阶段考虑的关联"", ""已删去的类之间的关联"", ""派生关联"", ""瞬时事件""]",PENDING_HUMAN_REVIEW
+validation,3b4fb1a5930465207d90502f,类名的定义是什么？,类名的定义是类的名称，一般用名词表示，位于类图矩形框的最上层。,"[""类的名称，一般用名词表示，位于类图矩形框的最上层""]",PENDING_HUMAN_REVIEW
+validation,f95f35623cadd122dee33407,根据课程知识，请说明类名的定义。,类名的定义是类的名称，一般用名词表示，位于类图矩形框的最上层。,"[""类的名称，一般用名词表示，位于类图矩形框的最上层""]",PENDING_HUMAN_REVIEW
+validation,17b5c43282b9e449ac7c386c,类图包括哪些内容？,类图包括依赖关系；关联关系；实现关系；泛化关系；组合关系；聚合关系。,"[""依赖关系"", ""关联关系"", ""实现关系"", ""泛化关系"", ""组合关系"", ""聚合关系""]",PENDING_HUMAN_REVIEW
+validation,1df866809483ff00c18b0ece,根据课程知识，请列出类图包括的内容。,类图包括依赖关系；关联关系；实现关系；泛化关系；组合关系；聚合关系。,"[""依赖关系"", ""关联关系"", ""实现关系"", ""泛化关系"", ""组合关系"", ""聚合关系""]",PENDING_HUMAN_REVIEW
+validation,22bb41e1f39268fdabf7859d,类图的定义是什么？,类图的定义是描述类和类之间的静态关系，不仅显示信息的结构，还描述了系统的行为。,"[""描述类和类之间的静态关系，不仅显示信息的结构，还描述了系统的行为""]",PENDING_HUMAN_REVIEW
+validation,e43c0bbda2b1a7b38d34832e,根据课程知识，请说明类图的定义。,类图的定义是描述类和类之间的静态关系，不仅显示信息的结构，还描述了系统的行为。,"[""描述类和类之间的静态关系，不仅显示信息的结构，还描述了系统的行为""]",PENDING_HUMAN_REVIEW
+validation,e22325f4a6002ed62b33d027,类图的组成元素是什么？,类图的组成元素是属性；服务；类名。,"[""属性"", ""服务"", ""类名""]",PENDING_HUMAN_REVIEW
+validation,8ff1fa0ac3c8a8c4a29e322a,根据课程知识，请说明类图的组成元素。,类图的组成元素是属性；服务；类名。,"[""属性"", ""服务"", ""类名""]",PENDING_HUMAN_REVIEW
+validation,e620cd7d09a331acbee66aff,综合测试的交付文档是什么？,综合测试的交付文档是软件测试计划和软件测试报告。,"[""软件测试计划和软件测试报告""]",PENDING_HUMAN_REVIEW
+validation,d5f6c3ade76b559a31454cb3,根据课程知识，请说明综合测试的交付文档。,综合测试的交付文档是软件测试计划和软件测试报告。,"[""软件测试计划和软件测试报告""]",PENDING_HUMAN_REVIEW
+validation,25bd7aa8e12695f85dc4f479,综合测试的关键任务是什么？,综合测试的关键任务是通过各种类型的测试使软件达到预定要求。,"[""通过各种类型的测试使软件达到预定要求""]",PENDING_HUMAN_REVIEW
+validation,0311e1f64c79a50e1228d079,根据课程知识，请说明综合测试的关键任务。,综合测试的关键任务是通过各种类型的测试使软件达到预定要求。,"[""通过各种类型的测试使软件达到预定要求""]",PENDING_HUMAN_REVIEW
+validation,d9ead9d235c2524babf9dd97,顶层数据流图的任务是什么？,顶层数据流图的任务是确定系统的范围、边界、外部实体及输入输出。,"[""确定系统的范围、边界、外部实体及输入输出""]",PENDING_HUMAN_REVIEW
+validation,deff53684d4c102e84518abd,根据课程知识，请说明顶层数据流图的任务。,顶层数据流图的任务是确定系统的范围、边界、外部实体及输入输出。,"[""确定系统的范围、边界、外部实体及输入输出""]",PENDING_HUMAN_REVIEW
+validation,bfca82506604dff2296277cd,顶层数据流图的关联对象是什么？,顶层数据流图的关联对象是仅表现系统与外部实体之间的数据交互。,"[""仅表现系统与外部实体之间的数据交互""]",PENDING_HUMAN_REVIEW
+validation,a03f2e0a3ba9d54dd10708d2,根据课程知识，请说明顶层数据流图的关联对象。,顶层数据流图的关联对象是仅表现系统与外部实体之间的数据交互。,"[""仅表现系统与外部实体之间的数据交互""]",PENDING_HUMAN_REVIEW
+validation,f8b748cb88ce8ead1ace8731,顶层数据流图的特征是什么？,顶层数据流图的特征是仅包含一个加工，代表整个软件系统。,"[""仅包含一个加工，代表整个软件系统""]",PENDING_HUMAN_REVIEW
+validation,af48c687be2e8f76adfd7b77,根据课程知识，请说明顶层数据流图的特征。,顶层数据流图的特征是仅包含一个加工，代表整个软件系统。,"[""仅包含一个加工，代表整个软件系统""]",PENDING_HUMAN_REVIEW
+test,e731b5e6d653843aa0cafcb0,使用继承合并和组织类的方式是什么？,使用继承合并和组织类的方式是自底向上；自顶向下。,"[""自底向上"", ""自顶向下""]",PENDING_HUMAN_REVIEW
+test,96d71615d17bc9983e59344c,根据课程知识，请说明使用继承合并和组织类的方式。,使用继承合并和组织类的方式是自底向上；自顶向下。,"[""自底向上"", ""自顶向下""]",PENDING_HUMAN_REVIEW
+test,451a85bf9d1651e5f4127a28,使用继承合并和组织类的目的是什么？,使用继承合并和组织类的目的是共享公共性质或属性。,"[""共享公共性质或属性""]",PENDING_HUMAN_REVIEW
+test,11724bbed4b1742eac68ba32,根据课程知识，请说明使用继承合并和组织类的目的。,使用继承合并和组织类的目的是共享公共性质或属性。,"[""共享公共性质或属性""]",PENDING_HUMAN_REVIEW
+test,33bd18dc8dd84609813be042,初步确定关联的依据是什么？,初步确定关联的依据是“需求陈述中的描述性动词或动词词组、问题域中的知识、需求陈述中提取隐含的关联”。,"[""“需求陈述中的描述性动词或动词词组、问题域中的知识、需求陈述中提取隐含的关联”""]",PENDING_HUMAN_REVIEW
+test,93ff0d9913b5d2f42d440a33,根据课程知识，请说明初步确定关联的依据。,初步确定关联的依据是“需求陈述中的描述性动词或动词词组、问题域中的知识、需求陈述中提取隐含的关联”。,"[""“需求陈述中的描述性动词或动词词组、问题域中的知识、需求陈述中提取隐含的关联”""]",PENDING_HUMAN_REVIEW
+test,7a4e4ad46838b9d95c6d2a31,判断框的功能是什么？,判断框的功能是表示条件分支。,"[""表示条件分支""]",PENDING_HUMAN_REVIEW
+test,a85fe798d573b867c4a5365c,根据课程知识，请说明判断框的功能。,判断框的功能是表示条件分支。,"[""表示条件分支""]",PENDING_HUMAN_REVIEW
+test,dd8bbcbb90f2f709a2c146ae,判断框的图形表示是什么？,判断框的图形表示是菱形。,"[""菱形""]",PENDING_HUMAN_REVIEW
+test,02a5043cf702896d11af4c0b,根据课程知识，请说明判断框的图形表示。,判断框的图形表示是菱形。,"[""菱形""]",PENDING_HUMAN_REVIEW
+test,626841921264f00cc46849e9,加工编号的父子关系是什么？,加工编号的父子关系是子图加工编号应以父图编号为前缀，如1层数据流图的加工2分解为2.1， 2.2。,"[""子图加工编号应以父图编号为前缀，如1层数据流图的加工2分解为2.1， 2.2""]",PENDING_HUMAN_REVIEW
+test,a2f4352d03968e2dc311791b,根据课程知识，请说明加工编号的父子关系。,加工编号的父子关系是子图加工编号应以父图编号为前缀，如1层数据流图的加工2分解为2.1， 2.2。,"[""子图加工编号应以父图编号为前缀，如1层数据流图的加工2分解为2.1， 2.2""]",PENDING_HUMAN_REVIEW
+test,a9a30679624f8d59d95633fe,动态图包含哪些内容？,动态图包含协作图；活动图；状态图；用例图；顺序图。,"[""协作图"", ""活动图"", ""状态图"", ""用例图"", ""顺序图""]",PENDING_HUMAN_REVIEW
+test,84931ef26f673483452e917a,根据课程知识，请列出动态图包含的内容。,动态图包含协作图；活动图；状态图；用例图；顺序图。,"[""协作图"", ""活动图"", ""状态图"", ""用例图"", ""顺序图""]",PENDING_HUMAN_REVIEW
+test,1b85293061be6dbed0d6e98f,单元测试报告包含哪些内容？,单元测试报告包含单个模块的测试结果、发现的错误及更正记录。,"[""单个模块的测试结果、发现的错误及更正记录""]",PENDING_HUMAN_REVIEW
+test,c506bc19724b315f6b35ba3c,根据课程知识，请列出单元测试报告包含的内容。,单元测试报告包含单个模块的测试结果、发现的错误及更正记录。,"[""单个模块的测试结果、发现的错误及更正记录""]",PENDING_HUMAN_REVIEW
+test,9ed84d1bf4cf587f7432ec14,参考5类常见事物的类型1是什么？,参考5类常见事物的类型1是可感知的物理实体，如笔、纸质票据等。,"[""可感知的物理实体，如笔、纸质票据等""]",PENDING_HUMAN_REVIEW
+test,3861d60e610700112b59d54e,根据课程知识，请说明参考5类常见事物的类型1。,参考5类常见事物的类型1是可感知的物理实体，如笔、纸质票据等。,"[""可感知的物理实体，如笔、纸质票据等""]",PENDING_HUMAN_REVIEW
+test,203516b8546bad1ed7b2d75f,参考5类常见事物的类型2是什么？,参考5类常见事物的类型2是人或组织的角色，如旅客、售票员、管理员等。,"[""人或组织的角色，如旅客、售票员、管理员等""]",PENDING_HUMAN_REVIEW
+test,d51d64179db1e422fea0957c,根据课程知识，请说明参考5类常见事物的类型2。,参考5类常见事物的类型2是人或组织的角色，如旅客、售票员、管理员等。,"[""人或组织的角色，如旅客、售票员、管理员等""]",PENDING_HUMAN_REVIEW
+test,d16c82671d9a4ae6dbe9dac2,参考5类常见事物的类型3是什么？,参考5类常见事物的类型3是应该记忆的事件，如订票、退票、查询航班等。,"[""应该记忆的事件，如订票、退票、查询航班等""]",PENDING_HUMAN_REVIEW
+test,6ebeb4946d9a676f77dbe669,根据课程知识，请说明参考5类常见事物的类型3。,参考5类常见事物的类型3是应该记忆的事件，如订票、退票、查询航班等。,"[""应该记忆的事件，如订票、退票、查询航班等""]",PENDING_HUMAN_REVIEW
+test,28a99d6add06954a978607bd,参考5类常见事物的类型4是什么？,参考5类常见事物的类型4是两个或多个对象的相互作用，通常具有交易或接触的性质，如出账单、出机票等。,"[""两个或多个对象的相互作用，通常具有交易或接触的性质，如出账单、出机票等""]",PENDING_HUMAN_REVIEW
+test,267ce3a5d13d4d30127a7568,根据课程知识，请说明参考5类常见事物的类型4。,参考5类常见事物的类型4是两个或多个对象的相互作用，通常具有交易或接触的性质，如出账单、出机票等。,"[""两个或多个对象的相互作用，通常具有交易或接触的性质，如出账单、出机票等""]",PENDING_HUMAN_REVIEW
+test,ee70fe77dafbfc6c99b7d7fe,参考5类常见事物的类型5是什么？,参考5类常见事物的类型5是需要说明的概念，如条例、规章制度、版权等。,"[""需要说明的概念，如条例、规章制度、版权等""]",PENDING_HUMAN_REVIEW
+test,247253f0046873e8fc98ebc5,根据课程知识，请说明参考5类常见事物的类型5。,参考5类常见事物的类型5是需要说明的概念，如条例、规章制度、版权等。,"[""需要说明的概念，如条例、规章制度、版权等""]",PENDING_HUMAN_REVIEW
+test,c6ddaa037279f35cd65e1f1e,对象模型的作用是什么？,对象模型的作用是为动态模型和功能模型奠定基础。,"[""为动态模型和功能模型奠定基础""]",PENDING_HUMAN_REVIEW
+test,1fec6cbe20adb19b4d25c6ed,根据课程知识，请说明对象模型的作用。,对象模型的作用是为动态模型和功能模型奠定基础。,"[""为动态模型和功能模型奠定基础""]",PENDING_HUMAN_REVIEW
+test,b9297d4fc145153177a59710,对象模型的定义是什么？,对象模型的定义是描述了做事情的实体以及动态模型、功能模型所操作的数据结构，对象模型中的操作对应动态模型中的事件和功能模型中的用例。,"[""描述了做事情的实体以及动态模型、功能模型所操作的数据结构，对象模型中的操作对应动态模型中的事件和功能模型中的用例""]",PENDING_HUMAN_REVIEW
+test,d729043841ff02429b18c1c1,根据课程知识，请说明对象模型的定义。,对象模型的定义是描述了做事情的实体以及动态模型、功能模型所操作的数据结构，对象模型中的操作对应动态模型中的事件和功能模型中的用例。,"[""描述了做事情的实体以及动态模型、功能模型所操作的数据结构，对象模型中的操作对应动态模型中的事件和功能模型中的用例""]",PENDING_HUMAN_REVIEW
+test,14389d19baa64218ebd86370,对象模型的建模工具是什么？,对象模型的建模工具是对象图；类图。,"[""对象图"", ""类图""]",PENDING_HUMAN_REVIEW
+test,1d9c01eb02eb5baa86545dde,根据课程知识，请说明对象模型的建模工具。,对象模型的建模工具是对象图；类图。,"[""对象图"", ""类图""]",PENDING_HUMAN_REVIEW
+test,f758e8edf0883b9c41fdba36,对象模型的建立步骤1是什么？,对象模型的建立步骤1是确定关联；确定类与对象。,"[""确定关联"", ""确定类与对象""]",PENDING_HUMAN_REVIEW
+test,046f77645268f844f13e0149,根据课程知识，请说明对象模型的建立步骤1。,对象模型的建立步骤1是确定关联；确定类与对象。,"[""确定关联"", ""确定类与对象""]",PENDING_HUMAN_REVIEW
+test,87992e6a828238ad23e956a8,对象模型的建立步骤2是什么？,对象模型的建立步骤2是确定类和关联的属性。,"[""确定类和关联的属性""]",PENDING_HUMAN_REVIEW
+test,a409a87bce3ed427608f4a94,根据课程知识，请说明对象模型的建立步骤2。,对象模型的建立步骤2是确定类和关联的属性。,"[""确定类和关联的属性""]",PENDING_HUMAN_REVIEW
+test,fc06b0dbf9b0d03d58be9b35,对象模型的建立步骤3是什么？,对象模型的建立步骤3是使用继承合并和组织类。,"[""使用继承合并和组织类""]",PENDING_HUMAN_REVIEW
+test,0621b96c0293725bbcdfbe63,根据课程知识，请说明对象模型的建立步骤3。,对象模型的建立步骤3是使用继承合并和组织类。,"[""使用继承合并和组织类""]",PENDING_HUMAN_REVIEW
+test,5c622839310730394234ea70,对象模型的开发特征是什么？,对象模型的开发特征是反复修改逐步完善。,"[""反复修改逐步完善""]",PENDING_HUMAN_REVIEW
+test,27f7e04ea373f1406f65d590,根据课程知识，请说明对象模型的开发特征。,对象模型的开发特征是反复修改逐步完善。,"[""反复修改逐步完善""]",PENDING_HUMAN_REVIEW
+test,7898fc030b3fac8c2d1f8b9d,对象模型的重要性是什么？,对象模型的重要性是描述系统静态结构，是最基本、最核心的模型。,"[""描述系统静态结构，是最基本、最核心的模型""]",PENDING_HUMAN_REVIEW
+test,a570de24b628936a8607b70e,根据课程知识，请说明对象模型的重要性。,对象模型的重要性是描述系统静态结构，是最基本、最核心的模型。,"[""描述系统静态结构，是最基本、最核心的模型""]",PENDING_HUMAN_REVIEW
+test,9ba5fb64267a3135632279c3,找出候选类与对象的方法是什么？,找出候选类与对象的方法是参考5类常见事物；名词解析法。,"[""参考5类常见事物"", ""名词解析法""]",PENDING_HUMAN_REVIEW
+test,3f548ea15baa044273b4b444,根据课程知识，请说明找出候选类与对象的方法。,找出候选类与对象的方法是参考5类常见事物；名词解析法。,"[""参考5类常见事物"", ""名词解析法""]",PENDING_HUMAN_REVIEW
+test,261ce570caae426de260f075,技术可行性研究涵盖哪些内容？,技术可行性研究涵盖现有服务器能否支持高并发订票请求及开发团队是否掌握实时航班同步技术。,"[""现有服务器能否支持高并发订票请求及开发团队是否掌握实时航班同步技术""]",PENDING_HUMAN_REVIEW
+test,73432ef4e7cffaef7835ea1a,根据课程知识，请列出技术可行性研究涵盖的内容。,技术可行性研究涵盖现有服务器能否支持高并发订票请求及开发团队是否掌握实时航班同步技术。,"[""现有服务器能否支持高并发订票请求及开发团队是否掌握实时航班同步技术""]",PENDING_HUMAN_REVIEW
+test,4b25994d7bf7775e5a2b7eda,激活条的定义是什么？,激活条的定义是代表交互对象被激活的状态，用矩形条表示，激活状态从输入消息触发开始，到对象参与交互完成结束。,"[""代表交互对象被激活的状态，用矩形条表示，激活状态从输入消息触发开始，到对象参与交互完成结束""]",PENDING_HUMAN_REVIEW
+test,df3b824f637dffd11dfc24dc,根据课程知识，请说明激活条的定义。,激活条的定义是代表交互对象被激活的状态，用矩形条表示，激活状态从输入消息触发开始，到对象参与交互完成结束。,"[""代表交互对象被激活的状态，用矩形条表示，激活状态从输入消息触发开始，到对象参与交互完成结束""]",PENDING_HUMAN_REVIEW
+test,b45ac44d572e5e8e993e3f16,确定关联的步骤1是什么？,确定关联的步骤1是初步确定关联。,"[""初步确定关联""]",PENDING_HUMAN_REVIEW
+test,7eec306f998bc58e8a8a2c25,根据课程知识，请说明确定关联的步骤1。,确定关联的步骤1是初步确定关联。,"[""初步确定关联""]",PENDING_HUMAN_REVIEW
+test,340590446c8d490f185cf7ae,确定关联的步骤2是什么？,确定关联的步骤2是筛选关联。,"[""筛选关联""]",PENDING_HUMAN_REVIEW
+test,a35c9a1b62f9312464bc20da,根据课程知识，请说明确定关联的步骤2。,确定关联的步骤2是筛选关联。,"[""筛选关联""]",PENDING_HUMAN_REVIEW
+test,71d7b359edf66418c4db3f7f,确定关联的步骤3是什么？,确定关联的步骤3是进一步完善关联。,"[""进一步完善关联""]",PENDING_HUMAN_REVIEW
+test,5cd21070b55996f1bdb6ab00,根据课程知识，请说明确定关联的步骤3。,确定关联的步骤3是进一步完善关联。,"[""进一步完善关联""]",PENDING_HUMAN_REVIEW
+test,604b4febfae6b30512f6ff78,确定类与对象的步骤1是什么？,确定类与对象的步骤1是找出候选类与对象。,"[""找出候选类与对象""]",PENDING_HUMAN_REVIEW
+test,1afb380e50997a874dacae55,根据课程知识，请说明确定类与对象的步骤1。,确定类与对象的步骤1是找出候选类与对象。,"[""找出候选类与对象""]",PENDING_HUMAN_REVIEW
+test,d21c5434336be5c0e664fbdb,确定类与对象的步骤2是什么？,确定类与对象的步骤2是筛选正确的类与对象。,"[""筛选正确的类与对象""]",PENDING_HUMAN_REVIEW
+test,07714abf9b3a0df572e0a3f2,根据课程知识，请说明确定类与对象的步骤2。,确定类与对象的步骤2是筛选正确的类与对象。,"[""筛选正确的类与对象""]",PENDING_HUMAN_REVIEW
+test,ae5d0d68a5fb5017ad95e239,确定类与对象的步骤3是什么？,确定类与对象的步骤3是进一步完善类与对象。,"[""进一步完善类与对象""]",PENDING_HUMAN_REVIEW
+test,997ef473fe8a857464cf8e88,根据课程知识，请说明确定类与对象的步骤3。,确定类与对象的步骤3是进一步完善类与对象。,"[""进一步完善类与对象""]",PENDING_HUMAN_REVIEW
+test,21a50cd67532dd902109d798,确定类和关联的属性的步骤是什么？,确定类和关联的属性的步骤是分析属性；选择属性。,"[""分析属性"", ""选择属性""]",PENDING_HUMAN_REVIEW
+test,c6ffb68548e2e41d2ec327bb,根据课程知识，请说明确定类和关联的属性的步骤。,确定类和关联的属性的步骤是分析属性；选择属性。,"[""分析属性"", ""选择属性""]",PENDING_HUMAN_REVIEW
+test,d71da1ab01dfb902de5bc592,筛选正确的类与对象的标准是什么？,筛选正确的类与对象的标准是“无关。仅把与问题域密切相关的类与对象构建到模型中”；冗余。如果两个或多个类表达了相同的信息，应保留描述最恰当的那个类。；实现，应该去掉仅和实现有关的候选类与对象；属性，删除那些实质是属性的候选项，如果具备很强的独立性，可视为类，而不是属性；操作，候选项中有的词既可做名词，也可做动词，慎重考虑，以确定将它们视为类或类中的操作；笼统，使用更明确的名词代替那些笼统、泛指或模糊的候选类。,"[""“无关。仅把与问题域密切相关的类与对象构建到模型中”"", ""冗余。如果两个或多个类表达了相同的信息，应保留描述最恰当的那个类。"", ""实现，应该去掉仅和实现有关的候选类与对象"", ""属性，删除那些实质是属性的候选项，如果具备很强的独立性，可视为类，而不是属性"", ""操作，候选项中有的词既可做名词，也可做动词，慎重考虑，以确定将它们视为类或类中的操作"", ""笼统，使用更明确的名词代替那些笼统、泛指或模糊的候选类""]",PENDING_HUMAN_REVIEW
+test,2b97633608921c078cc249b4,根据课程知识，请说明筛选正确的类与对象的标准。,筛选正确的类与对象的标准是“无关。仅把与问题域密切相关的类与对象构建到模型中”；冗余。如果两个或多个类表达了相同的信息，应保留描述最恰当的那个类。；实现，应该去掉仅和实现有关的候选类与对象；属性，删除那些实质是属性的候选项，如果具备很强的独立性，可视为类，而不是属性；操作，候选项中有的词既可做名词，也可做动词，慎重考虑，以确定将它们视为类或类中的操作；笼统，使用更明确的名词代替那些笼统、泛指或模糊的候选类。,"[""“无关。仅把与问题域密切相关的类与对象构建到模型中”"", ""冗余。如果两个或多个类表达了相同的信息，应保留描述最恰当的那个类。"", ""实现，应该去掉仅和实现有关的候选类与对象"", ""属性，删除那些实质是属性的候选项，如果具备很强的独立性，可视为类，而不是属性"", ""操作，候选项中有的词既可做名词，也可做动词，慎重考虑，以确定将它们视为类或类中的操作"", ""笼统，使用更明确的名词代替那些笼统、泛指或模糊的候选类""]",PENDING_HUMAN_REVIEW
+test,30682d264fb79adba9487ea1,超过3次的后续动作是什么？,超过3次的后续动作是登录失败。,"[""登录失败""]",PENDING_HUMAN_REVIEW
+test,c4a5d1d2c5fc3d674d4efd7a,根据课程知识，请说明超过3次的后续动作。,超过3次的后续动作是登录失败。,"[""登录失败""]",PENDING_HUMAN_REVIEW
+test,80d741d5053e862efd52bf5a,进一步完善类与对象的方式是什么？,进一步完善类与对象的方式是分解，候选中的名词可能是两个词的合体，需要分解和定位，例如’注册会员’由’注册’和’会员’组成，’会员’是类，而注册是’会员‘类中的方法；正名，选择含义更明确的名词作为类与对象名，例如在机票预定系统中，要订票的用户称为’旅客’，注册后成为系统’会员’，而只浏览界面的旅客称为’游客’；补充，为了更好地说明候选的类与对象，有时需补充新的类与对象，例如为了更好地描述航班的性质，可以补充一个’航班’类。,"[""分解，候选中的名词可能是两个词的合体，需要分解和定位，例如’注册会员’由’注册’和’会员’组成，’会员’是类，而注册是’会员‘类中的方法"", ""正名，选择含义更明确的名词作为类与对象名，例如在机票预定系统中，要订票的用户称为’旅客’，注册后成为系统’会员’，而只浏览界面的旅客称为’游客’"", ""补充，为了更好地说明候选的类与对象，有时需补充新的类与对象，例如为了更好地描述航班的性质，可以补充一个’航班’类""]",PENDING_HUMAN_REVIEW
+test,4749f160dcf7b1a406f8e4a5,根据课程知识，请说明进一步完善类与对象的方式。,进一步完善类与对象的方式是分解，候选中的名词可能是两个词的合体，需要分解和定位，例如’注册会员’由’注册’和’会员’组成，’会员’是类，而注册是’会员‘类中的方法；正名，选择含义更明确的名词作为类与对象名，例如在机票预定系统中，要订票的用户称为’旅客’，注册后成为系统’会员’，而只浏览界面的旅客称为’游客’；补充，为了更好地说明候选的类与对象，有时需补充新的类与对象，例如为了更好地描述航班的性质，可以补充一个’航班’类。,"[""分解，候选中的名词可能是两个词的合体，需要分解和定位，例如’注册会员’由’注册’和’会员’组成，’会员’是类，而注册是’会员‘类中的方法"", ""正名，选择含义更明确的名词作为类与对象名，例如在机票预定系统中，要订票的用户称为’旅客’，注册后成为系统’会员’，而只浏览界面的旅客称为’游客’"", ""补充，为了更好地说明候选的类与对象，有时需补充新的类与对象，例如为了更好地描述航班的性质，可以补充一个’航班’类""]",PENDING_HUMAN_REVIEW
+test,664c5dc39b8e4fc05809064c,静态图包含哪些内容？,静态图包含对象图；类图；组件图；部署图。,"[""对象图"", ""类图"", ""组件图"", ""部署图""]",PENDING_HUMAN_REVIEW
+test,f9f96de4b0a72bf4ebf315f1,根据课程知识，请列出静态图包含的内容。,静态图包含对象图；类图；组件图；部署图。,"[""对象图"", ""类图"", ""组件图"", ""部署图""]",PENDING_HUMAN_REVIEW
+test,e5a8d6b11a0c75dc75ef9705,预防性维护的定义是什么？,预防性维护的定义是修改软件为将来的维护活动做准备。,"[""修改软件为将来的维护活动做准备""]",PENDING_HUMAN_REVIEW
+test,44233f092e0c41efa8a6915a,根据课程知识，请说明预防性维护的定义。,预防性维护的定义是修改软件为将来的维护活动做准备。,"[""修改软件为将来的维护活动做准备""]",PENDING_HUMAN_REVIEW

@@ -1,0 +1,523 @@
+{
+  "generatedAt": "2026-11-17T09:09:16.9909705+08:00",
+  "testCaseCount": 72,
+  "teacherReviewed": false,
+  "testDataUsedForTraining": false,
+  "resultsType": "exploratory-only-unreviewed-test-labels",
+  "uniqueGlobalGoldEvidenceSets": 36,
+  "queriesPerEvidenceSetDistribution": [
+    {
+      "casesPerGroup": 2,
+      "groupCount": 36
+    }
+  ],
+  "uniqueGlobalGraphFactIds": 55,
+  "allEvidenceGroupsSelectionExact": 36,
+  "allEvidenceGroupsAnswersValid": 36,
+  "selectionExactRows": 72,
+  "answerValidRows": 72,
+  "usedEvidenceIdsConsistentRows": 72,
+  "answersContainingAllSelectedTripleFieldsRows": 72,
+  "failedEvidenceIdCaseIds": [],
+  "selectionAndAnswerChecksMatchEvaluatorContract": true,
+  "groupLevelMetrics": [
+    {
+      "globalFactIds": [
+        "032a84ce561111fac17f1d38"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "0d56d1977de0a80991718b63",
+        "7b657bc2f26964b7af617b0a"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "1015e02afced9ae9327fa903"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "1707ffff5561457037854442"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "217ccdb7ab09c24feeb41c92",
+        "71184899b53adae712c6d66a",
+        "a032c49e52ea6fc55e31b3ab",
+        "f270a34af2a2ac23d85df2e4"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 0.6875,
+      "meanBleu4": 0.720106
+    },
+    {
+      "globalFactIds": [
+        "2902b025f75de87b013db567"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "2e40008eb5401392178e7104"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "2ee295c1436ee724250ee492"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "30d2fbfdcdbe1094b11d243a"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "33924f57002432cddeeaa067",
+        "39a7bbd0ff27a0988dc34a8f",
+        "765f2eeb6589b3c36ebcfd0a",
+        "94074433258e903f5f976a77",
+        "9b34cc60c329c0455c1b8bbf"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 0.7,
+      "meanBleu4": 0.633263
+    },
+    {
+      "globalFactIds": [
+        "3d55a2c6868363d50f8cf476",
+        "67b0de5679e0b3a796cfb680"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 0.818182,
+      "meanBleu4": 0.878822
+    },
+    {
+      "globalFactIds": [
+        "466e6a7fb7c1fae5aca5da1b"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "4f9d6fb76c7b5c984bb80765",
+        "859acf279888ca14415fd938",
+        "f4ad60c414e41ccd082a112a"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 0.59887,
+      "meanBleu4": 0.974045
+    },
+    {
+      "globalFactIds": [
+        "5573e01e50461ad7c1bfd71a",
+        "55effbb6f1f906edf3954cb9",
+        "6fddd18a69e509fff1285b93",
+        "6ffffef5f458ffddf2f428a8",
+        "e8c28b2841ba7f337228c3bd",
+        "e971098ab944fea796dfdd7e"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 0.730769,
+      "meanBleu4": 0.978973
+    },
+    {
+      "globalFactIds": [
+        "56cc3492aa136d609cbee9ea"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "63c2f71000d483425c53c3f6",
+        "ddfe562a09aef07d7b416a14"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 0.8,
+      "meanBleu4": 0.861457
+    },
+    {
+      "globalFactIds": [
+        "6f4a12f10850af60abceffef"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "7ec377c6e292a276d803e985"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "93f04b804c012850d7996084"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "985eb1b81dcf59cd529c87fb"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "99120ebe63b57e25b529fdfe"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "b9cec23d138e2c9dcfecccaf"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "bc9ffc84c0fd93805d25271c"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "bdecb3fddf2f5e3a3066f4ae",
+        "d3f9a6a512bad137849af575"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 0.904762,
+      "meanBleu4": 0.950857
+    },
+    {
+      "globalFactIds": [
+        "be082a4716ccee91d5f1c8d6"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "be5670adf6f3358c8d21eb9f"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "c8542c671cb42d5b05546d8b"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "cc91ec4e7f19b1bb91a30f50"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "cd092f10b866b04d7544ddaa"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "d2d6c89c97b5ee4680fa2cf2"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "de0c30d6465920022dbdda08",
+        "fc86f7d9388924b9f483ed80"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "e32312ce2c28c7f4c7d5ec62"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "ef4ba62ddaf7f410b8ff0db1"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "f14aa3085be85160d7dd2715"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "f609a36cfc9e6c23c6d4f1b9"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    },
+    {
+      "globalFactIds": [
+        "f6444b1caca882c2622c3172"
+      ],
+      "caseCount": 2,
+      "uniqueQuestions": 2,
+      "uniqueReferenceAnswers": 1,
+      "allSelectionExact": true,
+      "allAnswersValid": true,
+      "meanRougeL": 1.0,
+      "meanBleu4": 1.0
+    }
+  ],
+  "baselineSummary": {
+    "cases": 72,
+    "endToEndEvidenceValidRate": 0.013888888888888888,
+    "endToEndValidAnswerMetrics": {
+      "bleu4": 1.0,
+      "entityRecall": 1.0,
+      "rougeL": 1.0
+    },
+    "model": "D:\\SXJ\\qwen35-finetune\\package\\base-model",
+    "oracleEvidenceGenerationValidRate": 0.027777777777777776,
+    "oracleValidAnswerMetrics": {
+      "bleu4": 0.855164,
+      "entityRecall": 1.0,
+      "rougeL": 0.973684
+    },
+    "predictions": "D:\\SXJ\\qwen35-finetune\\evaluation-unreviewed\\baseline.jsonl",
+    "selectionExactMatchRate": 0.4444444444444444,
+    "split": "test"
+  },
+  "finetunedSummary": {
+    "cases": 72,
+    "endToEndEvidenceValidRate": 1.0,
+    "endToEndValidAnswerMetrics": {
+      "bleu4": 0.972153,
+      "entityRecall": 1.0,
+      "rougeL": 0.951113
+    },
+    "model": "D:\\SXJ\\qwen35-finetune\\output\\qwen35-ranked-unreviewed\\best-adapter",
+    "oracleEvidenceGenerationValidRate": 1.0,
+    "oracleValidAnswerMetrics": {
+      "bleu4": 0.972153,
+      "entityRecall": 1.0,
+      "rougeL": 0.951113
+    },
+    "predictions": "D:\\SXJ\\qwen35-finetune\\evaluation-unreviewed\\finetuned.jsonl",
+    "selectionExactMatchRate": 1.0,
+    "split": "test"
+  },
+  "blindReviewFile": "blind-review/finetuned-output-review.csv",
+  "blindReviewHeaders": "\"caseId\",\"question\",\"candidateTriplesJson\",\"modelSelectedIdsJson\",\"modelAnswer\",\"selectionReview\",\"graphSupportReview\",\"completenessReview\",\"reviewerName\",\"reviewedAt\",\"reviewNotes\"",
+  "blindReviewExcludes": [
+    "referenceAnswer",
+    "goldEvidenceIds",
+    "expectedEntities",
+    "modelName",
+    "similarityScores"
+  ]
+}

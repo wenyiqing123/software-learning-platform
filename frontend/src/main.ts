@@ -1,0 +1,17 @@
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+import 'element-plus/theme-chalk/el-config-provider.css'
+import 'element-plus/theme-chalk/el-icon.css'
+import 'element-plus/theme-chalk/el-button.css'
+import 'element-plus/theme-chalk/el-button-group.css'
+import 'element-plus/theme-chalk/el-popper.css'
+import 'element-plus/theme-chalk/el-tag.css'
+import 'element-plus/theme-chalk/el-tooltip.css'
+import App from './App.vue'
+import './styles.css'
+import './styles-graph.css'
+import './styles-learning.css'
+import './styles-design-system.css'
+import router from './router'
+
+createApp(App).use(createPinia()).use(router).mount('#app')
