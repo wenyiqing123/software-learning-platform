@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { ArrowUpRight, BookOpen, BrainCircuit, CircleCheck, Clock3, Flame, Network, Sparkles } from '@lucide/vue'
+import { ArrowUpRight, BookOpen, BrainCircuit, CalendarCheck, CircleCheck, Clock3, Flame, Network, RotateCcw, Sparkles } from '@lucide/vue'
 import { useLearningMetrics, weeklyActivity } from '../composables/useLearningMetrics'
 import MetricTile from '../components/MetricTile.vue'
 import SectionHeading from '../components/SectionHeading.vue'
+import { courseHref, readLastLearningContext, practiceHref } from '../domain/learningContext'
 
 const emit = defineEmits<{ navigate: [view: string, entity?: string] }>()
 const { points, overview, loading, error, reload } = useLearningMetrics()
@@ -23,6 +24,13 @@ const weeklyTotal = computed(() => days.value.reduce((sum, day) => sum + day.cou
 const maxActivity = computed(() => Math.max(...days.value.map(day => day.count), 1))
 const accuracyDetail = computed(() => !overview.value ? '答题记录暂不可用'
   : overview.value.completed === 0 ? '尚无答题记录' : '正确率 ' + overview.value.accuracy + '%')
+const lastContext = ref(readLastLearningContext())
+const nextPoint = computed(() => points.value.find(point => (point.mastery ?? 0) < 60) || points.value[0])
+const lastLearningHref = computed(() => lastContext.value ? courseHref(lastContext.value) : { path: '/courses' })
+const nextPracticeHref = computed(() => nextPoint.value ? practiceHref({ knowledgePointId: nextPoint.value.id, courseId: nextPoint.value.courseId, entity: nextPoint.value.graphEntity }) : { path: '/practice' })
+function refreshContext() { lastContext.value = readLastLearningContext() }
+onMounted(() => window.addEventListener('learning:changed', refreshContext))
+onBeforeUnmount(() => window.removeEventListener('learning:changed', refreshContext))
 </script>
 
 <template>
@@ -34,6 +42,11 @@ const accuracyDetail = computed(() => !overview.value ? '答题记录暂不可�
       <div class="hero-copy"><div class="hero-overline"><span class="hero-dot"></span> 课程学习路径</div><h2>循序渐进，<br />把软件工程学扎实。</h2><p>从课程知识点出发，结合图谱与练习逐步巩固理解。</p><button class="button button-light" @click="emit('navigate', 'knowledge')">探索知识 <ArrowUpRight :size="16" /></button></div>
       <div class="hero-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="orbit-core"><Network :size="40" :stroke-width="1.4" /></div><div class="orbit-node node-a">需求</div><div class="orbit-node node-b">设计</div><div class="orbit-node node-c">测试</div></div>
       <div class="hero-progress"><div class="progress-ring" :style="{ '--progress': (completion ?? 0) + '%' }"><strong>{{ completion ?? '—' }}<small v-if="completion !== null">%</small></strong></div><span>{{ completion === null ? (overview ? '暂无答题记录' : '掌握度暂不可用') : '记录掌握度' }}</span></div>
+    </section>
+    <section class="learning-next-strip" aria-label="继续学习入口">
+      <RouterLink class="learning-next-card next-primary" :to="lastLearningHref"><span class="next-icon"><BookOpen :size="17" /></span><span><small>继续上次学习</small><strong>{{ lastContext ? '回到上次阅读的小节' : '选择课程开始阅读' }}</strong></span><ArrowUpRight :size="16" /></RouterLink>
+      <RouterLink class="learning-next-card" to="/review"><span class="next-icon next-warm"><RotateCcw :size="17" /></span><span><small>今日待复习</small><strong>{{ overview?.wrongCount ? '有 ' + overview.wrongCount + ' 道错题待处理' : '查看到期复习队列' }}</strong></span><ArrowUpRight :size="16" /></RouterLink>
+      <RouterLink class="learning-next-card" :to="nextPracticeHref"><span class="next-icon next-blue"><CalendarCheck :size="17" /></span><span><small>推荐下一步</small><strong>{{ nextPoint ? '练习“' + nextPoint.name + '”' : '打开专项练习' }}</strong></span><ArrowUpRight :size="16" /></RouterLink>
     </section>
     <section class="metric-grid" aria-label="学习统计" :aria-busy="loading">
       <MetricTile label="累计答题" :value="overview?.completed ?? '—'" detail="服务端保存的提交次数" tone="green" />

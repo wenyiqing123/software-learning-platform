@@ -192,6 +192,14 @@ class AnswerStreamSessionTest {
         assertThat(deadlines.getQueue()).isEmpty();
     }
 
+    @Test void streamWithNoTextEmitsStructuredModelEmptyErrorInsteadOfSuccessfulBlankDone() throws Exception {
+        when(model.stream(any(Prompt.class))).thenReturn(Flux.just(new ChatResponse(List.of())));
+        start(QaMode.DIRECT, Duration.ofSeconds(2));
+        await(emitter.finished);
+        assertThat(emitter.names()).containsExactly("status", "knowledge", "error");
+        assertThat(((Map<?, ?>) emitter.events.getLast().payload()).get("code")).isEqualTo("MODEL_EMPTY");
+    }
+
     @Test void deadlineInterruptsPendingRetrievalBeforeAnyModelSubscription() throws Exception {
         CountDownLatch entered = new CountDownLatch(1), interrupted = new CountDownLatch(1);
         when(python.retrieve(anyString(), anyList(), anyList())).thenAnswer(invocation -> {

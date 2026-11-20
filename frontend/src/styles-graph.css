@@ -1,20 +1,20 @@
-.graph-toolbar { min-height: 60px; display: flex; align-items: center; gap: 17px; padding: 9px 13px; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
-.graph-mode-switch { display: inline-flex; width: fit-content; gap: 3px; padding: 3px; background: #eef2ee; border-radius: 7px; }
+.graph-toolbar { min-height: 60px; display: flex; align-items: center; gap: 17px; padding: 9px 13px; background: var(--surface); border: 1px solid var(--border-default); border-radius: var(--radius-md); }
+.graph-mode-switch { display: inline-flex; width: fit-content; gap: 3px; padding: 3px; background: var(--surface-soft); border-radius: var(--radius-sm); }
 .graph-mode-switch button { padding: 8px 13px; color: #68776d; background: transparent; border: 0; border-radius: 5px; font: inherit; font-size: 12px; cursor: pointer; }
-.graph-mode-switch button.active { color: #176b57; background: #fff; box-shadow: 0 1px 3px #1b342410; }
+.graph-mode-switch button.active { color: var(--accent); background: var(--surface); box-shadow: var(--shadow-xs); }
 .graph-search { min-width: 280px; flex: 1; display: flex; align-items: center; gap: 10px; padding-left: 6px; color: #8d9890; }
 .graph-search input, .search-field input { min-width: 0; flex: 1; color: var(--ink); background: transparent; border: 0; outline: 0; font-size: 12px; }
 .toolbar-divider { width: 1px; height: 28px; background: #e8ece8; }
 .graph-count { display: inline-flex; align-items: center; gap: 6px; color: #79857d; white-space: nowrap; font-size: 10px; }
 .graph-explore-layout { min-height: 510px; display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 14px; }
-.graph-panel, .entity-panel { min-width: 0; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+.graph-panel, .entity-panel { min-width: 0; background: var(--surface); border: 1px solid var(--border-default); border-radius: var(--radius-md); }
 .graph-panel { display: flex; flex-direction: column; padding: 13px 15px 12px; }
 .graph-legend { min-height: 28px; display: flex; align-items: center; gap: 17px; color: #7b8780; font-size: 9px; }
 .graph-legend > span { display: inline-flex; align-items: center; gap: 6px; }
 .legend-node { width: 9px; height: 9px; display: inline-block; background: #d9eee2; border: 1px solid #72ad8d; border-radius: 50%; }
 .legend-line { width: 17px; height: 1px; display: inline-block; background: #9bafa4; }
 .graph-hint { margin-left: auto; }
-.graph-canvas { min-height: 410px; position: relative; flex: 1; overflow: hidden; background-color: #fbfcfa; background-image: radial-gradient(#e5ebe5 1px, transparent 1px); background-size: 19px 19px; border-radius: 6px; }
+.graph-canvas { min-height: 410px; position: relative; flex: 1; overflow: hidden; background-color: var(--surface-soft); background-image: radial-gradient(var(--border-soft) 1px, transparent 1px); background-size: 19px 19px; border-radius: var(--radius-sm); }
 .graph-state { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; color: #8a968e; text-align: center; }
 .graph-state > svg { color: #6d9a7b; }
 .graph-state strong { color: #526159; font-size: 12px; }
@@ -143,3 +143,6 @@ kbd { min-width: 15px; display: inline-grid; place-items: center; margin-right: 
 .side-separator { height: 1px; margin: 14px 0; background: #edf0ed; }
 .side-stat { display: flex; justify-content: space-between; margin-top: 10px; color: #828d85; font-size: 9px; }
 .side-stat strong { color: #4c5d51; font-size: 10px; }
+.graph-toolbar, .graph-panel, .entity-panel, .mastery-controls, .mastery-node-list { background: var(--surface); border-color: var(--border-default); box-shadow: var(--shadow-sm); }
+.graph-toolbar input, .graph-toolbar select, .entity-panel select { color: var(--text); background: var(--surface-soft); border-color: var(--border-default); border-radius: var(--radius-sm); }
+.graph-toolbar button, .entity-panel button { border-radius: var(--radius-sm); }.graph-page .graph-unavailable, .visualization-error { color: var(--danger); background: var(--danger-soft); border-color: #efd5cc; }

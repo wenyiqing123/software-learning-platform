@@ -108,6 +108,10 @@ final class AnswerStreamSession {
 
     private synchronized void complete() {
         if (terminal) return;
+        if (answer.toString().isBlank()) {
+            fail(AiFailure.modelEmpty());
+            return;
+        }
         AnswerResponse result = service.completed(prepared, answer.toString(), AnswerService.elapsedMs(startedAt),
                 AnswerService.elapsedMs(generationStartedAt), usage);
         if (!send("done", result)) return;

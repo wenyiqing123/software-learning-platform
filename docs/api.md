@@ -50,6 +50,8 @@
 | GET | /experiments | 本人最近100次实验 |
 | POST | /experiments/run | question；includeAblations、referenceAnswer、expectedEntities可选；后端调用AI并保存实际结果 |
 | PUT | /experiments/{id}/ratings | ratings对象，键为本次成功返回的模式，值1–5 |
+| GET | /experiments/export | 当前用户实验的服务端 CSV 导出；包含问题、实验类型、条件、证据返回顺序、耗时、模型/生成参数快照、提示词版本/hash、分项指标、人工评分和错误状态；不包含任何提示词正文 |
+| GET | /experiments/export/json | 与 CSV 同口径的 JSON 导出，schemaVersion=`experiment-export-v2`；RANKED 只保留版本/hash元数据，不返回后台固定系统提示词 |
 | GET | /experiment-tasks | 当前用户被分配的实验任务 |
 | POST | /experiment-tasks/{assignmentId}/start | 开始当前用户的实验分配；任务必须处于 OPEN |
 | GET / POST | /admin/experiment-tasks | 管理员查询 / 创建实验任务 |
@@ -57,6 +59,14 @@
 | POST | /admin/experiment-tasks/{id}/assign | 将用户ID列表分配到指定实验组，重复分配幂等 |
 | PUT | /admin/experiment-tasks/{id}/status | DRAFT、OPEN、CLOSED |
 | GET | /admin/experiment-tasks/export?taskId=... | 导出任务、实验组、参与者、状态和真实运行次数 CSV |
+| GET | /evaluations/sessions | 当前用户评估会话；包含条件、任务顺序、任务编号、用时和 Paas 评分状态 |
+| POST | /evaluations/sessions | conditionKey、taskKey、taskOrder、assignmentId、consentVersion、consentAccepted；创建带知情同意的评估会话 |
+| POST | /evaluations/sessions/{id}/measurements | phase=PRE、POST、DELAYED 或 EQUIVALENT，score(0–100)；延后测验独立保存 |
+| POST | /evaluations/sessions/{id}/complete | elapsedSeconds、psychologicalEffort(1–9)、feedback；结束单任务计时并保存 Paas/反馈 |
+| GET | /admin/evaluations/summary | 按条件返回 n、均值、中位数、标准差、四分位距、增益、用时和反馈数；仅管理员 |
+| GET | /admin/evaluations/export | 去标识化 CSV；参与者真实 userId 转为稳定匿名编号，保留分组、任务顺序、条件、用时、Paas、前/后/延后测验，不导出身份字段 |
+
+问答实验导出中的 `promptVersion`、`promptSha256`、`systemPromptSha256` 只用于复现和版本核对；服务端不会导出提示词正文，尤其不会导出 RANKED 后台固定证据约束系统提示词。自动指标与人工评分分栏保存；失败条件保留错误状态但不进入成功答案统计。
 | GET / POST | /admin/courses | 查询全部课程 / 创建课程 |
 | PUT | /admin/courses/{id} | code、name、term、description；图空间固定1 |
 | PUT | /admin/courses/{id}/enabled | enabled |
@@ -80,11 +90,15 @@
 
 错误状态含义：400输入错误，401身份无效，403无权限，404资源不存在或不属于当前用户，409冲突，503依赖暂不可用。业务错误包含 code、message 和 timestamp；AI错误详见 ai-contract.md。前端只在实际身份失效时处理登录续期，不能因503清除登录。
 
+Wave 4 稳定性错误码：AI 普通调用返回空文本时使用 MODEL_EMPTY；AI 流式请求在没有任何文本片段时发送 error 事件并使用同一错误码；Python 知识检索不可用使用 KNOWLEDGE_UNAVAILABLE；比较总时限耗尽使用 COMPARISON_TIMEOUT。这些错误不会生成空答案、静态图谱或成功实验指标。
+
 ## 只读 Python 契约
 
 POST /api/knowledge/retrieve 输入含 question、entities、historyEntities、historyMessages、relation、spaceId=1、topK。返回 entities、triples（subject/predicate/object/score）、prompt、hasEvidence、promptTemplate。
 
 浏览图谱时 topK 限制1–200。消融研究使用 topK=0 保留已有Python的原始检索顺序，并额外执行响应大小与三元组数量上限；超过上限返回明确失败，不伪造顺序。不存在图谱写接口。
+
+图谱 Java 客户端使用 PYTHON_GRAPH_CONNECT_TIMEOUT（默认3s）和 PYTHON_GRAPH_READ_TIMEOUT（默认20s）；超时、HTTP错误、空响应或非法三元组统一映射为知识图谱依赖失败。AI Python 检索客户端继续使用 python.knowledge.connect-timeout、read-timeout、响应字节上限和原始三元组数量上限。
 
 ## 评测口径
 

@@ -53,4 +53,22 @@ class EvaluationServiceTest {
             assertThat(row.meanGain()).isEqualTo(14.0);
         });
     }
+
+    @Test void acceptsDelayedMeasurementAndExportsAnonymousParticipantCode() {
+        var session=new EvaluationMapper.SessionRow(11L,7L,"CONTROL","TASK-1","v1",null,null,null,null,null,null);
+        when(mapper.findSession(7L,11L)).thenReturn(session);
+        service.measure(7L,11L,new EvaluationService.MeasureRequest("DELAYED",91.0,List.of("A")));
+        verify(mapper).upsertMeasurement(eq(7L),eq(11L),eq("DELAYED"),eq(91.0),anyString(),any());
+        when(mapper.completedRows(null)).thenReturn(List.of(new EvaluationMapper.DetailRow(7L,"CONTROL","TASK-1","A→B",420,7,72.0,86.0,91.0,true)));
+        String csv=service.exportAnonymized(null);
+        assertThat(csv).contains("participantCode,conditionKey").doesNotContain("userId").contains("P-").contains("CONTROL").contains("91.0");
+    }
+
+    @Test void summaryKeepsExperimentalConditionsSeparate() {
+        when(mapper.completedRows(null)).thenReturn(List.of(
+                new EvaluationMapper.DetailRow(7L,"CONTROL","TASK-1","A",10,4,60.0,70.0,80.0,true),
+                new EvaluationMapper.DetailRow(8L,"RANKED","TASK-2","B",20,6,70.0,85.0,90.0,false)));
+        var result=service.summary(null);
+        assertThat(result).extracting(EvaluationService.SummaryView::conditionKey).containsExactly("CONTROL","RANKED");
+    }
 }

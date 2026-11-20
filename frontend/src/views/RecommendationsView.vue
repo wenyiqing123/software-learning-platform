@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { ArrowRight, BrainCircuit, CircleAlert, Network, RotateCcw, Sparkles, Target } from '@lucide/vue'
 import { learningApi } from '../api/client'
 import SectionHeading from '../components/SectionHeading.vue'
+import FeedbackState from '../components/FeedbackState.vue'
 
 interface Recommendation { id: number; knowledgePointId?: number; title: string; reason: string; kind: string; score: number; knowledgePoint?: string }
 const router = useRouter()
@@ -52,14 +53,14 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="page-stack">
-    <SectionHeading eyebrow="基于你的学习记录" title="为你推荐" description="查看服务端返回的学习建议，按知识点打开练习或图谱。"><button class="button button-outline" :disabled="loading" @click="reload"><RotateCcw :size="15" />{{ loading ? '正在读取' : '刷新推荐' }}</button></SectionHeading>
-    <section class="recommend-overview"><div><span class="recommend-big-icon"><Sparkles :size="20" /></span><p class="eyebrow">课程学习建议</p><h2>{{ loading ? '正在读取推荐' : error ? '推荐暂不可用' : hasCards ? '从一个知识点开始巩固' : '当前暂无推荐记录' }}</h2><p>推荐原因与排序分由服务端提供；尚无答题记录的知识点也可能作为入门建议。</p></div><div class="recommend-signal"><span><Target :size="16" />按知识点练习</span><span><Network :size="16" />探索关联概念</span></div></section>
+    <SectionHeading eyebrow="基于你的学习记录" title="为你推荐" description="基于掌握度、错题与先修关系的可解释规则推荐。"><button class="button button-outline" :disabled="loading" @click="reload"><RotateCcw :size="15" />{{ loading ? '正在读取' : '刷新推荐' }}</button></SectionHeading>
+    <section class="recommend-overview"><div><span class="recommend-big-icon"><Sparkles :size="20" /></span><p class="eyebrow">可解释规则推荐</p><h2>{{ loading ? '正在读取推荐' : error ? '推荐暂不可用' : hasCards ? '从一个知识点开始巩固' : '当前暂无推荐记录' }}</h2><p>建议依据当前账户的掌握度、错题、练习记录与先修关系生成；排序分只用于安排优先级，不代表学习效果。</p></div><div class="recommend-signal"><span><Target :size="16" />按薄弱点练习</span><span><Network :size="16" />探索先修关系</span></div></section>
     <div v-if="error" class="inline-notice" role="alert"><CircleAlert :size="16" />{{ error }}<button class="text-button" @click="reload">重试</button></div>
-    <div v-if="loading" class="empty-state"><span class="spinner"></span><strong>正在读取学习建议</strong></div>
-    <div v-else-if="error" class="empty-state"><CircleAlert :size="24" /><strong>暂时无法确认推荐内容</strong><span>可稍后重试，或直接进入课程练习。</span><button class="text-button" @click="router.push('/practice')">查看练习 <ArrowRight :size="14" /></button></div>
+    <FeedbackState v-if="loading" loading loading-title="正在读取学习建议" loading-text="正在整理当前账户的掌握度、错题与先修关系。" />
+    <FeedbackState v-else-if="error" :error="error" error-title="暂时无法确认推荐内容" retry-label="重试" @retry="reload" />
     <section v-else-if="hasCards" class="recommendation-list"><article v-for="(item, index) in cards" :key="item.id" class="recommendation-row"><span class="rec-number">{{ String(index + 1).padStart(2, '0') }}</span><span class="rec-icon"><component :is="icons[index % icons.length]" :size="19" /></span><div class="rec-copy"><div><span class="recommend-kind">{{ item.kind || '学习建议' }}</span><span v-if="Number.isFinite(item.score)" class="rec-score" title="仅用于推荐排序，不代表掌握度">排序分 {{ item.score }}</span></div><h3>{{ item.title }}</h3><p :title="item.reason">{{ item.reason }}</p></div><div class="rec-actions"><button class="button button-dark button-small" :disabled="pointId(item) === undefined" @click="practice(item)">针对练习 <ArrowRight :size="14" /></button><button class="button button-outline button-small" :disabled="!item.knowledgePoint" @click="graph(item)">查看图谱 <Network :size="14" /></button></div></article></section>
-    <div v-else class="empty-state"><span class="empty-check"><Sparkles :size="24" /></span><strong>当前暂无学习建议</strong><span>可以先完成课程练习，再刷新查看服务端推荐。</span><button class="text-button" @click="router.push('/practice')">开始练习 <ArrowRight :size="14" /></button></div>
-    <div class="recommend-formula"><strong>使用说明</strong><span>排序分不代表学习完成度</span><i></i><span>提交练习后可刷新推荐</span></div>
+    <FeedbackState v-else empty empty-title="当前暂无学习建议" empty-text="可以先完成课程练习，再刷新查看服务端推荐。" empty-action-label="开始练习" @action="router.push('/practice')" />
+    <div class="recommend-formula"><strong>推荐依据</strong><span>掌握度 · 错题 · 练习记录 · 先修关系</span><i></i><span>完成练习后可刷新推荐</span></div>
   </div>
 </template>
 

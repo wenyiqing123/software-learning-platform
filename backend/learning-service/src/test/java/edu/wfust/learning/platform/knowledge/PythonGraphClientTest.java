@@ -6,6 +6,7 @@ import org.springframework.web.client.RestClientException;
 import tools.jackson.databind.ObjectMapper;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
 import static org.assertj.core.api.Assertions.*;
 
@@ -38,5 +39,10 @@ class PythonGraphClientTest {
             var client = new PythonGraphClient("http://127.0.0.1:" + server.getAddress().getPort());
             assertThatThrownBy(() -> client.retrieve("UML", 20)).isInstanceOf(RestClientException.class);
         } finally { server.stop(0); }
+    }
+
+    @Test void rejectsInvalidTimeoutConfigurationBeforeCreatingAClient() {
+        assertThatThrownBy(() -> new PythonGraphClient("http://127.0.0.1:8999", Duration.ZERO, Duration.ofSeconds(2)))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 }

@@ -48,9 +48,7 @@ public final class AiModelClient {
     public ChatResponse call(String text, String systemMessage) {
         requireConfigured();
         try {
-            ChatResponse response = model.call(prompt(text, systemMessage));
-            if (response == null || response.getResult() == null) throw AiFailure.model(null);
-            return response;
+            return requireAnswer(model.call(prompt(text, systemMessage)));
         } catch (AiFailure failure) { throw failure; }
         catch (RuntimeException exception) { throw AiFailure.model(exception); }
     }
@@ -62,9 +60,7 @@ public final class AiModelClient {
         }
         try {
             var options = settings.options().mutate().maxTokens(maxTokens).build();
-            ChatResponse response = model.call(prompt(text, systemMessage, options));
-            if (response == null || response.getResult() == null) throw AiFailure.model(null);
-            return response;
+            return requireAnswer(model.call(prompt(text, systemMessage, options)));
         } catch (AiFailure failure) { throw failure; }
         catch (RuntimeException exception) { throw AiFailure.model(exception); }
     }
@@ -73,5 +69,12 @@ public final class AiModelClient {
             requireConfigured();
             return model.stream(prompt(text));
         }).timeout(settings.httpTimeout()).onErrorMap(error -> error instanceof AiFailure ? error : AiFailure.model(error));
+    }
+    private ChatResponse requireAnswer(ChatResponse response) {
+        if (response == null || response.getResult() == null || response.getResult().getOutput() == null)
+            throw AiFailure.model(null);
+        String text = response.getResult().getOutput().getText();
+        if (text == null || text.isBlank()) throw AiFailure.modelEmpty();
+        return response;
     }
 }

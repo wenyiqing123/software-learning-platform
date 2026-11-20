@@ -4,6 +4,7 @@ import { ArrowRight, CircleAlert, Clock3, RotateCcw, Target, TriangleAlert } fro
 import { useRouter } from 'vue-router'
 import { api, apiError, learningApi, type AdaptivePracticeItem } from '../api/client'
 import SectionHeading from '../components/SectionHeading.vue'
+import FeedbackState from '../components/FeedbackState.vue'
 
 interface CourseOption { id: number; name: string }
 
@@ -89,7 +90,8 @@ onMounted(() => {
     </section>
     <p v-if="courseError" class="field-note">{{ courseError }}</p>
 
-    <div v-if="loading" class="empty-state"><span class="spinner"></span><strong>正在分析学习记录</strong><span>只读取当前账户可见的题库、错题和掌握度。</span></div>
+    <FeedbackState v-if="loading" loading loading-title="正在分析学习记录" loading-text="只读取当前账户可见的题库、错题和掌握度。" />
+    <FeedbackState v-else-if="error" :error="error" error-title="专项练习暂时不可用" @retry="loadCandidates" />
     <section v-else-if="hasItems" class="adaptive-list">
       <article v-for="(item, index) in items" :key="item.questionId" class="adaptive-item">
         <div class="adaptive-index">{{ String(index + 1).padStart(2, '0') }}</div>
@@ -102,6 +104,6 @@ onMounted(() => {
         <button class="button button-dark button-small" :data-testid="'adaptive-start-' + item.questionId" @click="start(item)">开始练习<ArrowRight :size="14" /></button>
       </article>
     </section>
-    <section v-else class="empty-state"><Target :size="24" /><strong>当前没有可安排的专项题目</strong><span>先完成课程练习，或调整课程和题目数量后重试。</span><button class="button button-outline" @click="router.push('/practice')">进入课程练习<ArrowRight :size="15" /></button></section>
+    <FeedbackState v-else empty empty-title="当前没有可安排的专项题目" empty-text="先完成课程练习，或调整课程和题目数量后重试。" empty-action-label="进入课程练习" @action="router.push('/practice')" />
   </div>
 </template>

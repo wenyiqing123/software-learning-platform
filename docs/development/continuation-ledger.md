@@ -28,3 +28,30 @@
 - 完成实验 CSV 展平导出，JSON 原始导出保持兼容；失败运行以 `FAILED` 保留但不进入成功指标。新增 CSV 单元测试和 ExperimentsView 回归测试。
 - Playwright 视觉检查覆盖桌面/移动端，移动端无横向溢出；下一步全量回归后再决定是否继续拆分后端 AI 策略类，当前不做无证据的架构重构。
 - 最终回归：后端 201/201、前端 52/52、生产构建成功；真实 `/api/system/status` 五项依赖均为 UP；`scripts/smoke-test.ps1` 18/18 通过。重新打包时发现并修复 Spring 多构造器注入问题，随后只重启本项目服务完成真实接口验收；新增状态请求会校验请求序号和令牌，避免旧账号响应回写。
+
+## Wave 2 记录（2026-11-20）
+
+- 前端样式系统：重构 `styles.css`、`styles-graph.css`、`styles-learning.css` 的根变量和关键容器/题卡/图谱/错题规则，新增统一 token bridge；`styles-design-system.css` 增加 surface、text、border、accent、radius、shadow、feedback、context、evidence、Markdown 和移动端布局 token。
+- 学习闭环：新增 `frontend/src/domain/learningContext.ts` 及测试，接通总览继续学习/复习/推荐入口，课程目录 hash 锚点、最近学习上下文、本节图谱/助教/练习入口；路由新增 hash 平滑滚动。
+- 图谱：`VisualizationViewport` 增加节点搜索、居中工具；`GraphEvidenceDrawer` 展示当前真实证据；`GraphView` 和 `MasteryMapView` 增加证据/节点上下文和 2D/3D 视口交互。Bridge/NebulaGraph 仍只读，离线时不生成静态图。
+- 助教：新增安全 `renderSimpleMarkdown`/`MarkdownContent`，回答和流式输出支持分段、列表、代码块；RANKED 前端不展示后台固定系统提示词，三元组证据可折叠。
+- 学习状态：新增 `FeedbackState` 共享组件；专项练习、每日计划、推荐、课程、练习、错题、复习页面的加载/错误/空数据入口统一使用设计 token；推荐文案明确为“基于掌握度、错题与先修关系的可解释规则推荐”。
+- 视觉验收：真实临时本地账号检查 1440px 图谱页，返回 8 个实体/7 条关系并显示证据抽屉；390px 课程页 `scrollWidth === clientWidth`，底部导航位于 `y=782`、高度 62px，目录/进度/笔记/三条上下文入口均可见。
+- Wave 3/4 待办：管理员页面反馈状态统一、业务大视图继续拆分、图谱 chunk 进一步拆分、固定评测集和认知负荷数据复核；不修改 Mecha-QA/Python/NebulaGraph，不虚构实验或学习效果。
+
+## Wave 3 记录（2026-11-20）
+
+- 问答实验后端：`ExperimentMetrics` 增加有效 BLEU 阶数；`ExperimentExport` 提供服务端 CSV/JSON 导出，保存问题、实验类型、证据返回顺序、耗时、模型/生成参数、提示词版本/hash、分项指标、人工评分和失败状态，明确排除 `prompt` 正文。
+- 问答实验前端：执行状态面板区分预期条件、实际返回数、运行时长和失败条件；结果卡并排展示答案、证据返回顺序、耗时、ROUGE-L、BLEU、有效阶数、实体召回率、人工评分和运行配置。RANKED 卡片不展示提示词正文。
+- 认知负荷后端：新增 V15 `evaluation_order_and_delayed_measurement` 迁移；评估会话支持 `taskOrder`、`assignmentId`，测量阶段支持 `DELAYED`；`EvaluationStatistics` 提供匿名参与者编号、均值/中位数/标准差/IQR；管理员 CSV 不返回真实 userId。
+- 认知负荷前端：评估页增加知情说明、流程顺序、任务顺序、Paas 1/3/5/7/9 语义锚点、延后测验入口；实验任务页先进入评估流程，再进入真实问答任务；管理员页展示论文统计所需分项描述统计。
+- Wave 3 验收：后端 206/206、前端 58/58、生产构建成功；新增测试验证提示词正文不进入导出、匿名编号不暴露用户 ID、延后测量独立保存和按实验条件分组统计。
+
+## Wave 4 记录（2026-11-20）
+
+- 后端 AI 问答执行增加显式策略选择器：Chat 策略处理 DIRECT、TRIPLES、消融和未启用专用模型的交互式 RANKED；Grounded 策略处理实验 RANKED 与专用 RANKED。AnswerService 的既有 REST/SSE 契约、Python 原始 Prompt 和隐藏系统提示词边界保持不变。
+- GroundedRankedAnswer 的证据覆盖、单/多事实判定、回退相关性评分和归一化规则已拆到独立 GroundedEvidenceValidator；新增空知识证据、实体/关系/宾语覆盖和多事实判定测试。
+- 稳定性终审：普通模型空文本返回 MODEL_EMPTY；流式请求没有文本时发送结构化错误；PythonGraphClient 增加可配置连接/读取超时、空响应与非法三元组拒绝；未知学习事件不再静默确认，Rabbit listener 使用不重回队的 DLQ 配置；已处理事件保持幂等，推荐 Redis 失效仍在事务提交后执行。
+- 安全终审：学生题目列表投影明确不含标准答案字段；错题变更测试验证 user_id 归属；管理员端继续由 ADMIN 方法鉴权保护；仓库扫描未发现真实凭据、私钥或模型权重。
+- 管理台终审：课程和题目启停、题库版本发布、微课发布加入二次确认；题库 JSON 文件限制为 2MB；Admin、错因、题库、微课、教学看板和学习报告接入共享反馈状态并统一设计 token，窄屏不依赖固定宽度表格。
+- Wave 4 实测：AI 99/99、learning-service 117/117、gateway 2/2，后端合计 218/218；前端 30 个测试文件、59 项通过；生产构建成功。未修改 Mecha-QA、Python Bridge、NebulaGraph、模型权重或既有图空间。

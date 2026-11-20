@@ -79,6 +79,19 @@ class AiModelClientTest {
         }
     }
 
+    @Test void successfulProviderResponseWithEmptyContentIsReportedAsModelEmpty() throws Exception {
+        try (HttpStub http = new HttpStub()) {
+            String body = """
+                    {"id":"empty","object":"chat.completion","created":1,"model":"fixed-model","choices":[{"index":0,"message":{"role":"assistant","content":"   "},"finish_reason":"stop"}]}
+                    """;
+            http.responder = request -> new HttpStub.Reply(200, body, 0);
+            AiModelClient client = new AiModelClient(new ModelSettings(http.baseUrl(), "test-key", "fixed-model",
+                    0.2, 128, Duration.ofSeconds(1)));
+            assertThatThrownBy(() -> client.call("question"))
+                    .isInstanceOfSatisfying(AiFailure.class, failure -> assertThat(failure.code()).isEqualTo("MODEL_EMPTY"));
+        }
+    }
+
     @Test void modelHttpTimeoutIsBoundedAndSafe() throws Exception {
         try (HttpStub http = new HttpStub()) {
             http.responder = request -> new HttpStub.Reply(200, "{}", 1500);

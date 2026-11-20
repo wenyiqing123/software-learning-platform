@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import QuestionBankView from './QuestionBankView.vue'
 
@@ -8,6 +8,7 @@ let imported = false
 
 beforeEach(() => {
   vi.resetAllMocks()
+  vi.spyOn(window, 'confirm').mockReturnValue(true)
   imported = false
   http.get.mockImplementation(async (path: string) => {
     if (path === '/admin/courses') return { data: [{ id: 1, name: '软件工程', term: '2026 秋季' }] }
@@ -18,7 +19,21 @@ beforeEach(() => {
   http.put.mockResolvedValue({ data: { id: 11, status: 'PUBLISHED', questionCount: 1 } })
 })
 
+afterEach(() => vi.restoreAllMocks())
+
 describe('QuestionBankView', () => {
+  it('requires confirmation before publishing a populated draft', async () => {
+    imported = true
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const wrapper = mount(QuestionBankView)
+    await flushPromises()
+    await wrapper.get('button[aria-label="发布题库版本 11"]').trigger('click')
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining('发布后将归档当前课程的旧版本'))
+    expect(http.put).not.toHaveBeenCalled()
+    confirm.mockRestore()
+    wrapper.unmount()
+  })
+
   it('creates a draft, imports JSON with row-level errors, and publishes it', async () => {
     http.post.mockImplementation(async (path: string) => {
       if (path === '/admin/question-bank/versions') return { data: { id: 11, courseId: 1, courseName: '软件工程', versionName: '第一次导入', status: 'DRAFT', sourceFilename: 'questions.json', questionCount: 0 } }

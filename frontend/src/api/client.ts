@@ -138,8 +138,8 @@ export interface StudyPlan { id: number; date: string; budgetMinutes: number; ta
 export interface AdaptivePracticeItem { questionId: number; stem: string; knowledgePointId?: number; knowledgePointName?: string; difficulty?: number; mastery: number; wrongCount: number; due: boolean; score: number; reason: string }
 export interface QuizDiagnosis { optionKey: string; optionText: string; knowledgePointId: number; knowledgePointName: string; rationale: string; sectionId?: number; sectionTitle?: string; practiceQuestionId?: number }
 export interface ConfiguredQuizDiagnosis { id: number; optionKey: string; optionText: string; knowledgePointId: number; knowledgePointName: string; rationale: string; enabled: boolean }
-export interface EvaluationSession { id: number; conditionKey: string; taskKey: string; consentVersion: string; startedAt: string; completedAt?: string; elapsedSeconds?: number; psychologicalEffort?: number; feedback?: string }
-export interface EvaluationSummary { conditionKey: string; sampleCount: number; meanPreScore?: number; meanPostScore?: number; meanGain?: number; meanEffort?: number; meanElapsedSeconds?: number; feedbackCount: number }
+export interface EvaluationSession { id: number; conditionKey: string; taskKey: string; taskOrder?: string; assignmentId?: number; consentVersion: string; startedAt: string; completedAt?: string; elapsedSeconds?: number; psychologicalEffort?: number; feedback?: string }
+export interface EvaluationSummary { conditionKey: string; sampleCount: number; meanPreScore?: number; medianPreScore?: number; stddevPreScore?: number; iqrPreScore?: number; meanPostScore?: number; medianPostScore?: number; stddevPostScore?: number; iqrPostScore?: number; meanDelayedScore?: number; medianDelayedScore?: number; stddevDelayedScore?: number; iqrDelayedScore?: number; meanGain?: number; meanEffort?: number; medianEffort?: number; stddevEffort?: number; iqrEffort?: number; meanElapsedSeconds?: number; medianElapsedSeconds?: number; stddevElapsedSeconds?: number; iqrElapsedSeconds?: number; feedbackCount: number }
 export interface TutorHintEvidence { subject: string; predicate: string; object: string; score: number }
 export interface TutorHintResult { question: string; level: number; content: string; hasEvidence: boolean; evidence: TutorHintEvidence[]; nextLevelAvailable: boolean; source: string }
 export const learningApi = {
@@ -171,8 +171,8 @@ export const learningApi = {
   adaptivePractice: (params: { limit?: number; courseId?: number } = {}) => api.get<AdaptivePracticeItem[]>('/adaptive-practice', { params }).then((r) => r.data),
   diagnoseAnswer: (questionId: number, selected: string[]) => api.post<QuizDiagnosis[]>('/quizzes/' + questionId + '/diagnosis', { selected }).then((r) => r.data),
   evaluationSessions: () => api.get<EvaluationSession[]>('/evaluations/sessions').then((r) => r.data),
-  startEvaluation: (payload: { conditionKey: string; taskKey: string; consentVersion: string; consentAccepted: boolean }) => api.post<EvaluationSession>('/evaluations/sessions', payload).then((r) => r.data),
-  recordEvaluationMeasurement: (id: number, payload: { phase: 'PRE' | 'POST' | 'EQUIVALENT'; score: number; responses?: string[] }) => api.post('/evaluations/sessions/' + id + '/measurements', payload).then((r) => r.data),
+  startEvaluation: (payload: { conditionKey: string; taskKey: string; taskOrder?: string; assignmentId?: number; consentVersion: string; consentAccepted: boolean }) => api.post<EvaluationSession>('/evaluations/sessions', payload).then((r) => r.data),
+  recordEvaluationMeasurement: (id: number, payload: { phase: 'PRE' | 'POST' | 'DELAYED' | 'EQUIVALENT'; score: number; responses?: string[] }) => api.post('/evaluations/sessions/' + id + '/measurements', payload).then((r) => r.data),
   completeEvaluation: (id: number, payload: { elapsedSeconds: number; psychologicalEffort: number; feedback: string }) => api.post<EvaluationSession>('/evaluations/sessions/' + id + '/complete', payload).then((r) => r.data),
   evaluationSummary: (conditionKey?: string) => api.get<EvaluationSummary[]>('/admin/evaluations/summary', { params: conditionKey ? { conditionKey } : undefined }).then((r) => r.data),
   exportEvaluationSummary: () => api.get('/admin/evaluations/export', { responseType: 'blob' }).then((r) => r.data),
@@ -195,6 +195,8 @@ export const learningApi = {
   dependencies: () => api.get<AiDependencySummary>('/ai/dependencies').then(r => r.data),
   systemStatus: () => api.get<SystemStatus>('/system/status').then(r => r.data),
   rateExperiment: (id: string, ratings: Record<string, number>) => api.put('/experiments/' + id + '/ratings', { ratings }).then((r) => r.data),
+  exportExperimentsCsv: () => api.get('/experiments/export', { responseType: 'blob' }).then((r) => r.data),
+  exportExperimentsJson: () => api.get('/experiments/export/json').then((r) => r.data),
   streamAsk: async (question: string, mode: string, onEvent: (name: string, payload: any) => void, signal?: AbortSignal, history?: { historyMessages: string[]; historyEntities: string[] }) => {
     const request = () => fetch('/api/ai/ask/stream', {
       method: 'POST', signal,

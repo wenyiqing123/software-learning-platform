@@ -2,12 +2,13 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { Graph } from '@antv/g6'
-import { ArrowUpRight, CircleHelp, Network, Search, Sparkles } from '@lucide/vue'
+import { ArrowUpRight, CircleHelp, Network, Sparkles } from '@lucide/vue'
 import { learningApi, type GraphResponse } from '../api/client'
 import SectionHeading from '../components/SectionHeading.vue'
 import PrerequisitePathPanel from './PrerequisitePathPanel.vue'
 import VisualizationViewport from '../components/VisualizationViewport.vue'
 import ThreeGraphCanvas from '../components/ThreeGraphCanvas.vue'
+import GraphEvidenceDrawer, { type EvidenceTriple } from '../components/GraphEvidenceDrawer.vue'
 
 const graphHost = ref<HTMLElement | null>(null)
 const route = useRoute()
@@ -25,6 +26,12 @@ const relationFilter = ref('ALL')
 const relationOptions = computed(() => Array.from(new Set(graphData.value.edges.map(edge => edge.label))).sort())
 const visibleEdges = computed(() => relationFilter.value === 'ALL' ? graphData.value.edges : graphData.value.edges.filter(edge => edge.label === relationFilter.value))
 const averageEvidenceScore = computed(() => { const values = visibleEdges.value.map(edge => edge.score).filter((score): score is number => typeof score === 'number'); return values.length ? (values.reduce((sum, score) => sum + score, 0) / values.length).toFixed(2) : '—' })
+const evidenceOpen = ref(false)
+const selectedEvidence = computed<EvidenceTriple[]>(() => graphData.value.evidence.filter((value): value is EvidenceTriple => {
+  if (!value || typeof value !== 'object') return false
+  const triple = value as Partial<EvidenceTriple>
+  return typeof triple.subject === 'string' && typeof triple.predicate === 'string' && typeof triple.object === 'string' && (triple.subject === selectedNode.value || triple.object === selectedNode.value)
+}))
 let graph: Graph | null = null
 
 function destroyGraph() {
@@ -62,7 +69,7 @@ async function drawGraph() {
   })
   graph.on('node:click', (event) => {
     const nodeId = (event as { target?: { id?: string } }).target?.id
-    if (typeof nodeId === 'string') selectedNode.value = nodeId
+    if (typeof nodeId === 'string') { selectedNode.value = nodeId; evidenceOpen.value = true }
   })
   await graph.render()
 }
@@ -84,6 +91,11 @@ async function searchEntity(value = entity.value) {
   } finally {
     loading.value = false
   }
+}
+function focusGraph() {
+  const instance = graph as (Graph & { focusElement?: (id: string, options?: Record<string, unknown>) => void; fitView?: (options?: Record<string, unknown>) => void }) | null
+  if (instance?.focusElement && selectedNode.value) instance.focusElement(selectedNode.value, { duration: 350 })
+  else instance?.fitView?.({ duration: 350 })
 }
 
 const exampleEntities = ['需求分析', '数据流图DFD', '用例图', '机票预定系统']
@@ -143,14 +155,13 @@ onBeforeUnmount(() => {
     <PrerequisitePathPanel v-if="mode === 'path'" id="prerequisite-path-panel" role="tabpanel" :course-id="courseId" :initial-target-id="pathTargetId" @target-change="setPathEntity" />
     <template v-else>
     <section id="knowledge-graph-panel" class="graph-toolbar" role="tabpanel">
-      <form class="graph-search" @submit.prevent="searchEntity()"><Search :size="17" /><input v-model="entity" aria-label="搜索图谱实体" placeholder="搜索软件工程知识点" /><button class="button button-dark" type="submit">查询图谱</button></form>
-      <span class="toolbar-divider"></span>
       <span class="graph-count"><Network :size="16" />{{ graphData.nodes.length }} 个实体</span>
       <span class="graph-count">{{ graphData.edges.length }} 条关系</span>
+      <span class="toolbar-divider"></span><span class="graph-count">当前节点：{{ selectedNode }}</span>
     </section>
     <section class="graph-explore-layout">
       <div class="graph-panel">
-        <VisualizationViewport title="课程知识关系" description="拖动节点、缩放画布，或切换实体查看相邻关系。" :mode="renderMode" :status="renderMode === '3d' ? 'Three.js 3D' : 'G6 2D'" :loading="loading" :error="error" :unavailable="graphUnavailable" :empty="!graphData.nodes.length && graphData.available" @retry="searchEntity()" @reset="searchEntity('需求分析')" @mode-change="switchRenderMode">
+        <VisualizationViewport title="课程知识关系" description="拖动节点、缩放画布，或切换实体查看相邻关系。" :mode="renderMode" :status="renderMode === '3d' ? 'Three.js 3D' : 'G6 2D'" :loading="loading" :error="error" :unavailable="graphUnavailable" :empty="!graphData.nodes.length && graphData.available" searchable :search-value="entity" @search="searchEntity" @focus="focusGraph" @retry="searchEntity()" @reset="searchEntity('需求分析')" @mode-change="switchRenderMode">
           <ThreeGraphCanvas v-if="renderMode === '3d'" :nodes="graphData.nodes" :edges="visibleEdges" :selected-id="selectedNode" @select="selectedNode = $event" />
           <div v-else ref="graphHost" class="graph-canvas" data-testid="knowledge-graph"></div>
           <template #footer>
@@ -163,7 +174,8 @@ onBeforeUnmount(() => {
         <div class="entity-stats"><div><strong>{{ selectedRelations.length }}</strong><span>关联关系</span></div><div><strong>{{ graphData.evidence.length }}</strong><span>证据三元组</span></div></div>
         <div v-if="renderMode === '3d'" class="graph-analysis"><p class="mini-heading">交互分析</p><label>关系筛选<select v-model="relationFilter" aria-label="关系类型筛选"><option value="ALL">全部关系</option><option v-for="item in relationOptions" :key="item" :value="item">{{ item }}</option></select></label><div><span>节点度数</span><strong>{{ selectedRelations.length }}</strong></div><div><span>平均证据分</span><strong>{{ averageEvidenceScore }}</strong></div></div>
         <div class="relation-list"><p class="mini-heading">相邻知识</p><div v-if="selectedRelations.length === 0" class="empty-relations">搜索并加载图谱后查看相邻知识。</div><button v-for="edge in selectedRelations" :key="edge.source + edge.label + edge.target" class="relation-item" @click="searchEntity(edge.source === selectedNode ? edge.target : edge.source)"><span>{{ edge.source === selectedNode ? edge.label + ' →' : '← ' + edge.label }}</span><strong>{{ edge.source === selectedNode ? edge.target : edge.source }}</strong><ArrowUpRight :size="14" /></button></div>
-        <button class="button button-dark entity-ask" @click="emit('navigate', 'tutor', selectedNode)"><Sparkles :size="16" />向 AI 助教提问</button>
+         <GraphEvidenceDrawer v-model="evidenceOpen" :node="selectedNode" :triples="selectedEvidence" @ask="emit('navigate', 'tutor', $event)" />
+         <button class="button button-dark entity-ask" @click="emit('navigate', 'tutor', selectedNode)"><Sparkles :size="16" />向 AI 助教提问</button>
       </aside>
     </section>
     </template>

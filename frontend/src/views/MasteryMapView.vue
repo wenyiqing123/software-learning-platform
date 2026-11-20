@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Graph } from '@antv/g6'
 import { ArrowRight, CircleAlert, Network, RotateCcw } from '@lucide/vue'
 import { api, apiError, learningApi, type MasteryMap, type MasteryMapNode } from '../api/client'
 import SectionHeading from '../components/SectionHeading.vue'
 import VisualizationViewport from '../components/VisualizationViewport.vue'
+import ThreeGraphCanvas from '../components/ThreeGraphCanvas.vue'
+import LearningContextActions from '../components/LearningContextActions.vue'
 
 interface Course { id: number; name: string; term: string }
 const router = useRouter()
@@ -15,6 +17,9 @@ const courseId = ref<number | undefined>()
 const map = ref<MasteryMap | null>(null)
 const loading = ref(true)
 const error = ref('')
+const renderMode = ref<'2d' | '3d'>('2d')
+const selectedNodeId = ref<number | undefined>()
+const evidenceOpen = ref(false)
 let graph: Graph | null = null
 
 function destroyGraph() { graph?.destroy(); graph = null }
@@ -36,6 +41,10 @@ async function draw() {
     layout: { type: 'force', preventOverlap: true, linkDistance: 150, nodeSize: 48 },
     behaviors: ['drag-canvas', 'zoom-canvas', 'drag-element'],
   })
+  graph.on('node:click', (event) => {
+    const id = (event as { target?: { id?: string } }).target?.id
+    if (id) { selectedNodeId.value = Number(id); evidenceOpen.value = true }
+  })
   await graph.render()
 }
 async function load() {
@@ -44,11 +53,18 @@ async function load() {
   catch (cause) { map.value = null; destroyGraph(); error.value = apiError(cause, '个人掌握图谱暂时无法加载。') }
   finally {
     loading.value = false
-    if (map.value) {
+    if (map.value && renderMode.value === '2d') {
       await nextTick()
       await draw()
     }
   }
+}
+const graphNodes = computed(() => map.value?.nodes.map(node => ({ id: String(node.id), label: node.name })) || [])
+const graphEdges = computed(() => map.value?.edges.map(edge => ({ source: String(edge.source), target: String(edge.target), label: edge.relation })) || [])
+function switchRenderMode(next: '2d' | '3d') { renderMode.value = next; if (next === '3d') destroyGraph(); else void draw() }
+function focusSelected() {
+  const instance = graph as (Graph & { focusElement?: (id: string, options?: Record<string, unknown>) => void; fitView?: (options?: Record<string, unknown>) => void }) | null
+  if (selectedNodeId.value && instance?.focusElement) instance.focusElement(String(selectedNodeId.value), { duration: 350 }); else instance?.fitView?.({ duration: 350 })
 }
 async function loadCourses() {
   try { courses.value = (await api.get<Course[]>('/courses')).data } catch { courses.value = [] }
@@ -68,11 +84,13 @@ onBeforeUnmount(destroyGraph)
     <section class="mastery-controls"><label><Network :size="15" />课程<select v-model.number="courseId" @change="load"><option :value="undefined">全部课程</option><option v-for="course in courses" :key="course.id" :value="course.id">{{ course.name }} · {{ course.term }}</option></select></label><span v-if="map" class="mastery-summary">{{ map.courseName }} · {{ map.nodes.length }} 个知识点 · {{ map.edges.length }} 条先修关系</span></section>
     <div v-if="loading" class="empty-state"><span class="spinner"></span><strong>正在汇总个人掌握记录</strong></div>
     <template v-else-if="map">
-      <VisualizationViewport title="个人掌握关系" description="颜色表示当前掌握状态；未来可在同一视口切换 3D 知识空间。" :loading="loading" :error="error" :empty="!map.nodes.length" @retry="load" @reset="load">
-        <div ref="host" class="mastery-canvas" aria-label="个人掌握关系图"></div>
+      <VisualizationViewport title="个人掌握关系" description="颜色表示当前掌握状态；可切换 2D/3D 视图并从节点继续学习。" :mode="renderMode" :status="renderMode === '3d' ? 'Three.js 3D' : 'G6 2D'" :loading="loading" :error="error" :empty="!map.nodes.length" @retry="load" @reset="load" @focus="focusSelected" @mode-change="switchRenderMode">
+        <ThreeGraphCanvas v-if="renderMode === '3d'" :nodes="graphNodes" :edges="graphEdges" :selected-id="selectedNodeId ? String(selectedNodeId) : undefined" @select="selectedNodeId = Number($event)" />
+        <div v-else ref="host" class="mastery-canvas" aria-label="个人掌握关系图"></div>
         <template #footer><div class="mastery-legend"><span><i class="legend-dot legend-mastered"></i>已掌握</span><span><i class="legend-dot legend-in-progress"></i>学习中/下一步</span><span><i class="legend-dot legend-blocked"></i>先修阻塞</span></div></template>
       </VisualizationViewport>
-      <section class="mastery-node-list"><article v-for="node in map.nodes" :key="node.id" class="mastery-node" :class="statusClass(node.status)"><div class="mastery-node-main"><div class="mastery-node-top"><span class="eyebrow">{{ node.graphEntity }}</span><strong>{{ statusLabel(node.status) }}</strong></div><h2>{{ node.name }}</h2><div class="mastery-progress"><i :style="{ width: node.mastery + '%' }"></i></div><div class="mastery-meta"><span>掌握度 {{ Math.round(node.mastery) }}%</span><span>{{ node.correctCount }} / {{ node.attemptCount }} 次答对</span><span v-if="node.dueReviewCount">待复习 {{ node.dueReviewCount }}</span></div></div><div class="mastery-actions"><button class="text-button" :data-testid="`mastery-study-${node.id}`" @click="study(node)">课程阅读<ArrowRight :size="13" /></button><button class="text-button" :data-testid="`mastery-practice-${node.id}`" @click="practice(node)">专项练习<ArrowRight :size="13" /></button></div></article></section>
+      <GraphEvidenceDrawer v-model="evidenceOpen" :node="selectedNodeId ? map.nodes.find(node => node.id === selectedNodeId)?.name : ''" title="掌握图谱证据" empty-text="掌握图谱只使用当前账户的 MySQL 学习记录和课程先修配置；本视图不伪造 NebulaGraph 证据。" />
+      <section class="mastery-node-list"><article v-for="node in map.nodes" :key="node.id" class="mastery-node" :class="[statusClass(node.status), { selected: selectedNodeId === node.id }]" @click="selectedNodeId = node.id; evidenceOpen = true"><div class="mastery-node-main"><div class="mastery-node-top"><span class="eyebrow">{{ node.graphEntity }}</span><strong>{{ statusLabel(node.status) }}</strong></div><h2>{{ node.name }}</h2><div class="mastery-progress"><i :style="{ width: node.mastery + '%' }"></i></div><div class="mastery-meta"><span>掌握度 {{ Math.round(node.mastery) }}%</span><span>{{ node.correctCount }} / {{ node.attemptCount }} 次答对</span><span v-if="node.dueReviewCount">待复习 {{ node.dueReviewCount }}</span></div><LearningContextActions compact :context="{ courseId: node.courseId, knowledgePointId: node.id, entity: node.graphEntity }" /></div><div class="mastery-actions"><button class="text-button" :data-testid="`mastery-study-${node.id}`" @click.stop="study(node)">课程阅读<ArrowRight :size="13" /></button><button class="text-button" :data-testid="`mastery-practice-${node.id}`" @click.stop="practice(node)">专项练习<ArrowRight :size="13" /></button></div></article></section>
     </template>
   </div>
 </template>

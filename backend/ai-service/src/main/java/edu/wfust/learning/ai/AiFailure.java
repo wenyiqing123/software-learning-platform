@@ -24,6 +24,10 @@ public class AiFailure extends RuntimeException {
         return new AiFailure(HttpStatus.SERVICE_UNAVAILABLE, "MODEL_UNAVAILABLE",
                 "模型服务暂不可用，请检查模型配置后重试。", true, cause);
     }
+    public static AiFailure modelEmpty() {
+        return new AiFailure(HttpStatus.SERVICE_UNAVAILABLE, "MODEL_EMPTY",
+                "模型服务返回了空答案，请稍后重试。", true);
+    }
     public static AiFailure knowledge(Throwable cause) {
         return new AiFailure(HttpStatus.SERVICE_UNAVAILABLE, "KNOWLEDGE_UNAVAILABLE",
                 "知识检索服务暂不可用，请稍后重试。", true, cause);

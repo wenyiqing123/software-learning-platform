@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { api } from '../api/client'
 import SectionHeading from '../components/SectionHeading.vue'
 import LearningNotesPanel from '../components/LearningNotesPanel.vue'
+import LearningContextActions from '../components/LearningContextActions.vue'
+import { rememberLearningContext } from '../domain/learningContext'
 
 interface Course { id: number; name: string; term: string; description: string }
 interface Resource { title: string; url: string; description: string }
@@ -57,6 +59,7 @@ async function loadCourses() {
 }
 function chooseSection(section: StudySection) {
   activeId.value = section.id; progressError.value = ''
+  rememberLearningContext({ courseId: courseId.value ?? undefined, sectionId: section.id, knowledgePointId: section.knowledgePointId, entity: section.graphEntity })
   void router.replace({ path: '/courses', query: { courseId: courseId.value, sectionId: section.id } })
 }
 function chooseCourse() { if (courseId.value) { void router.replace({ path: '/courses', query: { courseId: courseId.value } }); void loadCourse(courseId.value) } }
@@ -87,18 +90,19 @@ onMounted(loadCourses)
     <div v-if="loading" class="study-empty" role="status">正在加载课程与阅读进度…</div>
     <div v-else-if="!courses.length && !error" class="study-empty">暂无可学习的课程。课程启用后会显示在这里。</div>
     <template v-else-if="study">
-      <section class="study-summary"><div><p class="eyebrow">{{ study.code }} / {{ study.term }}</p><h2>{{ study.name }}</h2><p>{{ study.description }}</p></div><div class="study-progress"><strong>{{ study.completedSections }} / {{ study.totalSections }}</strong><span>小节已读 · {{ progress }}%</span><progress :value="study.completedSections" :max="Math.max(1, study.totalSections)" aria-label="阅读完成进度"></progress></div></section>
+      <section class="study-summary"><div><p class="eyebrow">{{ study.code }} / {{ study.term }}</p><h2>{{ study.name }}</h2><p>{{ study.description }}</p><div class="study-summary-actions"><RouterLink class="button button-outline button-small" :to="{ path: '/knowledge', query: { courseId: study.courseId, entity: active?.graphEntity, knowledgePointId: active?.knowledgePointId } }">浏览课程图谱</RouterLink><RouterLink class="button button-dark button-small" :to="{ path: '/practice', query: { courseId: study.courseId, knowledgePointId: active?.knowledgePointId } }">开始课程练习</RouterLink></div></div><div class="study-progress"><strong>{{ study.completedSections }} / {{ study.totalSections }}</strong><span>小节已读 · {{ progress }}%</span><progress :value="study.completedSections" :max="Math.max(1, study.totalSections)" aria-label="阅读完成进度"></progress><div class="progress-caption"><span>学习进度</span><strong>{{ progress }}%</strong></div></div></section>
       <div v-if="!sections.length" class="study-empty">本课程的阅读内容正在准备中。<RouterLink :to="{ path: '/knowledge', query: { courseId } }">浏览知识图谱</RouterLink></div>
       <div v-else class="study-layout">
-        <aside class="study-outline" aria-label="章节目录"><p class="eyebrow">章节目录</p><section v-for="(chapter, index) in study.chapters" :key="chapter.id"><h3>{{ String(index + 1).padStart(2, '0') }} {{ chapter.name }}</h3><p>{{ chapter.description }}</p><button v-for="section in chapter.sections" :key="section.id" class="outline-item" :class="{ active: active?.id === section.id }" :aria-current="active?.id === section.id ? 'page' : undefined" @click="chooseSection(section)"><span aria-hidden="true">{{ section.completed ? '✓' : '○' }}</span><span>{{ section.title }}<small>{{ section.completed ? '已完成阅读' : section.knowledgePointName }}</small></span></button></section></aside>
-        <article v-if="active" class="study-reading" :aria-labelledby="'section-title-' + active.id">
+        <aside id="course-outline" class="study-outline" aria-label="章节目录"><div class="outline-heading"><div><p class="eyebrow">章节目录</p><strong>{{ study.completedSections }} / {{ study.totalSections }} 小节</strong></div><span>{{ progress }}%</span></div><section v-for="(chapter, index) in study.chapters" :key="chapter.id"><h3>{{ String(index + 1).padStart(2, '0') }} {{ chapter.name }}</h3><p>{{ chapter.description }}</p><button v-for="section in chapter.sections" :key="section.id" class="outline-item" :class="{ active: active?.id === section.id }" :aria-current="active?.id === section.id ? 'page' : undefined" :aria-controls="'section-' + section.id" @click="chooseSection(section)"><span class="outline-status" aria-hidden="true">{{ section.completed ? '✓' : '○' }}</span><span>{{ section.title }}<small>{{ section.completed ? '已完成阅读' : section.knowledgePointName }}</small></span></button></section></aside>
+        <article v-if="active" :id="'section-' + active.id" class="study-reading" :aria-labelledby="'section-title-' + active.id">
           <p class="eyebrow">小节 {{ position + 1 }} / {{ sections.length }} · {{ active.knowledgePointName }}</p><h2 :id="'section-title-' + active.id">{{ active.title }}</h2>
           <section class="study-objectives"><h3>本节学习目标</h3><ul><li v-for="objective in active.objectives" :key="objective">{{ objective }}</li></ul></section>
           <section v-for="block in active.content" :key="block.heading" class="reading-block"><h3>{{ block.heading }}</h3><p v-for="paragraph in block.paragraphs" :key="paragraph">{{ paragraph }}</p></section>
            <section v-if="active.resources.length" class="study-resources"><h3>延伸阅读</h3><div v-for="resource in active.resources" :key="resource.url"><a v-if="safeUrl(resource.url)" :href="safeUrl(resource.url)" target="_blank" rel="noopener noreferrer">{{ resource.title }} ↗</a><strong v-else>{{ resource.title }}</strong><p>{{ resource.description }}</p></div></section>
            <LearningNotesPanel :section-id="active.id" :knowledge-point-id="active.knowledgePointId" />
-          <div class="study-actions"><RouterLink class="button button-outline" :to="{ path: '/knowledge', query: { entity: active.graphEntity, courseId, knowledgePointId: active.knowledgePointId } }">在图谱中建立联系 ↗</RouterLink><RouterLink class="button button-dark" :to="{ path: '/practice', query: { knowledgePointId: active.knowledgePointId, courseId } }">练习本节知识 →</RouterLink></div>
-          <footer class="study-footer"><div><button class="button button-outline" :disabled="saving" @click="markRead">{{ saving ? '正在保存…' : active.completed ? '✓ 已读 · 撤销标记' : '标记本节已读' }}</button><p>阅读记录与练习掌握度分别统计。</p><span v-if="progressError" role="alert">{{ progressError }}</span></div><div class="section-paging"><button class="text-button" :disabled="position <= 0" @click="sections[position - 1] && chooseSection(sections[position - 1]!)">上一节</button><button class="text-button" :disabled="position >= sections.length - 1" @click="sections[position + 1] && chooseSection(sections[position + 1]!)">下一节 →</button></div></footer>
+           <LearningContextActions :context="{ courseId: courseId ?? undefined, sectionId: active.id, knowledgePointId: active.knowledgePointId, entity: active.graphEntity }" />
+           <div class="study-actions"><RouterLink class="button button-outline" :to="{ path: '/knowledge', query: { entity: active.graphEntity, courseId, knowledgePointId: active.knowledgePointId, sectionId: active.id } }">在图谱中建立联系 ↗</RouterLink><RouterLink class="button button-dark" :to="{ path: '/practice', query: { knowledgePointId: active.knowledgePointId, courseId, sectionId: active.id } }">练习本节知识 →</RouterLink></div>
+           <footer class="study-footer"><div><button class="button button-outline" :disabled="saving" @click="markRead">{{ saving ? '正在保存…' : active.completed ? '✓ 已读 · 撤销标记' : '标记本节已读' }}</button><p>阅读记录与练习掌握度分别统计。</p><span v-if="progressError" role="alert">{{ progressError }}</span></div><div class="section-paging"><button class="text-button" :disabled="position <= 0" @click="sections[position - 1] && chooseSection(sections[position - 1]!)">上一节</button><button class="text-button" :disabled="position >= sections.length - 1" @click="sections[position + 1] && chooseSection(sections[position + 1]!)">下一节 →</button></div></footer>
         </article>
       </div>
     </template>

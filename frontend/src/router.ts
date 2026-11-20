@@ -3,6 +3,10 @@ import { learningApi } from './api/client'
 
 const router = createRouter({
   history: createWebHistory(),
+  scrollBehavior(to) {
+    if (to.hash) return { el: to.hash, top: 84, behavior: 'smooth' }
+    return { top: 0 }
+  },
   routes: [
     { path: '/login', component: () => import('./views/LoginView.vue'), meta: { public: true } },
     { path: '/', component: () => import('./views/DashboardView.vue') },

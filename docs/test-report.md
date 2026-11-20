@@ -76,3 +76,29 @@ MySQL 8.0.33、Redis 5.0.14.1、RabbitMQ 4.2.3 和 Nacos 2.2.0 为用户本机�
 - 重新打包并启动本项目 Java/Vite 服务后，真实临时账号调用 `/api/system/status` 返回 `overall=UP`，MySQL、Redis、RabbitMQ、knowledge、ai 五项均为 `UP`。
 - `scripts/smoke-test.ps1` 完成 18/18 项真实 HTTP 验收，覆盖认证刷新、管理员权限、课程进度隔离、题库答案隐私、答题/错题/推荐、会话归属和退出登录。
 - 重新启动过程只停止并启动本项目进程；未停止 MySQL、Redis、RabbitMQ、NebulaGraph 或 Python Bridge，也未修改 Mecha-QA 和图空间。
+
+## Wave 2 前端验收（2026-11-20）
+
+- 前端全量 `npm test -- --run`：29 个测试文件、57 项通过，包含新增上下文路由、Markdown 安全渲染、统一反馈状态和既有课程/图谱/掌握图谱/助教回归。
+- 前端生产 `npm run build`：成功；新增共享组件和学习闭环代码通过 `vue-tsc`，仍保留 Three.js 图谱 chunk 体积提示（约 2.06 MB，gzip 约 575 KB），作为 Wave 3 拆分候选。
+- 实际浏览器：1440×900 图谱页真实返回 8 个实体、7 条关系，显示节点搜索、2D 工具栏和只读证据抽屉；390×844 课程页无横向溢出，底部导航高度 62px，课程目录、阅读进度、笔记面板和三条上下文快捷入口可见。
+- 诚实降级核验：使用无效令牌访问图谱会按现有鉴权逻辑离开业务页；使用真实临时本地账号才进行图谱视觉检查，未通过前端绕过认证或注入静态图谱数据。
+- 代码红线核查：RANKED 固定系统提示词未在新增前端组件中展示；推荐文案未使用机器学习知识追踪或已验证学习成效措辞；未采集生理信号；未修改 Mecha-QA、Python Bridge、模型权重、NebulaGraph 图空间或数据库迁移。
+
+## Wave 3 实验与认知负荷验收（2026-11-20）
+
+- 后端全量 `mvn -f backend/pom.xml test`：learning-service 112 项、ai-service 92 项、learning-gateway 2 项，共 206 项通过，0 失败、0 错误。
+- 前端全量 `npm test -- --run`：30 个测试文件、58 项通过；`npm run build` 成功。新增覆盖实验导出字段、EvaluationView 延后测验、实验任务进入评估流程、有效阶数 BLEU 和匿名统计。
+- 问答实验：服务端新增 `/api/experiments/export` CSV 和 `/api/experiments/export/json` JSON；导出固定问题、实验类型、条件、证据返回顺序、耗时、模型/生成参数、提示词版本/hash、ROUGE-L、有效阶数 BLEU、实体召回率、人工评分和失败状态；提示词正文不导出，RANKED 固定系统提示词不透出。
+- 认知负荷评价：V15 新增任务顺序和 assignment 关联字段，允许 `PRE`、`POST`、`DELAYED`、`EQUIVALENT` 测量；管理端按条件展示 n、均值、中位数、标准差、四分位距，并导出去标识化参与者编号、分组、顺序、用时、Paas、前/后/延后测验和反馈数量。
+- 学术边界：未采集生理信号；界面没有“已降低认知负荷”的结论性表述；文本相似度、人工评分、Paas 与任务用时分开呈现，不被合并为事实正确性或学习成效。
+
+## Wave 4 后端稳定性、安全与管理台验收（2026-11-20）
+
+- AI 服务全量 Maven 测试：99 项通过，0 失败，0 错误；新增问答策略选择器、grounded 证据规则、空模型输出、空知识证据和流式空答案回归。
+- learning-service 全量 Maven 测试：117 项通过，0 失败，0 错误；新增 PythonGraphClient 超时配置、未知学习事件重试/DLQ、已处理事件幂等、学生题目答案投影和错题归属回归。
+- learning-gateway 全量 Maven 测试：2 项通过，0 失败，0 错误。后端合计 218 项通过。
+- 前端全量 Vitest：30 个测试文件、59 项通过；生产构建成功。新增题库发布确认测试，管理台和报表样式使用统一设计 token。
+- 稳定性：AiModelClient 对空文本返回 MODEL_EMPTY；AnswerStreamSession 不再以空答案发送 done；PythonGraphClient 支持 PYTHON_GRAPH_CONNECT_TIMEOUT/PYTHON_GRAPH_READ_TIMEOUT 并拒绝空响应和非法三元组；未知 outbox 事件抛错后按 Rabbit 重试/DLQ 处理，Redis 推荐缓存仍按事务提交后失效。
+- 安全：学生题目列表 DTO 不包含 answer/answerJson；错题变更按 user_id 查询；管理员接口保留 ADMIN 方法级鉴权；代码和配置扫描未发现真实 API key、密码、私钥或模型权重，测试中的 sk-* 仅为脱敏字符串断言。
+- 管理台：课程/题目启停、题库发布、微课发布增加二次确认；导入 JSON 限制 2MB；课程、错因、题库、微课、教学看板和学习报告使用统一加载/空数据/错误反馈；没有改变外部 Python/NebulaGraph 契约。

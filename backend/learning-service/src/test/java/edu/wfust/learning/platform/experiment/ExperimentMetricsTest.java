@@ -18,4 +18,8 @@ class ExperimentMetricsTest {
         assertThat(m.entityRecall()).isEqualTo(0.5); assertThat(m.rougeL()).isBetween(0.0,1.0);
         assertThat(ExperimentMetrics.percentile95(List.of(50L,10L,100L,30L,20L))).isEqualTo(100L);
     }
+    @Test void reportsEffectiveBleuOrderForShortAnswers() {
+        var scores = new ExperimentMetrics().evaluate("需", "需求", List.of());
+        assertThat(scores.bleuOrder()).isEqualTo(1);
+    }
 }

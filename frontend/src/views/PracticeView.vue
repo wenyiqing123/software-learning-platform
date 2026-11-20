@@ -5,6 +5,7 @@ import { ArrowRight, Check, CircleHelp, CircleX, Lightbulb, CircleCheck } from '
 import { learningApi, type QuizDiagnosis } from '../api/client'
 import { useLearningMetrics } from '../composables/useLearningMetrics'
 import SectionHeading from '../components/SectionHeading.vue'
+import LearningContextActions from '../components/LearningContextActions.vue'
 
 interface QuizOption { key: string; text: string }
 interface QuizQuestion { id: number; stem: string; type: 'SINGLE' | 'MULTIPLE' | 'TRUE_FALSE' | 'JUDGE'; options: QuizOption[]; knowledgePoint?: string }
@@ -182,7 +183,7 @@ onBeforeUnmount(() => { loadId++; window.removeEventListener('keydown', onAnswer
         </section>
         <div class="quiz-actions"><span class="key-hint"><kbd v-for="(_, optionIndex) in options.slice(0, 9)" :key="optionIndex">{{ optionIndex + 1 }}</kbd> 选择选项</span><button v-if="!result" class="button button-dark" :disabled="!selected.length || submitting" @click="submit">{{ submitting ? '提交中…' : submitError ? '重试提交' : '提交答案' }} <ArrowRight :size="16" /></button><template v-else><button v-if="!result.correct" class="text-button" @click="retryQuestion">再次作答</button><button class="button button-dark" @click="nextQuestion">{{ wrongItemId !== undefined ? '返回错题列表' : !targeted && index + 1 < questions.length ? '下一题' : '查看学习建议' }} <ArrowRight :size="16" /></button></template></div>
       </div>
-      <aside class="quiz-side"><div class="quiz-side-mark"><Lightbulb :size="19" /></div><p class="eyebrow">学习提示</p><h3>{{ question.knowledgePoint || '先理解，再作答' }}</h3><p>先独立作答，再查看服务端返回的正确答案与解析。需要补充概念时，可以打开关联知识图谱。</p><button class="text-button" @click="openKnowledge">查看相关知识 <ArrowRight :size="14" /></button><div class="side-separator"></div><div class="side-stat"><span>本次正确率</span><strong>{{ sessionAccuracy }}</strong></div><div class="side-stat"><span>本次已保存</span><strong>{{ submissions.length }} 次</strong></div><div class="side-stat"><span>待复习错题</span><strong>{{ overview?.wrongCount ?? '—' }}</strong></div></aside>
+       <aside class="quiz-side"><div class="quiz-side-mark"><Lightbulb :size="19" /></div><p class="eyebrow">学习提示</p><h3>{{ question.knowledgePoint || '先理解，再作答' }}</h3><p>先独立作答，再查看服务端返回的正确答案与解析。需要补充概念时，可以打开关联知识图谱。</p><button class="text-button" @click="openKnowledge">查看相关知识 <ArrowRight :size="14" /></button><LearningContextActions compact :context="{ knowledgePointId: Number(route.query.knowledgePointId) || undefined, entity: question.knowledgePoint }" /><div class="side-separator"></div><div class="side-stat"><span>本次正确率</span><strong>{{ sessionAccuracy }}</strong></div><div class="side-stat"><span>本次已保存</span><strong>{{ submissions.length }} 次</strong></div><div class="side-stat"><span>待复习错题</span><strong>{{ overview?.wrongCount ?? '—' }}</strong></div></aside>
     </section>
     <div v-else-if="!serviceError" class="empty-state"><CircleHelp :size="24" /><strong>当前范围暂无可用题目</strong><span>可返回课程列表选择其他知识点。</span><button class="text-button" @click="router.push('/courses')">查看课程 <ArrowRight :size="14" /></button></div>
   </div>

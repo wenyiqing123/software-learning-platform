@@ -25,7 +25,8 @@ public class AiExperimentController {
     private final AiComparisonClient ai;
     private final ExperimentMetrics metrics;
     private final ExperimentTaskService taskService;
-    public AiExperimentController(AiExperimentMapper mapper,ObjectMapper json,AiComparisonClient ai,ExperimentMetrics metrics,ExperimentTaskService taskService){this.mapper=mapper;this.json=json;this.ai=ai;this.metrics=metrics;this.taskService=taskService;}
+    private final ExperimentExport exporter;
+    public AiExperimentController(AiExperimentMapper mapper,ObjectMapper json,AiComparisonClient ai,ExperimentMetrics metrics,ExperimentTaskService taskService,ExperimentExport exporter){this.mapper=mapper;this.json=json;this.ai=ai;this.metrics=metrics;this.taskService=taskService;this.exporter=exporter;}
     public record RunRequest(@NotBlank @Size(max=2000)String question,Boolean includeAblations,@Size(max=4000)String referenceAnswer,@Size(max=40)List<@NotBlank @Size(max=100)String> expectedEntities,String experimentType,Long taskId){
         public RunRequest {
             if(includeAblations==null) includeAblations=false;
@@ -35,6 +36,8 @@ public class AiExperimentController {
     public record RatingRequest(@NotEmpty @Size(max=8)Map<@NotBlank String,@Min(1)@Max(5)Integer> ratings){}
     public record ExperimentView(String id,String question,String createdAt,List<Map<String,Object>> results,Map<String,Integer> ratings,Map<String,Object> evaluation,Long taskId,Long assignmentId){}
     @GetMapping public List<ExperimentView> list(Authentication auth){return mapper.selectList(new QueryWrapper<AiExperimentEntity>().eq("user_id",userId(auth)).orderByDesc("created_at").last("LIMIT 100")).stream().map(this::view).toList();}
+    @GetMapping(value="/export",produces="text/csv;charset=UTF-8") public String exportCsv(Authentication auth){return ExperimentExport.csv(exporter.rows(list(auth)));}
+    @GetMapping(value="/export/json",produces="application/json") public Map<String,Object> exportJson(Authentication auth){return Map.of("schemaVersion","experiment-export-v2","exportedAt",LocalDateTime.now().toString(),"runs",exporter.rows(list(auth)));}
 
     @PostMapping("/run") @ResponseStatus(HttpStatus.CREATED)
     public ExperimentView run(Authentication auth,@RequestHeader("Authorization")String authorization,@Valid @RequestBody RunRequest request){

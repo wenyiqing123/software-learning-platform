@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { ArrowRight, BookOpenCheck, Check, CircleAlert, Clock3, RotateCcw, Search, Sparkles } from '@lucide/vue'
 import { learningApi } from '../api/client'
 import SectionHeading from '../components/SectionHeading.vue'
+import LearningContextActions from '../components/LearningContextActions.vue'
 
 interface WrongQuestion { id: number; questionId: number; question: string; knowledgePoint?: string; wrongCount: number; status?: string }
 const router = useRouter()
@@ -79,7 +80,7 @@ onBeforeUnmount(() => { active = false; requestId++ })
     <section class="content-section wrong-list-section"><div class="section-title-row"><div><p class="eyebrow">逐题巩固</p><h2>待复习题目</h2></div><label class="search-field"><Search :size="16" /><input v-model="search" placeholder="搜索题目或知识点" /></label></div>
       <div v-if="loading" class="empty-state"><span class="spinner"></span><strong>正在加载错题</strong></div>
       <div v-else-if="loadError" class="empty-state"><CircleAlert :size="24" /><strong>暂时无法读取错题</strong><span>连接恢复后再查看真实待复习记录。</span><button class="text-button" @click="load">重试加载 <RotateCcw :size="14" /></button></div>
-      <div v-else-if="items.length" class="wrong-list"><article v-for="item in items" :key="item.id" class="wrong-row"><span class="wrong-mark"><CircleAlert :size="18" /></span><div class="wrong-content"><strong>{{ item.question }}</strong><div><span v-if="item.knowledgePoint" class="topic-chip">{{ item.knowledgePoint }}</span><span class="wrong-meta"><RotateCcw :size="13" />答错 {{ item.wrongCount }} 次</span></div></div><button class="button button-outline button-small" :disabled="busyId !== null" @click="review(item)">重新练习 <ArrowRight :size="14" /></button><button class="icon-button mastered-button" :disabled="busyId !== null" :title="busyId === item.id ? '正在保存' : '标记为已掌握'" @click="markMastered(item.id)"><Check :size="17" /></button></article></div>
+      <div v-else-if="items.length" class="wrong-list"><article v-for="item in items" :key="item.id" class="wrong-row"><span class="wrong-mark"><CircleAlert :size="18" /></span><div class="wrong-content"><strong>{{ item.question }}</strong><div><span v-if="item.knowledgePoint" class="topic-chip">{{ item.knowledgePoint }}</span><span class="wrong-meta"><RotateCcw :size="13" />答错 {{ item.wrongCount }} 次</span></div><LearningContextActions compact :context="{ entity: item.knowledgePoint }" /></div><button class="button button-outline button-small" :disabled="busyId !== null" @click="review(item)">重新练习 <ArrowRight :size="14" /></button><button class="icon-button mastered-button" :disabled="busyId !== null" :title="busyId === item.id ? '正在保存' : '标记为已掌握'" @click="markMastered(item.id)"><Check :size="17" /></button></article></div>
       <div v-else class="empty-state"><span class="empty-check"><BookOpenCheck :size="24" /></span><strong>{{ search ? '没有匹配的错题' : '当前没有待复习错题' }}</strong><span>{{ search ? '调整搜索词查看其他待复习题目。' : '完成课程练习后，答错的题目会自动整理到这里。' }}</span><button class="text-button" @click="router.push('/practice')">去做练习 <ArrowRight :size="14" /></button></div>
     </section>
     <div class="review-tip"><Clock3 :size="16" /><span>建议隔一段时间重新作答，结合解析检查自己是否真正理解。</span></div>

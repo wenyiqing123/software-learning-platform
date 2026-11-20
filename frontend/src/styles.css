@@ -1,22 +1,22 @@
 :root {
-  font-family: 'DM Sans', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
-  color: #202a25;
-  background: #f4f6f3;
+  font-family: var(--font-body);
+  color: var(--text);
+  background: var(--surface-soft);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  --ink: #202a25;
-  --muted: #77817b;
-  --soft: #f4f6f3;
-  --line: #e5e9e5;
-  --green: #176b57;
-  --green-dark: #153f36;
-  --green-pale: #e7f3ed;
-  --orange: #c56b43;
-  --orange-pale: #fff0e7;
-  --blue: #5281a1;
-  --blue-pale: #eaf2f8;
-  --white: #fff;
+  --ink: var(--text);
+  --muted: var(--text-muted);
+  --soft: var(--surface-soft);
+  --line: var(--border-default);
+  --green: var(--accent);
+  --green-dark: var(--accent-strong);
+  --green-pale: var(--accent-soft);
+  --orange: var(--warning);
+  --orange-pale: var(--warning-soft);
+  --blue: var(--info);
+  --blue-pale: var(--info-soft);
+  --white: var(--surface);
 }
 
 * { box-sizing: border-box; }
@@ -153,3 +153,10 @@ button:disabled { opacity: .52; cursor: not-allowed; }
 .recommend-strip h2 { margin: 0; color: #2a3930; font-size: 12px; font-weight: 600; }
 .recommend-strip > div:nth-child(2) > span { display: block; margin-top: 4px; color: #839087; font-size: 9px; }
 .recommend-check { color: #78a281; }
+
+/* Wave 2 token bridge: legacy page selectors inherit the design system. */
+.login-page, .dashboard-hero { font-family: var(--font-body); }
+.login-panel, .login-form input, .login-form textarea, .login-form select { background: var(--surface); border-color: var(--border-default); }
+.dashboard-columns > *, .content-section, .metric-tile, .recommend-strip { border-color: var(--border-default); box-shadow: var(--shadow-sm); }
+.button-dark { color: var(--surface); background: var(--accent); }.button-dark:hover:not(:disabled) { background: var(--accent-strong); }.button-outline { color: var(--text); background: var(--surface); border-color: var(--border-default); }.button-outline:hover:not(:disabled) { color: var(--accent); background: var(--accent-soft); border-color: var(--border-focus); }
+.inline-notice, .error-notice { border-radius: var(--radius-md); }.error-notice { color: var(--danger); background: var(--danger-soft); border-color: #efd5cc; }

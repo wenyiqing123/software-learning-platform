@@ -36,6 +36,13 @@ class GroundedRankedAnswerTest {
     private GroundedRankedAnswer.Outcome run() { return run("比较两类文档"); }
     private GroundedRankedAnswer.Outcome run(String question) { return service.execute(question, evidence, evidence.prompt()); }
 
+    @Test void nullKnowledgeReturnsStructuredInsufficientEvidenceFailure() {
+        var result = service.execute("问题", null, "原始提示");
+        assertThat(result.failure()).isNotNull();
+        assertThat(result.failure().code()).isEqualTo("KNOWLEDGE_INSUFFICIENT");
+        assertThat(result.answer()).isEmpty();
+    }
+
     @Test void insufficientEvidenceStopsBeforeAnswerGeneration() {
         answers("{\"status\":\"INSUFFICIENT\",\"taskType\":\"COMPARISON\",\"selectedIds\":[]}", "SHOULD NOT RUN");
         var result = run();

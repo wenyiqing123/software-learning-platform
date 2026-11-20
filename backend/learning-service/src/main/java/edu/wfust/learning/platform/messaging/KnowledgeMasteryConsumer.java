@@ -33,7 +33,8 @@ public class KnowledgeMasteryConsumer {
     public void consume(String payload) throws Exception {
         LearningEvent event = objectMapper.readValue(payload, LearningEvent.class);
         LearningEventEntity stored = eventMapper.findByEventId(event.eventId().toString());
-        if (stored == null || stored.getProcessedAt() != null) return;
+        if (stored == null) throw new IllegalStateException("learning event outbox row not found");
+        if (stored.getProcessedAt() != null) return;
         if (event.knowledgePointId() != null) {
             masteryMapper.recordAttempt(event.userId(), event.knowledgePointId(), Boolean.TRUE.equals(event.correct()));
         }

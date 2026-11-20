@@ -1,7 +1,7 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { learningApi } from '../api/client'
 
-export interface KnowledgePointMetric { id: number; name: string; graphEntity: string; mastery?: number | null; sortOrder: number }
+export interface KnowledgePointMetric { id: number; courseId?: number; name: string; graphEntity: string; mastery?: number | null; sortOrder: number }
 export interface DailyActivity { day: string; attempts: number }
 export interface OverviewMetric { mastery: number; completed: number; wrongCount: number; accuracy: number; activity: DailyActivity[] }
 

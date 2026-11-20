@@ -4,6 +4,7 @@ import { ArrowRight, BookOpen, Check, CircleAlert, CircleCheck, Clock3, Pause, R
 import { useRoute, useRouter } from 'vue-router'
 import { learningApi, type SpacedReviewCard, type SpacedReviewResult } from '../api/client'
 import SectionHeading from '../components/SectionHeading.vue'
+import LearningContextActions from '../components/LearningContextActions.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -111,6 +112,7 @@ onMounted(() => void load())
       <div class="review-progress"><span><Clock3 :size="15" />{{ showingPaused ? '已暂停' : '到期' }} {{ cards.length }} 题</span><span>{{ index + 1 }} / {{ cards.length }}</span></div>
       <div class="review-context"><span class="eyebrow">{{ current.knowledgePoint || '课程知识点' }}</span><span>此前答错 {{ current.wrongCount }} 次</span><span>上次间隔 {{ current.previousIntervalMinutes || 0 }} 分钟</span></div>
       <h2 class="review-question">{{ current.question }}</h2>
+      <LearningContextActions compact :context="{ entity: current.knowledgePoint }" />
       <div class="review-options">
         <button v-for="option in current.options" :key="option.key" class="answer-option" :class="{ selected: selected.includes(option.key), correct: result && answers.includes(option.key), incorrect: result && selected.includes(option.key) && !answers.includes(option.key) }" :disabled="!!result || submitting || showingPaused" :aria-pressed="selected.includes(option.key)" @click="toggle(option.key)">
           <span class="option-marker">{{ option.key }}</span><span>{{ option.text }}</span><Check v-if="result && answers.includes(option.key)" :size="17" />

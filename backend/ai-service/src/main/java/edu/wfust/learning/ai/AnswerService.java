@@ -26,6 +26,7 @@ public class AnswerService {
     private final PromptStrategy promptStrategy;
     private final ComparisonExecutor comparisons;
     private final GroundedRankedAnswer groundedRanked;
+    private QaStrategySelector strategySelector = QaStrategySelector.defaultSelector();
     private GroundedRankedAnswer dedicatedGroundedRanked;
     private AiModelClient dedicatedRankedModel;
     private RankedModelSettings rankedModelSettings;
@@ -73,6 +74,8 @@ public class AnswerService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     @org.springframework.beans.factory.annotation.Qualifier("matrixAdapterGroundedRankedAnswer")
     void setMatrixAdapterGroundedAnswer(GroundedRankedAnswer value) { this.matrixAdapterGroundedAnswer = value; }
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    void setStrategySelector(QaStrategySelector value) { if (value != null) this.strategySelector = value; }
     public ModelSettings settings() { return modelClient.settings(); }
     public Map<String, Object> rankedModelInfo() {
         RankedModelSettings settings = rankedModelSettings;
@@ -395,19 +398,17 @@ public class AnswerService {
     private AnswerResponse execute(PreparedAnswer prepared, boolean tolerateFailure) {
         long startedAt = System.nanoTime();
         try {
-            if ((prepared.provenance().comparisonId() != null && prepared.request().mode() == QaMode.RANKED)
-                    || usesDedicatedRankedModel(prepared)) {
-                GroundedRankedAnswer engine = usesDedicatedRankedModel(prepared) ? dedicatedGroundedRanked : groundedRanked;
-                var outcome = engine.execute(prepared.request().question(), prepared.knowledge(), prepared.prompt());
-                long generationMs = elapsedMs(startedAt);
-                return response(prepared, outcome.answer(), prepared.retrievalMs() + generationMs,
-                        generationMs, outcome.usage(), outcome.failure(), outcome.trace());
-            }
-            ChatResponse result = modelClient.call(prepared.prompt());
+            boolean dedicated = usesDedicatedRankedModel(prepared);
+            AiModelClient generationModel = dedicated ? dedicatedRankedModel : modelClient;
+            GroundedRankedAnswer generationGrounded = dedicated ? dedicatedGroundedRanked : groundedRanked;
+            boolean groundedRanked = (prepared.provenance().comparisonId() != null
+                    && prepared.request().mode() == QaMode.RANKED) || dedicated;
+            QaExecutionStrategy.Outcome outcome = strategySelector.select(prepared.request().mode(), groundedRanked).execute(
+                    new QaExecutionStrategy.Context(prepared.request().question(), prepared.knowledge(), prepared.prompt(),
+                            generationModel, generationGrounded));
             long generationMs = elapsedMs(startedAt);
-            String answer = result.getResult().getOutput().getText();
-            return response(prepared, answer == null ? "" : answer, prepared.retrievalMs() + generationMs,
-                    generationMs, AnswerResponse.TokenUsage.from(result), null);
+            return response(prepared, outcome.answer(), prepared.retrievalMs() + generationMs,
+                    generationMs, outcome.usage(), outcome.failure(), outcome.grounding());
         } catch (RuntimeException exception) {
             AiFailure failure = exception instanceof AiFailure known ? known : AiFailure.model(exception);
             if (!tolerateFailure) throw failure;

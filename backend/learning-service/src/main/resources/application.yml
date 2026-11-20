@@ -30,6 +30,7 @@ spring:
       mandatory: true
     listener:
       simple:
+        default-requeue-rejected: false
         retry:
           enabled: true
           max-attempts: 3
@@ -60,6 +61,8 @@ management:
 python:
   knowledge:
     base-url: ${PYTHON_KNOWLEDGE_URL:http://127.0.0.1:8999}
+    graph-connect-timeout: ${PYTHON_GRAPH_CONNECT_TIMEOUT:3s}
+    graph-read-timeout: ${PYTHON_GRAPH_READ_TIMEOUT:20s}
 ai:
   service:
     base-url: ${AI_SERVICE_URL:http://127.0.0.1:8082}
