@@ -25,6 +25,15 @@ public class PythonGraphClient {
         return response;
     }
 
+    public boolean isAvailable() {
+        try {
+            return client.get().uri("/health")
+                    .exchange((request, response) -> response.getStatusCode().is2xxSuccessful());
+        } catch (RuntimeException ignored) {
+            return false;
+        }
+    }
+
     public record PythonGraphRequest(String question, List<String> entities, List<String> historyEntities,
                                      List<String> historyMessages, String relation, Integer spaceId, Integer topK) { }
     public record Triple(String subject, String predicate, String object, double score) { }

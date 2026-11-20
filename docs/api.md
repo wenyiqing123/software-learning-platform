@@ -9,6 +9,7 @@
 | POST | /auth/refresh | refreshToken；一次使用后立即轮换 |
 | POST | /auth/logout | refreshToken；返回204 |
 | GET | /auth/me | 当前用户ID、显示名称和角色 |
+| GET | /system/status | 当前账号可见的 MySQL、Redis、RabbitMQ、Python Bridge/知识图谱和 AI 服务状态；只返回状态、检查时间和功能影响，不返回地址、密钥或异常栈 |
 | GET | /courses | 启用的课程 |
 | GET | /courses/{courseId}/study | 章节、小节正文、目标、资源和本人完成状态 |
 | PUT | /courses/{courseId}/study/sections/{sectionId}/progress | completed；身份来自令牌 |
@@ -90,5 +91,7 @@ POST /api/knowledge/retrieve 输入含 question、entities、historyEntities、h
 问答实验页面把 `expectedEntities` 作为逐项填写的字符串数组提交，最多 40 项；空项忽略，每个输入框整体作为一个目标字符串，不按逗号、顿号等标点拆分。它用于答案召回率计算，不是三元组主语/关系/宾语，也不会作为提示词发送给模型；多个目标应分别填写在不同输入框。本题既可只填核心词 `动宾短语`，也可把带标点的完整标准答案作为一个目标短语填写。默认参考答案保留评测者给出的完整表述（包括示例）；当前图谱证据只支持“动宾短语描述处理逻辑”，没有提供“校验权限、生成报表”示例。受证据约束的回答不会擅自补入这两个例子，因此 ROUGE-L/BLEU 可能低于包含这些例子的回答；这反映参考答案与图谱证据覆盖范围差异，不应通过改短参考答案掩盖。实验比较中的 `RANKED` 使用 `ranked-grounded-v3`：保留 Python 原始提示词作为 user 消息，先选择直接回答问题的候选证据，再要求回答逐条包含选中三元组的主体、关系和宾语，并按关系语义自然组织汉语句子；“规则、类型、方式、形式”等标签关系直接接宾语，“实质、定义、含义”等名词性判断关系使用“是/为”，不机械用冒号替代连接词。校验缺项则失败；普通 `/ai/ask` 与 `/ai/ask/stream` 的 `RANKED` 行为不变。`result.prompt` 与 `promptSha256` 对应原始 user 提示词，隐藏的服务端系统提示词正文不返回客户端；`provenance` 记录 `promptSource=PYTHON_ORIGINAL_PLUS_SYSTEM_PROMPT`、版本与 `systemPromptSha256`，`grounding` 记录候选、选择、原始输出、校验结果、耗时和 token。多事实证据不足、证据编号无效或回答未覆盖选中事实任一三元组要素时返回失败，不进入答案指标或人工评分。新旧 RANKED 结果不能混合解读；旧结果没有系统提示词版本标记。
 
 results 为后端 AI 服务的实际响应；evaluation.source=SERVER_AI_SERVICE。V2遗留浏览器导入记录标注 LEGACY_BROWSER_IMPORT。evaluation.metricsByMode 仅包含成功生成结果。参考答案为空时 ROUGE-L/BLEU 为 null，期望实体为空时实体召回率为 null；失败模式不允许人工评分。
+
+问答实验页面另外提供客户端 CSV 展平导出和原始 JSON 导出；导出字段包含运行时间、实验类型、策略、模型变体、成功/失败、耗时、分项指标、人工评分、回答和错误信息。失败运行保留在报告中但不进入成功答案指标或人工评分。
 
 ROUGE-L 使用小写 Unicode 字母/数字字符序列的最长公共子序列F1；BLEU 使用同一分词，最大4阶并对短文本采用有效阶数，不做平滑；实体召回率按去重的期望实体是否出现在回答中计算。它们不等同于完整事实正确性。个人跨次统计包含不同问题与配置，正式论文分析应导出后按评测集和配置分组。

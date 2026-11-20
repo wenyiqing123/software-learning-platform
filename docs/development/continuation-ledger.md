@@ -19,3 +19,12 @@
 - 当前运行服务为 Vue 5173、Gateway 8080、learning-service 8081、ai-service 8082；Python Bridge 8999 本轮未启动，故图谱/AI 检索依赖需按原有启动说明单独检查。
 - 后续复核已启动 NebulaGraph 与 Python Bridge 8999；真实需求分析检索返回 7 条三元组，F7 “全部课程”修复已进入 8081 运行 JAR。
 - F9 已完成第一版：V10 笔记/收藏表、用户隔离接口、课程阅读页笔记面板和 3 项服务测试；真实 API 已验证创建、查询、更新、删除和收藏切换，临时验收笔记已清理。
+
+## 优化记录（2026-11-20）
+
+- 基于基线 199 项后端测试、48 项前端测试和成功生产构建，新增优化路线图 `docs/superpowers/plans/2026-11-20-platform-optimization-roadmap.md`。
+- 完成真实依赖状态聚合：`SystemStatusService` 探测 MySQL、Redis、RabbitMQ、Python Bridge/知识图谱和 AI 服务；MySQL 故障为 `DOWN`，其他依赖故障为 `DEGRADED`，不返回凭据或内部地址。新增 2 项聚合测试，并验证 Python Graph Client 的 `/health` 只读调用。
+- 完成 App shell 导航减负：学习、练习、研究评估和管理工作台分组折叠；移动端使用核心学习底部导航；顶部增加低干扰依赖状态面板。
+- 完成实验 CSV 展平导出，JSON 原始导出保持兼容；失败运行以 `FAILED` 保留但不进入成功指标。新增 CSV 单元测试和 ExperimentsView 回归测试。
+- Playwright 视觉检查覆盖桌面/移动端，移动端无横向溢出；下一步全量回归后再决定是否继续拆分后端 AI 策略类，当前不做无证据的架构重构。
+- 最终回归：后端 201/201、前端 52/52、生产构建成功；真实 `/api/system/status` 五项依赖均为 UP；`scripts/smoke-test.ps1` 18/18 通过。重新打包时发现并修复 Spring 多构造器注入问题，随后只重启本项目服务完成真实接口验收；新增状态请求会校验请求序号和令牌，避免旧账号响应回写。

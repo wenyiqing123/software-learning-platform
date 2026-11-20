@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { SseDecoder } from '../domain/sse'
+import type { AiDependencySummary, SystemStatus } from '../domain/systemStatus'
 export const api = axios.create({ baseURL: '/api', timeout: 20_000, headers: { 'Content-Type': 'application/json' } })
 let refreshInFlight: Promise<string> | null = null
 function clearSession() {
@@ -191,7 +192,8 @@ export const learningApi = {
   sessionMessages: (id: number) => api.get('/tutor/sessions/' + id + '/messages').then(r => r.data),
   saveMessage: (id: number, payload: { role: string; content: string; mode: string; metadata?: unknown }) => api.post('/tutor/sessions/' + id + '/messages', payload).then(r => r.data),
   deleteSession: (id: number) => api.delete('/tutor/sessions/' + id).then(r => r.data),
-  dependencies: () => api.get('/ai/dependencies').then(r => r.data),
+  dependencies: () => api.get<AiDependencySummary>('/ai/dependencies').then(r => r.data),
+  systemStatus: () => api.get<SystemStatus>('/system/status').then(r => r.data),
   rateExperiment: (id: string, ratings: Record<string, number>) => api.put('/experiments/' + id + '/ratings', { ratings }).then((r) => r.data),
   streamAsk: async (question: string, mode: string, onEvent: (name: string, payload: any) => void, signal?: AbortSignal, history?: { historyMessages: string[]; historyEntities: string[] }) => {
     const request = () => fetch('/api/ai/ask/stream', {

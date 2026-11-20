@@ -60,3 +60,19 @@
 ## 环境依赖
 
 MySQL 8.0.33、Redis 5.0.14.1、RabbitMQ 4.2.3 和 Nacos 2.2.0 为用户本机原有版本，本项目没有修改它们。NebulaGraph Desktop 的 graphd、metad、storaged 原容器通过 Docker Desktop 启动，不重建和不重置卷。当前 Nacos 不在 Gateway 运行路径中。JDK 使用项目启动脚本显式选择的 Temurin OpenJDK 21.0.13+9。
+
+## 优化阶段验收（2026-11-20）
+
+- 基线：`mvn -f backend/pom.xml test` 共 199 项通过（learning-service 105、ai-service 92、learning-gateway 2）；前端 `npm test -- --run` 为 23 个测试文件、48 项通过；`npm run build` 成功，仍保留图谱/Three.js 懒加载 chunk 体积提示。
+- 新增 `GET /api/system/status` 聚合状态接口。单元测试覆盖 MySQL 故障导致 `DOWN`、知识图谱故障导致 `DEGRADED`、检查时间和固定依赖顺序；状态响应不包含内部地址、密钥或异常栈。PythonGraphClient 增加只读 `/health` 探测。
+- 前端新增状态映射、AI 配置降级合并和 CSV 展平导出测试；新增实验 CSV 导出字段包括运行、策略、模型变体、成功/失败、耗时、ROUGE-L、BLEU、实体召回率、人工评分、回答和错误。
+- Playwright 视觉核验：1440×900 桌面依赖状态弹层可打开，390×844 移动视口底部导航位于 `y=782`、高度 62px，`scrollWidth === clientWidth`，未发现横向溢出。使用无效演示令牌时界面显示“请重新登录”，未将服务失败伪装为正常。
+- 未修改 Mecha-QA、Python Bridge 代码、模型权重、NebulaGraph 图空间和已执行 Flyway 迁移；本阶段没有新增数据库表。
+
+## 最终回归（2026-11-20）
+
+- 修复新状态服务的 Spring 构造器选择问题后重新执行 `mvn -f backend/pom.xml test`：learning-service 107 项、ai-service 92 项、learning-gateway 2 项，共 201 项通过，0 失败、0 错误。
+- 前端重新执行 `npm test -- --run`：26 个测试文件、52 项通过；`npm run build` 成功。图谱/Three.js chunk 体积警告仍存在，但不影响非图谱路由加载。
+- 重新打包并启动本项目 Java/Vite 服务后，真实临时账号调用 `/api/system/status` 返回 `overall=UP`，MySQL、Redis、RabbitMQ、knowledge、ai 五项均为 `UP`。
+- `scripts/smoke-test.ps1` 完成 18/18 项真实 HTTP 验收，覆盖认证刷新、管理员权限、课程进度隔离、题库答案隐私、答题/错题/推荐、会话归属和退出登录。
+- 重新启动过程只停止并启动本项目进程；未停止 MySQL、Redis、RabbitMQ、NebulaGraph 或 Python Bridge，也未修改 Mecha-QA 和图空间。
