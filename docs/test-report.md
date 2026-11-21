@@ -102,3 +102,18 @@ MySQL 8.0.33、Redis 5.0.14.1、RabbitMQ 4.2.3 和 Nacos 2.2.0 为用户本机�
 - 稳定性：AiModelClient 对空文本返回 MODEL_EMPTY；AnswerStreamSession 不再以空答案发送 done；PythonGraphClient 支持 PYTHON_GRAPH_CONNECT_TIMEOUT/PYTHON_GRAPH_READ_TIMEOUT 并拒绝空响应和非法三元组；未知 outbox 事件抛错后按 Rabbit 重试/DLQ 处理，Redis 推荐缓存仍按事务提交后失效。
 - 安全：学生题目列表 DTO 不包含 answer/answerJson；错题变更按 user_id 查询；管理员接口保留 ADMIN 方法级鉴权；代码和配置扫描未发现真实 API key、密码、私钥或模型权重，测试中的 sk-* 仅为脱敏字符串断言。
 - 管理台：课程/题目启停、题库发布、微课发布增加二次确认；导入 JSON 限制 2MB；课程、错因、题库、微课、教学看板和学习报告使用统一加载/空数据/错误反馈；没有改变外部 Python/NebulaGraph 契约。
+
+## 任务 1：网关、代理与部署路由审计（2026-11-21）
+
+| 链路 | 核查结论 |
+| --- | --- |
+| frontend/vite.config.ts | /api 统一转发到 127.0.0.1:8080；SSE 使用同一 API 入口，不存在前端直连服务端口。 |
+| Gateway AI 路由 | /api/ai/** 优先级 -1，转发到 AI_SERVICE_URL，覆盖 ask、compare、Qwen matrix、micro-lesson、tutor hint、dependencies、matrix-health 和 /ask/stream。 |
+| Gateway 学习路由 | /api/** 兜底转发到 LEARNING_SERVICE_URL，覆盖认证、课程、图谱、题库、错题、推荐、报告、实验、评估、管理台等新增接口。 |
+| Gateway SSE | connect-timeout=3000、response-timeout=210s；大于 AI 服务 120s SSE 超时，避免网关先断流。 |
+| Nginx /api/ | 转发到 127.0.0.1:18084，proxy_buffering off、proxy_request_buffering off、proxy_cache off、X-Accel-Buffering no，读写超时 300s。 |
+| Nginx / | 转发到前端 127.0.0.1:18083，前后端入口职责分离。 |
+| Compose 环境 | AI_SERVICE_URL、LEARNING_SERVICE_URL、PYTHON_KNOWLEDGE_URL、RABBITMQ_VHOST 均有明确传递；RabbitMQ vhost 与 .env.example、deploy/.env.server.example、Java 配置保持一致。 |
+| Flyway | V1–V15 文件连续存在，learning-service 使用 classpath:db/migration 自动执行。 |
+
+GatewayRouteConfigurationTest 当前 5/5 通过，新增路径矩阵覆盖 14 个学习服务路径和 7 个 AI/SSE 路径；Compose config --quiet、部署 Bash 语法检查通过。当前机器未安装 Nginx CLI，因此 Nginx 采用配置文本断言核查，生产机仍需执行 nginx -t。

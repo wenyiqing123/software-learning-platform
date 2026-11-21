@@ -23,7 +23,7 @@ spring:
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USERNAME:software_learning}
     password: ${RABBITMQ_PASSWORD:}
-    virtual-host: /software-learning
+    virtual-host: ${RABBITMQ_VHOST:/software-learning}
     publisher-confirm-type: correlated
     publisher-returns: true
     template:

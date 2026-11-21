@@ -55,3 +55,10 @@
 - 安全终审：学生题目列表投影明确不含标准答案字段；错题变更测试验证 user_id 归属；管理员端继续由 ADMIN 方法鉴权保护；仓库扫描未发现真实凭据、私钥或模型权重。
 - 管理台终审：课程和题目启停、题库版本发布、微课发布加入二次确认；题库 JSON 文件限制为 2MB；Admin、错因、题库、微课、教学看板和学习报告接入共享反馈状态并统一设计 token，窄屏不依赖固定宽度表格。
 - Wave 4 实测：AI 99/99、learning-service 117/117、gateway 2/2，后端合计 218/218；前端 30 个测试文件、59 项通过；生产构建成功。未修改 Mecha-QA、Python Bridge、NebulaGraph、模型权重或既有图空间。
+
+## 任务 1 路由审计记录（2026-11-21）
+
+- 复核全部 learning-service/ai-service Controller 前缀：AI 统一 /api/ai/**，学习服务统一 /api/** 兜底；新增系统状态、评估管理、实验导出、微课、题库版本、实验任务和 SSE 均有对应覆盖。
+- GatewayRouteConfigurationTest 扩展为 5 项：14 个学习服务路径和 7 个 AI/SSE 路径通过 PathPattern 实际匹配断言，并验证 AI route order=-1 与 210s 响应超时。
+- Nginx 文本审计确认 /api/ 关闭代理缓冲、请求缓冲和缓存，设置 X-Accel-Buffering no 与 300s 超时；Vite /api 代理保持指向 Gateway。
+- V1–V15 迁移连续存在。修复部署一致性：learning-service RabbitMQ vhost 改为读取 RABBITMQ_VHOST，Compose 和本地 .env.example 显式提供 /software-learning 默认值。
