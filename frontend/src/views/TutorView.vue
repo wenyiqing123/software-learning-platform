@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
-import { ArrowRight, ArrowUpRight, Bot, Check, ChevronDown, CircleAlert, Database, Gauge, Lightbulb, Send, Sparkles } from '@lucide/vue'
+import { ArrowRight, ArrowUpRight, Bot, CircleAlert, Database, Gauge, Lightbulb, Send, Sparkles } from '@lucide/vue'
 import { useRoute } from 'vue-router'
 import { apiError, learningApi } from '../api/client'
 import SectionHeading from '../components/SectionHeading.vue'
 import MarkdownContent from '../components/MarkdownContent.vue'
+import TutorModeSelector from '../components/TutorModeSelector.vue'
+import TutorAnswerCard from '../components/TutorAnswerCard.vue'
 
 type Mode = 'DIRECT' | 'TRIPLES' | 'RANKED'
 interface AnswerResult { mode?: Mode; answer?: string; content?: string; entities?: { canonicalName: string }[]; triples?: { subject: string; predicate: string; object: string; score?: number }[]; hasEvidence?: boolean; latencyMs?: number; prompt?: string; error?: string }
@@ -38,6 +40,10 @@ const hintError = ref('')
 const hintResult = ref<TutorHintResult | null>(null)
 let abortController: AbortController | null = null
 onMounted(async () => { try { sessions.value = await learningApi.sessions() } catch (e) { historyError.value = apiError(e, '会话历史暂不可用') } })
+function selectMode(selected: string) {
+  if (selected === 'DIRECT' || selected === 'TRIPLES' || selected === 'RANKED') mode.value = selected
+  compareAll.value = false
+}
 function stopGenerating() { abortController?.abort() }
 onBeforeUnmount(stopGenerating)
 async function selectSession() {
@@ -125,9 +131,7 @@ async function submit() {
       <section v-if="messages.length" class="chat-history"><details><summary>会话记录 · {{ messages.length }} 条</summary><article v-for="message in messages" :key="message.id" :class="message.role.toLowerCase()"><strong>{{ message.role === 'USER' ? '我的问题' : '学习助教' }}</strong><MarkdownContent :content="message.content" /><button v-if="message.metadata?.results" class="text-button" @click="results = message.metadata.results; compareAll = results.length > 1">查看证据记录</button></article></details></section>
     <section class="tutor-workspace">
       <div class="tutor-main">
-        <div class="mode-selector" role="group" aria-label="问答模式">
-          <button v-for="item in modes" :key="item.key" class="mode-option" :class="{ selected: mode === item.key }" :aria-pressed="mode === item.key" @click="mode = item.key; compareAll = false"><span class="mode-icon"><component :is="item.icon" :size="17" /></span><span><strong>{{ item.title }}</strong><small>{{ item.note }}</small></span><Check v-if="mode === item.key && !compareAll" class="mode-check" :size="16" /></button>
-        </div>
+        <TutorModeSelector :mode="mode" :compare-all="compareAll" :modes="modes" @select="selectMode" />
         <div class="prompt-composer"><label for="question-input">你的问题</label><textarea id="question-input" v-model="question" rows="3" placeholder="例如：软件需求规格说明书包含哪些内容？"></textarea><div class="composer-footer"><span>回答将结合软件工程课程知识</span><button v-if="loading" class="button button-outline" @click="stopGenerating">停止生成</button><button class="button button-dark" :disabled="loading || !question.trim()" @click="submit">{{ loading ? '正在分析' : compareAll ? '开始对比' : '发送问题' }}<Send :size="15" /></button></div></div>
         <section class="hint-panel">
           <div class="hint-heading"><div><p class="eyebrow">分层学习提示</p><h2>先思考，再展开证据，最后查看解析</h2></div><Lightbulb :size="20" /></div>
@@ -140,7 +144,7 @@ async function submit() {
         <div v-if="loading" class="answer-loading"><span class="spinner"></span><div><strong>正在整理课程知识</strong><small>检索图谱、评估相关性并生成回答</small><MarkdownContent v-if="streamingAnswer" :content="streamingAnswer" /><span v-if="streamingEvidence">已获取 {{ streamingEvidence.triples?.length || 0 }} 条图谱证据</span></div></div>
         <div v-else-if="error" class="inline-notice error-notice"><CircleAlert :size="17" />{{ error }}</div>
         <section v-else-if="results.length" class="answer-section"><div class="answer-heading"><span class="assistant-avatar"><Sparkles :size="17" /></span><div><strong>{{ compareAll ? '三种问答方式对比' : '学习助教' }}</strong><small>{{ activeResult?.latencyMs ? '用时 ' + activeResult.latencyMs + ' ms' : '刚刚' }}</small></div><button class="text-button" title="复制回答" @click="copyAnswer(activeResult?.answer || activeResult?.content)">复制回答 <ArrowUpRight :size="14" /></button></div>
-          <article v-for="(item, index) in results" :key="item.mode || index" class="answer-result"><div v-if="compareAll" class="result-mode-label">{{ modes.find((entry) => entry.key === item.mode)?.title || item.mode || '问答结果' }}</div><p v-if="item.error" class="compare-error">{{ item.error }}</p><MarkdownContent v-else :content="item.answer || item.content" /><div v-if="item.entities?.length" class="entity-tags"><span v-for="entity in item.entities" :key="entity.canonicalName">{{ entity.canonicalName }}</span></div><details v-if="item.triples?.length" class="evidence-block"><summary class="evidence-title"><Database :size="15" /><strong>图谱证据</strong><span>{{ item.triples.length }} 条三元组</span><ChevronDown :size="14" /></summary><div v-for="triple in item.triples" :key="triple.subject + triple.predicate + triple.object" class="evidence-triple"><span>{{ triple.subject }}</span><i>{{ triple.predicate }}</i><span>{{ triple.object }}</span><small v-if="triple.score !== undefined">{{ Number(triple.score).toFixed(3) }}</small></div></details><details v-if="item.prompt && item.mode !== 'RANKED' && !compareAll" class="prompt-details"><summary>查看检索提示 <ChevronDown :size="14" /></summary><pre>{{ item.prompt }}</pre></details></article>
+          <TutorAnswerCard v-for="(item, index) in results" :key="item.mode || index" :item="item" :label="compareAll ? (modes.find((entry) => entry.key === item.mode)?.title || item.mode || '问答结果') : undefined" :show-prompt="!compareAll" @copy="copyAnswer" />
         </section>
       </div>
       <aside class="tutor-aside"><div class="tutor-aside-icon"><Sparkles :size="18" /></div><p class="eyebrow">回答策略</p><h3>{{ compareAll ? '控制变量，对照观察' : modes.find((item) => item.key === mode)?.title }}</h3><p v-if="mode === 'DIRECT' && !compareAll">直接将问题交给大模型，适合作为不使用课程图谱的对照基线。</p><p v-else-if="mode === 'TRIPLES' && !compareAll">检索相关三元组作为上下文，不提供相关性分数，观察结构化知识的作用。</p><p v-else>使用 Python 返回的相关性排序与原始提示词，帮助模型聚焦关键证据。</p><div class="strategy-steps"><span><i>1</i>识别问题实体</span><span><i>2</i>检索图谱邻居</span><span><i>3</i>生成有依据的回答</span></div><div class="aside-footnote">回答可能有误，请结合课程材料核对。</div></aside>

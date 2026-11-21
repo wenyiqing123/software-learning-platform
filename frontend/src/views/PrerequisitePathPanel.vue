@@ -91,7 +91,7 @@ onMounted(async () => { await loadPoints(); await loadPath() })
     <template v-else>
       <div v-if="path.cycleDetected" class="path-warning" role="alert"><CircleAlert :size="16" />先修关系存在循环，系统已去重并停止递归；请联系管理员检查课程关系。</div>
       <ol class="path-list">
-        <li v-for="(node, index) in path.nodes" :key="node.id" data-testid="path-node" class="path-node" :class="'path-' + node.status.toLowerCase()">
+        <li v-for="(node, index) in path.nodes" :key="node.id" data-testid="path-node" class="path-node" :class="['path-' + node.status.toLowerCase(), { 'path-target': node.id === path.targetId }]">
           <div class="path-node-index">{{ index + 1 }}</div>
           <div class="path-node-main">
             <div class="path-node-heading"><strong>{{ node.name }}</strong><span class="path-status"><CircleCheck v-if="node.status === 'MASTERED'" :size="13" />{{ statusText(node.status) }}</span></div>
@@ -110,7 +110,7 @@ onMounted(async () => { await loadPoints(); await loadPath() })
 </template>
 
 <style scoped>
-.prerequisite-panel { display: grid; gap: 16px; padding: 18px; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+.prerequisite-panel { display: grid; gap: 16px; padding: 20px; background: var(--surface); border: 1px solid var(--border-default); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
 .path-toolbar { display: flex; align-items: end; flex-wrap: wrap; gap: 15px; }
 .path-target-picker { display: grid; gap: 6px; min-width: 240px; color: var(--muted); font-size: 11px; }
 .path-target-picker select { padding: 9px 10px; color: var(--ink); background: #fbfcfa; border: 1px solid #dbe3dc; border-radius: 6px; font: inherit; }
@@ -119,17 +119,17 @@ onMounted(async () => { await loadPoints(); await loadPath() })
 .path-error { justify-content: flex-start; color: #964632; background: #fff7f1; padding: 14px; border-radius: 6px; }
 .path-error .button { margin-left: auto; }
 .path-warning { display: flex; align-items: center; gap: 7px; padding: 10px 12px; color: #87512c; background: #fff7e8; border-radius: 6px; font-size: 11px; line-height: 1.6; }
-.path-list { display: grid; gap: 9px; padding: 0; margin: 0; list-style: none; }
-.path-node { position: relative; display: grid; grid-template-columns: 32px minmax(0, 1fr) 18px; gap: 10px; align-items: start; padding: 13px 12px; background: #fafbf9; border: 1px solid #edf0ec; border-radius: 7px; }
-.path-node-index { display: grid; place-items: center; width: 26px; height: 26px; color: var(--green); background: var(--green-pale); border-radius: 50%; font-size: 11px; font-weight: 700; }
+.path-list { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
+.path-node { position: relative; display: grid; grid-template-columns: 32px minmax(0, 1fr) 18px; gap: 10px; align-items: start; padding: 13px 12px; background: var(--surface-soft); border: 1px solid var(--border-soft); border-radius: var(--radius-md); }
+.path-node:not(:last-child)::after { content: ""; position: absolute; left: 25px; bottom: -11px; width: 2px; height: 11px; background: linear-gradient(var(--accent), var(--border-default)); } .path-node-index { display: grid; place-items: center; width: 26px; height: 26px; color: var(--green); background: var(--green-pale); border-radius: 50%; font-size: 11px; font-weight: 700; }
 .path-node-main { min-width: 0; }
 .path-node-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; }
 .path-node-heading strong { color: var(--ink); font-size: 14px; }
 .path-status { display: inline-flex; align-items: center; gap: 3px; padding: 3px 7px; color: #65776b; background: #edf1ed; border-radius: 4px; font-size: 10px; }
-.path-mastered .path-status { color: #176b57; background: #e6f3ed; }.path-in_progress .path-status { color: #8a642f; background: #fff3da; }.path-blocked .path-status { color: #9a5037; background: #fff0e8; }
+.path-target { border-color: var(--accent); box-shadow: var(--focus-ring); } .path-mastered .path-status { color: #176b57; background: #e6f3ed; }.path-in_progress .path-status { color: #8a642f; background: #fff3da; }.path-blocked .path-status { color: #9a5037; background: #fff0e8; }
 .path-node-meta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 5px; color: var(--muted); font-size: 10px; }
 .path-node-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-.path-node-actions a { color: var(--green); font-size: 11px; text-decoration: none; }.path-node-actions a:hover { text-decoration: underline; }
-.path-arrow { align-self: center; color: #a1b3a7; }
+.path-node-actions a { color: var(--accent); font-size: 11px; text-decoration: none; }.path-node-actions a:hover { text-decoration: underline; }
+.path-arrow { align-self: center; color: var(--accent); opacity:.7; }
 @media(max-width:600px) { .path-error { align-items: flex-start; flex-wrap: wrap; }.path-error .button { margin-left: 0; }.path-node { grid-template-columns: 28px minmax(0,1fr); }.path-arrow { display: none; } }
 </style>

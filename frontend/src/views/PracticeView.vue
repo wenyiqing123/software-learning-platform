@@ -6,6 +6,7 @@ import { learningApi, type QuizDiagnosis } from '../api/client'
 import { useLearningMetrics } from '../composables/useLearningMetrics'
 import SectionHeading from '../components/SectionHeading.vue'
 import LearningContextActions from '../components/LearningContextActions.vue'
+import PracticeQuestionCard from '../components/PracticeQuestionCard.vue'
 
 interface QuizOption { key: string; text: string }
 interface QuizQuestion { id: number; stem: string; type: 'SINGLE' | 'MULTIPLE' | 'TRUE_FALSE' | 'JUDGE'; options: QuizOption[]; knowledgePoint?: string }
@@ -155,34 +156,29 @@ onBeforeUnmount(() => { loadId++; window.removeEventListener('keydown', onAnswer
     <div v-if="serviceError" class="inline-notice" role="alert"><CircleHelp :size="16" />{{ serviceError }}<button class="text-button" @click="loadQuestions">重试</button><button v-if="targeted" class="text-button" @click="router.push('/wrong-book')">返回错题列表</button></div>
     <div v-if="loadingQuestions" class="loading-row"><span class="spinner"></span>正在加载练习题目</div>
     <section v-else-if="question" class="quiz-layout">
-      <div class="quiz-main">
-        <div class="quiz-topline"><span class="question-count">{{ String(index + 1).padStart(2, '0') }} <i>/ {{ String(questions.length).padStart(2, '0') }}</i></span><span class="question-type">{{ questionType }}</span><span v-if="question.knowledgePoint" class="question-point">{{ question.knowledgePoint }}</span></div>
-        <div class="question-progress" role="progressbar" aria-label="当前题目位置" :aria-valuenow="index + 1" :aria-valuemax="questions.length" :aria-valuemin="1"><i :style="{ width: progress + '%' }"></i></div>
-        <h2 class="question-stem">{{ question.stem }}</h2>
-        <p class="selection-hint">{{ isMultiple ? '选择所有正确答案' : isTrueFalse ? '判断题目中的表述是否正确' : '选择一个最合适的答案' }}</p>
-        <div class="option-list">
-          <button v-for="option in options" :key="option.key" class="answer-option" :class="{ selected: selected.includes(option.key), correct: result && correctAnswers.includes(option.key), incorrect: result && selected.includes(option.key) && !correctAnswers.includes(option.key) }" :aria-pressed="selected.includes(option.key)" :disabled="submitting || !!result" @click="toggleOption(option.key)">
-            <span class="option-marker">{{ option.key }}</span><span>{{ option.text }}</span><Check v-if="result && correctAnswers.includes(option.key)" :size="18" />
-          </button>
-        </div>
-        <div v-if="!options.length" class="inline-notice">该题目尚未配置可作答选项，请联系课程管理员。</div>
-        <div v-if="submitError" class="inline-notice submit-error" role="alert"><CircleHelp :size="16" /><span>{{ submitError }}</span><button class="text-button" :disabled="submitting" @click="submit">{{ submitting ? '重试中…' : '重试提交' }}</button></div>
-        <div v-if="result" class="answer-feedback" :class="result.correct ? 'feedback-correct' : 'feedback-wrong'"><component :is="result.correct ? CircleCheck : CircleX" :size="19" /><div><strong>{{ result.correct ? '回答正确' : '本次回答有误' }}</strong><p>正确答案：{{ correctAnswers.join('、') }}</p><p>{{ result.explanation || '服务端暂未提供解析。' }}</p><span>答题记录已保存{{ wrongItemId !== undefined && result.correct ? '，该错题已完成复习。' : '。' }}</span></div></div>
-        <section v-if="result && !result.correct" class="diagnosis-feedback" aria-label="错因关联">
-          <div class="diagnosis-heading"><div><p class="eyebrow">课程配置的证据</p><h3>错因关联与补救</h3></div><span v-if="diagnosisLoading" class="diagnosis-loading">正在读取</span></div>
-          <p v-if="diagnosisError" class="diagnosis-note diagnosis-error">{{ diagnosisError }}</p>
-          <p v-else-if="diagnosisLoading" class="diagnosis-note">正在匹配干扰项与课程知识点。</p>
-          <template v-else-if="diagnoses.length">
-            <article v-for="item in diagnoses" :key="item.optionKey + '-' + item.knowledgePointId" class="diagnosis-item">
-              <div><strong>你选择了 {{ item.optionKey }}：{{ item.optionText }}</strong><span>可能混淆：{{ item.knowledgePointName }}</span></div>
-              <p>{{ item.rationale }}</p>
-              <div class="diagnosis-actions"><RouterLink v-if="item.sectionId" class="text-button" :to="{ path: '/courses', query: { sectionId: String(item.sectionId) } }">补读{{ item.sectionTitle ? ' · ' + item.sectionTitle : '' }}<ArrowRight :size="13" /></RouterLink><RouterLink v-if="item.practiceQuestionId" class="text-button" :to="{ path: '/practice', query: { questionId: String(item.practiceQuestionId) } }">练习类似题<ArrowRight :size="13" /></RouterLink></div>
-            </article>
-          </template>
-          <p v-else class="diagnosis-note">本题暂未配置可追溯的错因关联，平台不会仅凭一次错误答案猜测你的认知原因。</p>
-        </section>
-        <div class="quiz-actions"><span class="key-hint"><kbd v-for="(_, optionIndex) in options.slice(0, 9)" :key="optionIndex">{{ optionIndex + 1 }}</kbd> 选择选项</span><button v-if="!result" class="button button-dark" :disabled="!selected.length || submitting" @click="submit">{{ submitting ? '提交中…' : submitError ? '重试提交' : '提交答案' }} <ArrowRight :size="16" /></button><template v-else><button v-if="!result.correct" class="text-button" @click="retryQuestion">再次作答</button><button class="button button-dark" @click="nextQuestion">{{ wrongItemId !== undefined ? '返回错题列表' : !targeted && index + 1 < questions.length ? '下一题' : '查看学习建议' }} <ArrowRight :size="16" /></button></template></div>
-      </div>
+      <PracticeQuestionCard
+        :question="question"
+        :index="index"
+        :total="questions.length"
+        :question-type="questionType"
+        :progress="progress"
+        :is-multiple="isMultiple"
+        :is-true-false="isTrueFalse"
+        :selected="selected"
+        :correct-answers="correctAnswers"
+        :result="result"
+        :submitting="submitting"
+        :submit-error="submitError"
+        :wrong-item-id="wrongItemId"
+        :diagnoses="diagnoses"
+        :diagnosis-loading="diagnosisLoading"
+        :diagnosis-error="diagnosisError"
+        @toggle="toggleOption"
+        @submit="submit"
+        @retry-submit="submit"
+        @retry-question="retryQuestion"
+        @next="nextQuestion"
+      />
        <aside class="quiz-side"><div class="quiz-side-mark"><Lightbulb :size="19" /></div><p class="eyebrow">学习提示</p><h3>{{ question.knowledgePoint || '先理解，再作答' }}</h3><p>先独立作答，再查看服务端返回的正确答案与解析。需要补充概念时，可以打开关联知识图谱。</p><button class="text-button" @click="openKnowledge">查看相关知识 <ArrowRight :size="14" /></button><LearningContextActions compact :context="{ knowledgePointId: Number(route.query.knowledgePointId) || undefined, entity: question.knowledgePoint }" /><div class="side-separator"></div><div class="side-stat"><span>本次正确率</span><strong>{{ sessionAccuracy }}</strong></div><div class="side-stat"><span>本次已保存</span><strong>{{ submissions.length }} 次</strong></div><div class="side-stat"><span>待复习错题</span><strong>{{ overview?.wrongCount ?? '—' }}</strong></div></aside>
     </section>
     <div v-else-if="!serviceError" class="empty-state"><CircleHelp :size="24" /><strong>当前范围暂无可用题目</strong><span>可返回课程列表选择其他知识点。</span><button class="text-button" @click="router.push('/courses')">查看课程 <ArrowRight :size="14" /></button></div>

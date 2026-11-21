@@ -41,7 +41,7 @@ function rebuild() {
     const position = new THREE.Vector3(radius * Math.cos(theta) * Math.sin(phi), radius * Math.cos(phi), radius * Math.sin(theta) * Math.sin(phi))
     positions.set(node.id, position)
     const selected = node.id === props.selectedId
-    const mesh = new THREE.Mesh(new THREE.SphereGeometry(selected ? 13 : 10, 20, 14), new THREE.MeshStandardMaterial({ color: selected ? '#176b57' : '#8fc7aa', roughness: .6, metalness: .05 }))
+    const mesh = new THREE.Mesh(new THREE.SphereGeometry(selected ? 13 : 10, 20, 14), new THREE.MeshStandardMaterial({ color: selected ? '#0d5545' : '#8fc7aa', emissive: selected ? '#54d39c' : '#000000', emissiveIntensity: selected ? .42 : 0, roughness: .55, metalness: .08 }))
     mesh.position.copy(position); mesh.userData.id = node.id; nodeMeshes.push(mesh); group.add(mesh)
     const label = labelSprite(node.label)
     if (label) { label.position.copy(position).add(new THREE.Vector3(0, -18, 0)); group.add(label) }
@@ -50,10 +50,11 @@ function rebuild() {
     const source = positions.get(edge.source); const target = positions.get(edge.target)
     if (!source || !target) continue
     const geometry = new THREE.BufferGeometry().setFromPoints([source, target])
-    group.add(new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: '#9eb8aa', transparent: true, opacity: .78 })))
+    group.add(new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: selectedEdge(edge) ? '#3b9a73' : '#9eb8aa', transparent: true, opacity: selectedEdge(edge) ? .95 : .58 })))
   }
 }
 
+function selectedEdge(edge: GraphEdge) { return props.selectedId === edge.source || props.selectedId === edge.target }
 function resize() {
   if (!host.value || !renderer || !camera) return
   const width = Math.max(1, host.value.clientWidth); const height = Math.max(1, host.value.clientHeight)
@@ -82,6 +83,6 @@ watch(() => [props.nodes, props.edges, props.selectedId], rebuild, { deep: true 
 onBeforeUnmount(() => { cancelAnimationFrame(frame); resizeObserver?.disconnect(); renderer?.domElement.removeEventListener('pointerdown', onPointerDown); controls?.dispose(); renderer?.dispose(); renderer?.domElement.remove(); graphGroup?.clear(); renderer = null; scene = null; camera = null; controls = null; graphGroup = null })
 </script>
 
-<template><div ref="host" class="three-graph-canvas" data-testid="three-graph-canvas" aria-label="Three.js 三维知识图谱"></div></template>
+<template><div ref="host" class="three-graph-canvas" data-testid="three-graph-canvas" aria-label="Three.js 三维知识图谱"><span class="three-graph-hint">拖拽旋转 · 滚轮缩放 · 点击节点查看证据</span></div></template>
 
-<style scoped>.three-graph-canvas{width:100%;height:100%;min-height:430px;overflow:hidden;cursor:grab}.three-graph-canvas:active{cursor:grabbing}.three-graph-canvas :deep(canvas){display:block;width:100%;height:100%}</style>
+<style scoped>.three-graph-canvas{position:relative;width:100%;height:100%;min-height:430px;overflow:hidden;cursor:grab;background:radial-gradient(circle at 50% 35%,rgba(39,118,83,.08),transparent 42%)}.three-graph-hint{position:absolute;right:12px;bottom:10px;z-index:1;padding:5px 8px;color:var(--text-muted);background:rgba(255,255,255,.82);border:1px solid var(--border-soft);border-radius:var(--radius-sm);font-size:10px;pointer-events:none}.three-graph-canvas:active{cursor:grabbing}.three-graph-canvas :deep(canvas){display:block;width:100%;height:100%}</style>

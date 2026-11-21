@@ -117,3 +117,18 @@ MySQL 8.0.33、Redis 5.0.14.1、RabbitMQ 4.2.3 和 Nacos 2.2.0 为用户本机�
 | Flyway | V1–V15 文件连续存在，learning-service 使用 classpath:db/migration 自动执行。 |
 
 GatewayRouteConfigurationTest 当前 5/5 通过，新增路径矩阵覆盖 14 个学习服务路径和 7 个 AI/SSE 路径；Compose config --quiet、部署 Bash 语法检查通过。当前机器未安装 Nginx CLI，因此 Nginx 采用配置文本断言核查，生产机仍需执行 nginx -t。
+
+## 任务 2：前端 CSS 与核心交互精修验收（2026-11-21）
+
+| 项目 | 重构前 | 重构后 |
+| --- | ---: | ---: |
+| styles-design-system.css | 18,552 B | 16,993 B |
+| styles.css | 14,769 B | 12,590 B |
+| styles-graph.css | 15,673 B | 13,890 B |
+| styles-learning.css | 26,592 B | 23,658 B |
+| 合计 | 75,586 B | 67,131 B |
+
+- 巨型视图：AdminView 23,664 → 16,088 B；ExperimentsView 20,350 → 17,689 B；TutorView 17,086 → 15,940 B；PracticeView 15,826 → 11,905 B。
+- 新拆分组件：AdminCoursePanel、AdminQuestionPanel、ExperimentResultGrid、TutorModeSelector、TutorAnswerCard、PracticeQuestionCard。
+- 前端全量 Vitest：35 个测试文件、64 项通过；npm run build 成功；Three.js chunk 体积警告仍存在但不影响构建。
+- 合规核查：LoginView 无敏感凭证；TutorView/TutorAnswerCard 不展示 RANKED 后台固定证据提示词；EvaluationView 保留 V15 顺序与延后测验流程，未采集生理信号且无降低认知负荷结论文案。

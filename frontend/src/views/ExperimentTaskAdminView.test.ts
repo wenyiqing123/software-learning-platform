@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import ExperimentTaskAdminView from './ExperimentTaskAdminView.vue'
 
@@ -7,10 +7,12 @@ vi.mock('../api/client', () => ({ api: http, apiError: vi.fn(() => '任务管理
 
 beforeEach(() => {
   vi.resetAllMocks()
+  vi.spyOn(window, 'confirm').mockReturnValue(true)
   http.get.mockResolvedValue({ data: [{ id: 9, title: '需求分析任务', description: '完成服务器实验', experimentType: 'METHODS', question: '数据流图中加工如何命名？', status: 'DRAFT', groupCount: 0, assignmentCount: 0 }] })
   http.post.mockResolvedValue({ data: { id: 9, title: '需求分析任务', description: '完成服务器实验', experimentType: 'METHODS', question: '数据流图中加工如何命名？', status: 'DRAFT', groupCount: 0, assignmentCount: 0 } })
   http.put.mockResolvedValue({ data: { id: 9, title: '需求分析任务', description: '完成服务器实验', experimentType: 'METHODS', question: '数据流图中加工如何命名？', status: 'OPEN', groupCount: 0, assignmentCount: 0 } })
 })
+afterEach(() => vi.restoreAllMocks())
 
 describe('ExperimentTaskAdminView', () => {
   it('creates a task and opens it for participants', async () => {

@@ -46,3 +46,11 @@
 - Wave 4 已将管理员课程/题目启停、题库发布、微课发布接入二次确认；题库 JSON 导入限制为 2MB；管理台、错因配置、微课、教学看板和学习报告统一使用 FeedbackState 与设计 token。
 - 管理台表格/列表在窄屏下允许内容换行而不撑破页面；所有空数据、依赖失败和发布状态均显示真实反馈。Three.js 图谱 chunk 仍记录为后续性能优化项。
 - 问答指标、人工评分、Paas 和任务用时保持分栏展示；界面不把文本相似度或单次主观评分解释为事实正确性或已经降低认知负荷。
+
+## 任务 2 深度精修（2026-11-21）
+
+- 四份全局 CSS 经过 AST 压缩、重复根变量清理和 token 收敛，保留单规则换行格式便于维护；旧总字节数 75,586，新总字节数 67,131。
+- LoginView 改为学术/智能学习平台双栏门面，明确展示“理解课程—连接知识—验证掌握”学习路线，不包含账号、密码、API key 或演示凭据。
+- ThreeGraphCanvas 增强选中节点发光、关联边高亮和操作提示；PrerequisitePathPanel 增加目标节点边框、层级连接线和状态颜色；LearningNotesPanel 支持折叠、编辑、删除确认；ExperimentTaskAdminView 增加加载态和开放/关闭确认。
+- TutorView 抽取 TutorModeSelector、TutorAnswerCard，保留停止生成、流式状态、证据折叠和 RANKED 后台提示词隔离；PracticeView 抽取 PracticeQuestionCard，保留进度、判题、错因证据和补救跳转；AdminView 抽取 AdminCoursePanel/AdminQuestionPanel；ExperimentsView 抽取 ExperimentResultGrid。
+- EvaluationView 继续使用 V15 taskOrder/assignmentId、PRE/POST/DELAYED 测量和 Paas 1–9 语义锚点；页面不采集生理信号，不使用已降低认知负荷等结论性措辞。

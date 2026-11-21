@@ -56,6 +56,14 @@
 - 管理台终审：课程和题目启停、题库版本发布、微课发布加入二次确认；题库 JSON 文件限制为 2MB；Admin、错因、题库、微课、教学看板和学习报告接入共享反馈状态并统一设计 token，窄屏不依赖固定宽度表格。
 - Wave 4 实测：AI 99/99、learning-service 117/117、gateway 2/2，后端合计 218/218；前端 30 个测试文件、59 项通过；生产构建成功。未修改 Mecha-QA、Python Bridge、NebulaGraph、模型权重或既有图空间。
 
+## 任务 2 记录（2026-11-21）
+
+- 全局 CSS 从 75,586 bytes 收敛到 67,131 bytes，采用 AST 压缩、重复根变量移除和设计 token 统一；未新增全局样式表。
+- 完成 LoginView、ThreeGraphCanvas、PrerequisitePathPanel、LearningNotesPanel、ExperimentTaskAdminView 的视觉/交互精修；三维节点、先修路径、笔记折叠和实验任务状态均保留真实数据与诚实错误态。
+- 完成巨型视图职责拆分：AdminCoursePanel、AdminQuestionPanel、ExperimentResultGrid、TutorModeSelector、TutorAnswerCard、PracticeQuestionCard；AdminView、ExperimentsView、TutorView、PracticeView 体积均下降。
+- 新增 LoginView、TutorView、TutorAnswerCard、PracticeQuestionCard、ExperimentResultGrid 测试；EvaluationView 增加 V15 taskOrder 回归断言。RANKED 后台固定证据约束提示词未出现在前端渲染路径。
+- 任务 2 最终验证：前端 35 个测试文件、64 项通过，生产构建成功；后端接口代码未修改，既有后端测试契约不受影响。
+
 ## 任务 1 路由审计记录（2026-11-21）
 
 - 复核全部 learning-service/ai-service Controller 前缀：AI 统一 /api/ai/**，学习服务统一 /api/** 兜底；新增系统状态、评估管理、实验导出、微课、题库版本、实验任务和 SSE 均有对应覆盖。
