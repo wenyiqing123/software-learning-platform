@@ -4,6 +4,7 @@ import edu.wfust.learning.platform.entity.*;
 import edu.wfust.learning.platform.mapper.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import tools.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.*;
@@ -38,6 +39,18 @@ class RecommendationServiceTest {
         when(mastery.selectList(any())).thenReturn(List.of(mastery(1, 80)));
         when(wrong.countByKnowledgePoint(9L)).thenReturn(List.of(Map.of("knowledgePointId", 1L, "wrongCount", 10000L)));
         assertThat(service().forUser(9L)).allSatisfy(r -> assertThat(r.score()).isBetween(0.0,100.0));
+    }
+
+    @Test void malformedUserCacheFallsBackToFreshUserScopedCalculationAndRefreshesCache() {
+        var valueOps = mock(ValueOperations.class);
+        when(redis.opsForValue()).thenReturn(valueOps);
+        when(valueOps.get("slp:recommendation:9")).thenReturn("not-json");
+        when(points.selectList(any())).thenReturn(List.of(point(1, "需求", "[]", 1)));
+        when(mastery.selectList(any())).thenReturn(List.of());
+        when(wrong.countByKnowledgePoint(9L)).thenReturn(List.of());
+        var result = service().forUser(9L);
+        assertThat(result).isNotEmpty();
+        verify(valueOps).set(eq("slp:recommendation:9"), anyString(), any(java.time.Duration.class));
     }
     static KnowledgePointEntity point(long id, String name, String prerequisites, int order) {
         var p = new KnowledgePointEntity(); p.setId(id); p.setName(name); p.setGraphEntity(name); p.setPrerequisitesJson(prerequisites); p.setSortOrder(order); p.setEnabled(true); return p;

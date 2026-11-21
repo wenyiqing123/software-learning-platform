@@ -64,6 +64,13 @@
 - 新增 LoginView、TutorView、TutorAnswerCard、PracticeQuestionCard、ExperimentResultGrid 测试；EvaluationView 增加 V15 taskOrder 回归断言。RANKED 后台固定证据约束提示词未出现在前端渲染路径。
 - 任务 2 最终验证：前端 35 个测试文件、64 项通过，生产构建成功；后端接口代码未修改，既有后端测试契约不受影响。
 
+## 任务 3 记录（2026-11-21）
+
+- AnswerService 从 456 行/29,213 B 精简到 149 行/9,248 B。检索与 Provenance 由 AnswerPreparationCoordinator 负责，模型/矩阵执行和响应组装由 AnswerExecutionCoordinator 负责，比较并发和 Qwen 2×3 编排由 AnswerComparisonCoordinator 负责；AnswerService 仅保留兼容门面、依赖状态和委托方法。
+- 安全审计新增并修复：EvaluationService 启动会话校验 assignmentId 归属；ExperimentTaskStudentController 使用不含 userId 的学生 DTO；既有 Quiz/Notes/Tutor/StudyPlan/Report/Review/Experiment 所有权查询和 ADMIN 鉴权通过检查。
+- 异步一致性：KnowledgeMasteryConsumer 在 afterCommit 同时失效 Redis 推荐键与 MySQL recommendation_snapshot；OutboxRelay 对 nack/returned message 保持 pending；新增边界测试。
+- 任务 3 相关定向测试已通过：AI 协作者/原有问答测试、EvaluationService、ExperimentTaskService、KnowledgeMasteryConsumer、OutboxRelay、RecommendationService。全量回归已通过，准备本地提交，不推送远程。
+
 ## 任务 1 路由审计记录（2026-11-21）
 
 - 复核全部 learning-service/ai-service Controller 前缀：AI 统一 /api/ai/**，学习服务统一 /api/** 兜底；新增系统状态、评估管理、实验导出、微课、题库版本、实验任务和 SSE 均有对应覆盖。

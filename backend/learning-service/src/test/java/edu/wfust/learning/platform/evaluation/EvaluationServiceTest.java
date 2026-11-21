@@ -1,6 +1,8 @@
 package edu.wfust.learning.platform.evaluation;
 
+import edu.wfust.learning.platform.entity.ExperimentAssignmentEntity;
 import edu.wfust.learning.platform.mapper.EvaluationMapper;
+import edu.wfust.learning.platform.mapper.ExperimentAssignmentMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.json.JsonMapper;
@@ -15,6 +17,7 @@ import static org.mockito.Mockito.*;
 
 class EvaluationServiceTest {
     private final EvaluationMapper mapper=mock(EvaluationMapper.class);
+    private final ExperimentAssignmentMapper assignments=mock(ExperimentAssignmentMapper.class);
     private final EvaluationService service=new EvaluationService(mapper, JsonMapper.builder().build(), Clock.fixed(Instant.parse("2026-11-19T04:00:00Z"), ZoneId.of("Asia/Shanghai")));
 
     @Test void requiresExplicitConsentBeforeCreatingSession() {
@@ -70,5 +73,16 @@ class EvaluationServiceTest {
                 new EvaluationMapper.DetailRow(8L,"RANKED","TASK-2","B",20,6,70.0,85.0,90.0,false)));
         var result=service.summary(null);
         assertThat(result).extracting(EvaluationService.SummaryView::conditionKey).containsExactly("CONTROL","RANKED");
+    }
+
+    @Test void rejectsEvaluationStartForAnotherUsersAssignment() {
+        var other = new ExperimentAssignmentEntity();
+        other.setId(33L); other.setUserId(88L); other.setTaskId(9L);
+        when(assignments.selectById(33L)).thenReturn(other);
+        var secured = new EvaluationService(mapper, JsonMapper.builder().build(), Clock.systemUTC(), assignments);
+        assertThatThrownBy(() -> secured.start(7L, new EvaluationService.StartRequest("CONTROL", "TASK-1", "A→B", 33L, "v1", true)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("实验分配");
+        verifyNoInteractions(mapper);
     }
 }

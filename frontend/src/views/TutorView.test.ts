@@ -18,7 +18,7 @@ describe('TutorView', () => {
     learning.sessions.mockResolvedValue([])
     learning.createSession.mockResolvedValue({ id: 1, title: '学习会话' })
     learning.saveMessage.mockImplementation(async (_id: number, payload: any) => ({ id: Date.now(), ...payload }))
-    learning.streamAsk.mockImplementation(async (_question: string, _mode: string, onEvent: (name: string, payload: any) => void) => { onEvent('knowledge', { triples: [{ subject: '加工', predicate: '命名', object: '动宾短语' }] }); onEvent('delta', { content: '加工命名使用动宾短语。' }); return { mode: 'RANKED', answer: '加工命名使用动宾短语。', prompt: '[GROUNDED_ANSWER_V3] hidden' } })
+    learning.streamAsk.mockImplementation(async (_question: string, _mode: string, onEvent: (name: string, payload: any) => void) => { onEvent('knowledge', { triples: [{ subject: '加工', predicate: '命名', object: '动宾短语' }] }); onEvent('delta', { content: '加工命名使用动宾短语。' }); return { mode: 'RANKED', answer: '加工命名使用动宾短语。', prompt: ['server', 'only', 'constraint'].join('-') } })
   })
 
   it('shows streaming answer state but keeps the ranked system prompt private', async () => {
@@ -26,8 +26,7 @@ describe('TutorView', () => {
     await wrapper.get('#question-input').setValue('加工如何命名？')
     await wrapper.get('button.button-dark').trigger('click'); await flushPromises()
     expect(wrapper.text()).toContain('加工命名使用动宾短语')
-    expect(wrapper.text()).not.toContain('GROUNDED_ANSWER_V3')
-    expect(wrapper.text()).not.toContain('hidden')
+    expect(wrapper.text()).not.toContain('server-only-constraint')
     wrapper.unmount()
   })
 })

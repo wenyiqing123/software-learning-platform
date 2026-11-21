@@ -5,6 +5,7 @@ import edu.wfust.learning.platform.config.RabbitConfig;
 import edu.wfust.learning.platform.entity.LearningEventEntity;
 import edu.wfust.learning.platform.mapper.KnowledgeMasteryMapper;
 import edu.wfust.learning.platform.mapper.LearningEventMapper;
+import edu.wfust.learning.platform.mapper.RecommendationSnapshotMapper;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -19,13 +20,16 @@ public class KnowledgeMasteryConsumer {
     private final LearningEventMapper eventMapper;
     private final KnowledgeMasteryMapper masteryMapper;
     private final StringRedisTemplate redis;
+    private final RecommendationSnapshotMapper snapshots;
 
     public KnowledgeMasteryConsumer(ObjectMapper objectMapper, LearningEventMapper eventMapper,
-                                    KnowledgeMasteryMapper masteryMapper, StringRedisTemplate redis) {
+                                    KnowledgeMasteryMapper masteryMapper, StringRedisTemplate redis,
+                                    RecommendationSnapshotMapper snapshots) {
         this.objectMapper = objectMapper;
         this.eventMapper = eventMapper;
         this.masteryMapper = masteryMapper;
         this.redis = redis;
+        this.snapshots = snapshots;
     }
 
     @RabbitListener(queues = RabbitConfig.QUEUE)
@@ -39,7 +43,10 @@ public class KnowledgeMasteryConsumer {
             masteryMapper.recordAttempt(event.userId(), event.knowledgePointId(), Boolean.TRUE.equals(event.correct()));
         }
         eventMapper.update(null, new UpdateWrapper<LearningEventEntity>().eq("id", stored.getId()).set("processed_at", LocalDateTime.now()));
-        Runnable invalidate = () -> { try { redis.delete("slp:recommendation:" + event.userId()); } catch (RuntimeException ignored) { /* Redis TTL bounds stale cache when unavailable. */ } };
+        Runnable invalidate = () -> {
+            try { redis.delete("slp:recommendation:" + event.userId()); } catch (RuntimeException ignored) { /* Redis TTL bounds stale cache when unavailable. */ }
+            try { snapshots.deleteForUser(event.userId()); } catch (RuntimeException ignored) { /* MySQL snapshot is rebuilt on the next recommendation miss. */ }
+        };
         if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
             org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(new org.springframework.transaction.support.TransactionSynchronization() {
                 @Override public void afterCommit() { invalidate.run(); }

@@ -2,6 +2,8 @@ package edu.wfust.learning.platform.evaluation;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import edu.wfust.learning.platform.mapper.EvaluationMapper;
+import edu.wfust.learning.platform.entity.ExperimentAssignmentEntity;
+import edu.wfust.learning.platform.mapper.ExperimentAssignmentMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,14 +20,19 @@ public class EvaluationService {
     private final EvaluationMapper mapper;
     private final ObjectMapper json;
     private final Clock clock;
+    private final ExperimentAssignmentMapper assignments;
 
-    public EvaluationService(EvaluationMapper mapper,ObjectMapper json,Clock clock){this.mapper=mapper;this.json=json;this.clock=clock;}
+    public EvaluationService(EvaluationMapper mapper,ObjectMapper json,Clock clock){this(mapper,json,clock,null);}
+    @org.springframework.beans.factory.annotation.Autowired
+    public EvaluationService(EvaluationMapper mapper,ObjectMapper json,Clock clock,ExperimentAssignmentMapper assignments){this.mapper=mapper;this.json=json;this.clock=clock;this.assignments=assignments;}
 
     @Transactional
     public SessionView start(long userId,StartRequest request){
         if(!request.consentAccepted()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"必须先阅读并同意评估说明");
         if(request.conditionKey()==null||request.conditionKey().isBlank()||request.taskKey()==null||request.taskKey().isBlank()||request.consentVersion()==null||request.consentVersion().isBlank())
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"评估条件、任务和同意版本不能为空");
+        if(request.assignmentId()!=null && (assignments==null || !ownsAssignment(userId,request.assignmentId())))
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,"实验分配不存在或不属于当前用户");
         var row=new EvaluationMapper.SessionRow(null,userId,request.conditionKey().strip(),request.taskKey().strip(),request.taskOrder()==null?null:request.taskOrder().strip(),request.assignmentId(),request.consentVersion().strip(),LocalDateTime.now(clock),null,null,null,null,null);
         mapper.insertSession(row); return view(row);
     }
@@ -71,6 +78,7 @@ public class EvaluationService {
     }
 
     private EvaluationMapper.SessionRow owned(long userId,long id){var row=mapper.findSession(userId,id);if(row==null)throw new ResponseStatusException(HttpStatus.NOT_FOUND,"评估会话不存在或不属于当前用户");return row;}
+    private boolean ownsAssignment(long userId,long assignmentId){ExperimentAssignmentEntity assignment=assignments.selectById(assignmentId);return assignment!=null&&Long.valueOf(userId).equals(assignment.getUserId());}
     private SessionView view(EvaluationMapper.SessionRow row){return new SessionView(row.getId(),row.getConditionKey(),row.getTaskKey(),row.getTaskOrder(),row.getAssignmentId(),row.getConsentVersion(),row.getStartedAt(),row.getCompletedAt(),row.getElapsedSeconds(),row.getPsychologicalEffort(),row.getFeedback());}
     private SummaryView toSummary(EvaluationStatistics.Summary stats,long feedbackCount){return new SummaryView(stats.conditionKey(),(long)stats.sampleCount(),stats.medianPreScore(),stats.stddevPreScore(),stats.iqrPreScore(),stats.meanPreScore(),stats.meanPostScore(),stats.medianPostScore(),stats.stddevPostScore(),stats.iqrPostScore(),stats.meanDelayedScore(),stats.medianDelayedScore(),stats.meanGain(),stats.meanEffort(),stats.medianEffort(),stats.stddevEffort(),stats.iqrEffort(),stats.meanElapsedSeconds(),stats.medianElapsedSeconds(),stats.stddevElapsedSeconds(),stats.iqrElapsedSeconds(),feedbackCount);}
     private String write(List<String> responses){try{return json.writeValueAsString(responses==null?List.of():responses);}catch(Exception e){throw new IllegalStateException("无法保存测量答案",e);}}

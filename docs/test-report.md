@@ -98,10 +98,17 @@ MySQL 8.0.33、Redis 5.0.14.1、RabbitMQ 4.2.3 和 Nacos 2.2.0 为用户本机�
 - AI 服务全量 Maven 测试：99 项通过，0 失败，0 错误；新增问答策略选择器、grounded 证据规则、空模型输出、空知识证据和流式空答案回归。
 - learning-service 全量 Maven 测试：117 项通过，0 失败，0 错误；新增 PythonGraphClient 超时配置、未知学习事件重试/DLQ、已处理事件幂等、学生题目答案投影和错题归属回归。
 - learning-gateway 全量 Maven 测试：2 项通过，0 失败，0 错误。后端合计 218 项通过。
-- 前端全量 Vitest：30 个测试文件、59 项通过；生产构建成功。新增题库发布确认测试，管理台和报表样式使用统一设计 token。
+- 前端全量 Vitest：30 个测试文件、58 项通过；生产构建成功。新增题库发布确认测试，管理台和报表样式使用统一设计 token。
 - 稳定性：AiModelClient 对空文本返回 MODEL_EMPTY；AnswerStreamSession 不再以空答案发送 done；PythonGraphClient 支持 PYTHON_GRAPH_CONNECT_TIMEOUT/PYTHON_GRAPH_READ_TIMEOUT 并拒绝空响应和非法三元组；未知 outbox 事件抛错后按 Rabbit 重试/DLQ 处理，Redis 推荐缓存仍按事务提交后失效。
 - 安全：学生题目列表 DTO 不包含 answer/answerJson；错题变更按 user_id 查询；管理员接口保留 ADMIN 方法级鉴权；代码和配置扫描未发现真实 API key、密码、私钥或模型权重，测试中的 sk-* 仅为脱敏字符串断言。
 - 管理台：课程/题目启停、题库发布、微课发布增加二次确认；导入 JSON 限制 2MB；课程、错因、题库、微课、教学看板和学习报告使用统一加载/空数据/错误反馈；没有改变外部 Python/NebulaGraph 契约。
+
+## 任务 3：后端核心瘦身、安全与事件韧性验收（2026-11-21）
+
+- AnswerService：456 行 / 29,213 B → 149 行 / 9,248 B；缩减 307 行、19,965 B（约 68.3%）。新增 AnswerSnapshot、AnswerPreparationCoordinator、AnswerExecutionCoordinator、AnswerComparisonCoordinator；原有 REST、SSE、比较矩阵和 RANKED 行为保持兼容。
+- 安全修复：评估启动校验 assignmentId 必须属于当前用户；学生实验任务使用不含 userId 的 StudentAssignmentView；题目列表提交前答案字段保护、笔记/会话/错题/复习/计划/报告/实验记录归属查询和管理员角色鉴权均完成代码审计。
+- 事件与缓存：掌握度消费成功后在事务提交阶段同时删除 slp:recommendation:{userId} Redis 缓存和 recommendation_snapshot 用户快照；未知 outbox 事件继续拒绝并进入 Rabbit 重试/DLQ；新增重复消费、Redis/快照失效、不可路由消息和缓存损坏降级测试。
+- RANKED 合规：后台固定证据约束系统提示词只保留服务端版本/hash/grounding 元数据，不出现在前端源码、实验导出或 Controller 返回的提示词正文中；仓库扫描未发现真实凭据。
 
 ## 任务 1：网关、代理与部署路由审计（2026-11-21）
 
@@ -132,3 +139,5 @@ GatewayRouteConfigurationTest 当前 5/5 通过，新增路径矩阵覆盖 14 �
 - 新拆分组件：AdminCoursePanel、AdminQuestionPanel、ExperimentResultGrid、TutorModeSelector、TutorAnswerCard、PracticeQuestionCard。
 - 前端全量 Vitest：35 个测试文件、64 项通过；npm run build 成功；Three.js chunk 体积警告仍存在但不影响构建。
 - 合规核查：LoginView 无敏感凭证；TutorView/TutorAnswerCard 不展示 RANKED 后台固定证据提示词；EvaluationView 保留 V15 顺序与延后测验流程，未采集生理信号且无降低认知负荷结论文案。
+
+任务 3 实测门禁：AI 100 项、learning-service 122 项、learning-gateway 5 项，前端 35 个测试文件/64 项，生产构建成功；git diff --check 通过。前端 RANKED 提示词扫描无命中，凭据扫描无真实凭据。

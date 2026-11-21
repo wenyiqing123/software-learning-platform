@@ -61,4 +61,15 @@ class ExperimentTaskServiceTest {
         assertThatThrownBy(() -> service.bindRun(7L, 9L)).isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
         verifyNoInteractions(assignments);
     }
+
+    @Test
+    void studentAssignmentProjectionDoesNotExposeAnotherIdentity() {
+        when(assignments.findForUser(7L)).thenReturn(List.of(new ExperimentAssignmentMapper.AssignmentRow(
+            21L, 9L, 3L, 7L, "ASSIGNED", null, null, null, "任务", "说明", "METHODS", "问题", "参考", "OPEN", "组A", "METHODS")));
+        var result = service.studentAssignments(7L);
+        assertThat(result).singleElement().satisfies(view -> {
+            assertThat(view.id()).isEqualTo(21L);
+            assertThat(view.getClass().getRecordComponents()).noneMatch(component -> component.getName().equals("userId"));
+        });
+    }
 }
