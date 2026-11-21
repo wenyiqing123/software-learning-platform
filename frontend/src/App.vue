@@ -96,7 +96,9 @@ const currentYear = new Date().getFullYear()
             <button v-for="item in group.items" :key="item.path" class="nav-item" :class="{ active: activePath === item.path }" @click="router.push(item.path)"><component :is="item.icon" :size="18" :stroke-width="1.8" /><span>{{ item.label }}</span><i v-if="item.path === '/wrong-book'" class="nav-count" :title="metricsError || (metricsLoading ? '正在刷新待复习数量' : '待复习错题数量')">{{ wrongCount }}</i></button>
           </div>
         </div>
-        <div v-if="isAdmin" class="nav-group">
+      </nav>
+      <nav v-else class="primary-nav" aria-label="管理员主导航">
+        <div class="nav-group">
           <button class="nav-group-toggle" :aria-expanded="sectionOpen('admin')" @click="toggleSection('admin')"><span class="nav-label">管理工作台</span><ChevronDown :size="14" :class="{ rotated: sectionOpen('admin') }" /></button>
           <div v-show="sectionOpen('admin')" class="nav-group-items"><button v-for="item in adminItems" :key="item.path" class="nav-item" :class="{ active: activePath === item.path }" @click="router.push(item.path)"><component :is="item.icon" :size="18" :stroke-width="1.8" /><span>{{ item.label }}</span></button></div>
         </div>

@@ -104,4 +104,4 @@
 - 路由使用 `meta.roles` 实现 STUDENT/ADMIN 互斥；学生首页 `/dashboard`，管理员首页 `/teaching-dashboard`，旧 `/admin/*` 入口重定向兼容。
 - 管理员菜单收敛为教学总览、内容与题库中心、实验与评价中心；新增两个 Tab 工作台，移除管理员个人学习入口。
 - 学生个人控制器增加角色约束；教学/评价统计过滤管理员账号；实验任务分配校验目标账号必须为 STUDENT。
-- 前端路由与工作台测试新增，前端 42 个测试文件/81 项通过；learning-service 128/128；双角色 Playwright 112/112。
+- 前端路由与工作台测试新增，前端 43 个测试文件/82 项通过；learning-service 128/128；双角色 Playwright 112/112。

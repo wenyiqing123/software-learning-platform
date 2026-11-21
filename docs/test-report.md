@@ -216,4 +216,4 @@ git diff --check:  pass
 - 管理员导航从 7 个平级入口收敛为 3 个：教学总览、内容与题库中心、实验与评价中心。旧 `/admin/*` 路由继续重定向到对应 Tab。
 - 后端学生专属控制器增加 STUDENT 角色约束；TeachingDashboard/EvaluationMapper 统计只纳入 STUDENT；实验任务分配拒绝 ADMIN 账号。learning-service 全量测试最终 `128/128`。
 - 双角色 Playwright 运行态检查覆盖 28 条路径 × 2 角色 × 2 分辨率，共 `112/112`；角色重定向、控制台错误、横向溢出、默认控件和未样式化表格均为 0。
-- 前端最终 `42` 个测试文件、`81` 项通过；生产构建成功且 0 chunk warnings。
+- 前端最终 `43` 个测试文件、`82` 项通过；生产构建成功且 0 chunk warnings。
