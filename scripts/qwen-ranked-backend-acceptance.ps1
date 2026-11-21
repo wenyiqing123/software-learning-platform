@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 $base = 'http://127.0.0.1:8080'
-$root = 'D:\develop\PythonProject\pythonallwork\毕设\software-learning-platform'
+$root = Split-Path -Parent $PSScriptRoot
 $values = @{}
 foreach ($line in Get-Content -LiteralPath (Join-Path $root '.env.local')) { if ($line -match '^\s*([^#=\s]+)\s*=\s*(.*?)\s*$') { $values[$matches[1]] = $matches[2] } }
 $loginBody = @{ username = $values['SLP_BOOTSTRAP_ADMIN_USERNAME']; password = $values['SLP_BOOTSTRAP_ADMIN_PASSWORD'] } | ConvertTo-Json -Compress

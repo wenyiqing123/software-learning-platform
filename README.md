@@ -98,6 +98,8 @@ try {
 4. 在 frontend/ 执行 npm ci；start.ps1 缺少 node_modules 时也会执行安装。
 5. 启动本机依赖后运行脚本，由 Flyway 自动应用数据库迁移。
 
+`.env.example` 覆盖本地 MySQL、Redis、RabbitMQ、JWT、Python Bridge、Gateway、模型超时、RANKED/Qwen 可选开关和管理员引导变量；服务器部署使用 `deploy/.env.server.example`，其中只放占位符。Compose 会显式传递 `RABBITMQ_VHOST`、Python 图谱超时、Gateway 地址、AI 生成参数和可选 RANKED 参数，实际密钥只写入服务器的受限 `.env.server`。
+
 当前专用数据库已应用至 V15。已经执行的迁移保持原样；未来表结构变更使用 V16+。不要修改已执行的 SQL 或清空 Flyway 历史。
 
 ## 账户与管理端
@@ -117,6 +119,8 @@ try {
 ## AI 与现有 Python 依赖
 
 通过 OPENAI_BASE_URL、OPENAI_API_KEY、OPENAI_MODEL 可接入兼容 OpenAI Chat Completions 协议的服务。当前本机已配置 DeepSeek `deepseek-flash`，AI 直答、三种模式和消融模式都已实测成功；密钥只保存在被 Git 忽略的 `.env.local`。地址和错误契约见 `tests/docs/ai-contract.md`。更换模型配置后重启服务。
+
+本地 Qwen RANKED 验收脚本位于 `scripts/qwen-ranked-backend-acceptance.ps1` 和 `scripts/qwen-ranked-five-case-acceptance.ps1`，脚本只读取 `.env.local` 并输出脱敏验收结果，不把凭据写入仓库；默认开关仍为关闭。
 
 未配置模型密钥时会明确提示，不会伪造答案；非 AI 学习模块仍可使用。
 
@@ -154,5 +158,5 @@ Wave 4 将问答生成执行拆为显式策略选择器：普通聊天策略负�
 
 - 合规守卫测试已加入 AI 服务、learning-service 和前端：覆盖 RANKED 固定系统提示词不泄露、图谱/模型依赖故障诚实降级、学生提交前答案字段隔离和开题报告学术措辞边界。
 - 前端 Vite 已将 `three`、G6、布局/渲染器、Element Plus、Vue 核心和 UI 依赖拆为独立供应商块；最终构建的 `graph-three` 为 565.99 kB（gzip 139.14 kB），不再出现原 2.06 MB Three.js 单块告警。G6 作为图谱路由级供应商块为 1,366.15 kB（gzip 392.77 kB），应用壳和业务页不再携带图形运行时。
-- 最终实测：ai-service 102/102、learning-service 126/126、learning-gateway 5/5；前端 36 个测试文件、68 项通过；`npm run build`、`git diff --check` 通过。1440×900 与 1280×800 预览巡检覆盖 28 个路由访问，无控制台错误、未捕获异常或横向溢出；未登录路径按设计回到 `/login`。
+- 最终实测：ai-service 102/102、learning-service 126/126、learning-gateway 5/5；前端 40 个测试文件、76 项通过；`npm run build`、`docker compose config --quiet`、`git diff --check` 通过。1440×900 与 1280×800 已登录态预览巡检覆盖 28 个路由访问，无控制台错误、未捕获异常、横向溢出、顶部遮挡或按钮内容溢出。
 - 任务 4/5 的答辩点击路径和故障应急命令见 [`docs/答辩现场演示剧本与故障应急清单.md`](docs/答辩现场演示剧本与故障应急清单.md)。

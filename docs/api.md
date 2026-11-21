@@ -117,3 +117,9 @@ ROUGE-L 使用小写 Unicode 字母/数字字符序列的最长公共子序列F1
 - `backend/learning-service` 的守卫测试确认实验导出不含 `prompt` 正文，`/knowledge/graph` 的依赖失败直接返回 503/结构化故障，不生成静态节点；学生题目投影在提交前不含 `answer`、`answerJson` 或 `correctAnswer`。
 - 前端守卫测试扫描助教、实验、总览、推荐、评价和登录视图，禁止 RANKED 后台提示词标识及“机器学习知识追踪”“采集生理信号”“已证明降低认知负荷”等越界表述；图谱离线分支必须显示真实错误/等待连接状态。
 - 前端 `/api` 仍只代理到 Gateway；SSE 仍由 Gateway/Nginx 关闭缓冲并使用 300 秒超时。最终 Vite 供应商分包和 28 项 Playwright 路由级巡检记录见验收报告。
+
+## 封版模块与环境对齐
+
+- `frontend/src/api/client.ts` 是兼容重导出入口；认证、课程、知识图谱、练习复习、评估、实验、管理、推荐、系统状态和助教请求分别位于 `frontend/src/api/` 对应域模块，既有调用方无需更改 import。
+- `deploy/compose.server.yml` 与 `deploy/.env.server.example` 的变量插值一一对应；`RABBITMQ_VHOST`、`PYTHON_GRAPH_CONNECT_TIMEOUT`、`PYTHON_GRAPH_READ_TIMEOUT`、`AI_MODEL_HTTP_TIMEOUT`、`AI_STREAM_TIMEOUT` 和 RANKED/Qwen 可选参数均有明确默认值或占位符。
+- 本轮没有修改 Mecha-QA、Python Bridge、NebulaGraph 图空间、模型权重或 Java REST/SSE 契约。

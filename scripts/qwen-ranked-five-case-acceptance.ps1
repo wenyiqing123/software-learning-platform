@@ -1,5 +1,5 @@
 $ErrorActionPreference = 'Stop'
-$root = 'D:\develop\PythonProject\pythonallwork\毕设\software-learning-platform'
+$root = Split-Path -Parent $PSScriptRoot
 $values = @{}
 foreach ($line in Get-Content -LiteralPath (Join-Path $root '.env.local')) { if ($line -match '^\s*([^#=\s]+)\s*=\s*(.*?)\s*$') { $values[$matches[1]] = $matches[2] } }
 if ($values['RANKED_MODEL_ENABLED'] -ne 'false') { throw 'Persistent Qwen flag must remain off' }

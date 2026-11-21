@@ -83,5 +83,12 @@
 - 新增后端/前端合规守卫测试：固定 RANKED 系统提示词仅允许服务端版本/hash元数据；实验导出、Controller 响应和浏览器源码不含提示词正文；图谱/Python 依赖失败不生成假节点；学生提交前题目投影不含答案；核心文案不越过认知负荷与推荐解释边界。
 - Vite 通过 Rolldown `manualChunks` 拆分 `graph-three`、`graph-g6`、`graph-layout`、`graph-renderer`、`graph-ui`、`graph-algorithm`、`element-plus`、`vue-core` 和 `ui-vendor`。最终无 chunk 警告，Three.js 运行时块为 565.99 kB / gzip 139.14 kB，G6 为 1,366.15 kB / gzip 392.77 kB。
 - 使用 `vite preview` + Playwright 在 1440×900 与 1280×800 各访问 14 个入口，共 28 次；未登录页面按设计重定向到 `/login`，无控制台错误、未捕获异常或横向溢出。该结果不冒充已登录业务数据联调。
-- 终版实测：ai-service 102/102、learning-service 126/126、learning-gateway 5/5、前端 36 个测试文件/68 项，生产构建和 `git diff --check` 通过；四份全局 CSS 均为 0 个 `!important`。新增答辩剧本与故障应急清单，README/API/UI/测试报告/工程验收报告均已对齐当前提交。
+- 终版实测：ai-service 102/102、learning-service 126/126、learning-gateway 5/5、前端 40 个测试文件/76 项，生产构建和 `git diff --check` 通过；四份全局 CSS 均为 0 个 `!important`。新增答辩剧本与故障应急清单，README/API/UI/测试报告/工程验收报告均已对齐当前提交。
 - 本轮未修改外部 Mecha-QA、Python Bridge、NebulaGraph 图空间、模型权重或任何凭据；远程仓库保持未推送。
+
+## 封版前最后精修（2026-11-21）
+
+- Compose 与服务器环境模板完成全量变量对齐，脚本迁移到 `scripts/`，`backend/.idea` 从 Git 索引移除，测试专用 Node 类型声明移出应用源码。
+- `frontend/src/api/client.ts` 已收敛为兼容门面，业务请求拆分到认证、课程、知识、练习、评估、实验、管理、推荐、系统和助教模块；GroundedRankedAnswer 保持现有内聚结构，避免破坏 prompt/trace 契约。
+- 新增 Dashboard、WrongBook、Recommendations、EvaluationAdmin 四个视图测试；前端 40 个测试文件/76 项通过。
+- 已登录态隔离 Playwright 脚本覆盖 1440×900 与 1280×800 的 14 个学生/管理入口，共 28 次，无控制台错误、页面异常、横向溢出、顶部遮挡和按钮内容溢出；报告明确不替代真实全栈联调。

@@ -158,7 +158,7 @@ GatewayRouteConfigurationTest 当前 5/5 通过，新增路径矩阵覆盖 14 �
 ai-service:       102 tests, 0 failures, 0 errors
 learning-service: 126 tests, 0 failures, 0 errors
 learning-gateway:   5 tests, 0 failures, 0 errors
-frontend:          36 test files, 68 tests passed
+frontend:          40 test files, 76 tests passed
 npm run build:     success, no chunk-size warning
 git diff --check:  passed
 CSS !important:   0 matches in the four global stylesheets
@@ -190,3 +190,22 @@ CSS !important:   0 matches in the four global stylesheets
 | `styles-graph.css` | 13,890 B | 0 |
 | `styles-learning.css` | 23,608 B | 0 |
 | 合计 | 67,071 B | 0 |
+
+## 封版前最后精修（2026-11-21）
+
+- 部署模板：Compose 的 46 个变量插值全部能在 `deploy/.env.server.example` 找到；补齐 RabbitMQ vhost、JWT 过期时间、Python 图谱超时、AI 生成参数、Gateway 地址和可选 RANKED/Qwen 参数，模板不含真实密码或 API Key。
+- 仓库卫生：Qwen 验收脚本迁移到 `scripts/qwen-ranked-backend-acceptance.ps1` 与 `scripts/qwen-ranked-five-case-acceptance.ps1`；`backend/.idea` 已从 Git 索引移除并加入 `.gitignore`；合规测试移至 `frontend/tests/`，删除 `frontend/src/node-shims.d.ts`。
+- API 兼容门面：`frontend/src/api/client.ts` 保留原有 `learningApi` 和导出名，实际请求拆到 11 个业务域模块，现有视图无需更改 import。
+- GroundedRankedAnswer 已完成审视；证据规则由 `GroundedEvidenceValidator` 内聚承担，剩余 prompt、模型编排、trace 和失败边界保持在同一策略类，避免无收益拆分；AI 102 项测试通过。
+- 新增四个核心主视图测试；前端最终为 40 个测试文件、76 项通过。
+- 隔离已登录态 Playwright 在 1440×900、1280×800 各巡检 14 个入口，共 28 次，控制台错误、未捕获异常、横向溢出、空挂载、顶部遮挡和按钮内容溢出均为 0。该结果仅验证前端已登录态渲染与排版，不替代真实全栈后端/图谱联调。
+
+```text
+ai-service:       102/102
+learning-service: 126/126
+learning-gateway:   5/5
+frontend:          40 个测试文件 / 76 项
+npm run build:     success, 0 chunk warnings
+docker compose config --quiet: pass
+git diff --check:  pass
+```
