@@ -141,3 +141,52 @@ GatewayRouteConfigurationTest 当前 5/5 通过，新增路径矩阵覆盖 14 �
 - 合规核查：LoginView 无敏感凭证；TutorView/TutorAnswerCard 不展示 RANKED 后台固定证据提示词；EvaluationView 保留 V15 顺序与延后测验流程，未采集生理信号且无降低认知负荷结论文案。
 
 任务 3 实测门禁：AI 100 项、learning-service 122 项、learning-gateway 5 项，前端 35 个测试文件/64 项，生产构建成功；git diff --check 通过。前端 RANKED 提示词扫描无命中，凭据扫描无真实凭据。
+
+## 任务 4/5：红线守卫、运行态巡检与最终构建（2026-11-21）
+
+### 新增守卫测试
+
+| 套件 | 新增/覆盖 | 实测结果 |
+| --- | --- | --- |
+| ai-service | 证据不足不生成答案；grounding 仅输出版本/hash，不输出固定系统提示词正文 | `ComplianceGuardTest` 2/2 |
+| learning-service | 实验导出不含提示词正文；图谱依赖故障不生成节点；题目提交前不含标准答案；Controller 边界清洗 RANKED 提示词 | `ComplianceGuardTest` 3/3 + `AiExperimentResponseGuardTest` 1/1 |
+| frontend | RANKED 标识/约束正文不进浏览器；学术措辞红线；图谱离线态；失败实验不渲染成功回答 | `compliance-guard.test.ts` 4/4 |
+
+### 最终门禁实测
+
+```text
+ai-service:       102 tests, 0 failures, 0 errors
+learning-service: 126 tests, 0 failures, 0 errors
+learning-gateway:   5 tests, 0 failures, 0 errors
+frontend:          36 test files, 68 tests passed
+npm run build:     success, no chunk-size warning
+git diff --check:  passed
+CSS !important:   0 matches in the four global stylesheets
+```
+
+### Vite 分包对比
+
+| 构建阶段 | 结果 |
+| --- | --- |
+| 任务 3 基线 | Three.js/图谱相关单块约 2.06 MB，gzip 约 575 KB，存在超限提示 |
+| 任务 4/5 最终 | `graph-three` 565.99 kB / gzip 139.14 kB；`graph-g6` 1,366.15 kB / gzip 392.77 kB；另有 `graph-algorithm` 39.03 kB / gzip 10.52 kB；无构建警告 |
+
+阈值调整是在实际供应商拆包完成后将 1.5 MB 作为图谱运行时上限，未通过单纯放大阈值掩盖业务包；Three.js 已从应用大块中独立为图谱路由级懒加载块。
+
+### 真实运行态
+
+使用 `vite preview` 和 Playwright 对 1440×900、1280×800 各访问 14 个入口，共 28 次访问。未登录状态下受保护路由均按设计重定向 `/login`；登录页根节点正常，所有访问无控制台错误、未捕获异常和横向滚动。该巡检证明路由壳和登录入口可加载，不替代已登录真实数据联调。
+
+### 合规结论
+
+本轮未修改外部 Mecha-QA、Python Bridge、NebulaGraph 图空间或模型权重；没有把自动文本指标当成事实正确性，没有采集生理信号，也没有预设认知负荷结论。前端与学习服务源码未命中 RANKED 固定系统提示词标识，凭据扫描未发现真实 API Key、密码、私钥或模型权重。
+
+### 最终 CSS 体积与样式扫描
+
+| 文件 | 当前字节数 | `!important` |
+| --- | ---: | ---: |
+| `styles-design-system.css` | 16,983 B | 0 |
+| `styles.css` | 12,590 B | 0 |
+| `styles-graph.css` | 13,890 B | 0 |
+| `styles-learning.css` | 23,608 B | 0 |
+| 合计 | 67,071 B | 0 |

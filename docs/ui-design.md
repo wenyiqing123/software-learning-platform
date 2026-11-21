@@ -54,3 +54,11 @@
 - ThreeGraphCanvas 增强选中节点发光、关联边高亮和操作提示；PrerequisitePathPanel 增加目标节点边框、层级连接线和状态颜色；LearningNotesPanel 支持折叠、编辑、删除确认；ExperimentTaskAdminView 增加加载态和开放/关闭确认。
 - TutorView 抽取 TutorModeSelector、TutorAnswerCard，保留停止生成、流式状态、证据折叠和 RANKED 后台提示词隔离；PracticeView 抽取 PracticeQuestionCard，保留进度、判题、错因证据和补救跳转；AdminView 抽取 AdminCoursePanel/AdminQuestionPanel；ExperimentsView 抽取 ExperimentResultGrid。
 - EvaluationView 继续使用 V15 taskOrder/assignmentId、PRE/POST/DELAYED 测量和 Paas 1–9 语义锚点；页面不采集生理信号，不使用已降低认知负荷等结论性措辞。
+
+## 任务 4/5 最终收口（2026-11-21）
+
+- 新增前端合规守卫测试，扫描 RANKED 后台提示词标识、实验失败渲染、图谱离线状态及总览/推荐/评价/登录文案；守卫不依赖登录数据，也不把后端提示词正文复制到浏览器。
+- Vite 通过 `build.rolldownOptions.output.manualChunks` 将 `graph-three`、`graph-g6`、图形布局/渲染器、`element-plus`、`vue-core` 和 `ui-vendor` 分离。图形块按路由懒加载，应用壳不再承担 Three.js/G6 首屏体积；最终构建不再输出原 Three.js 单块超限告警。
+- 预览巡检在 1440×900 与 1280×800 覆盖登录、总览、课程、图谱、助教、练习、错题、复习、推荐、实验、评价和管理台入口；未登录时所有受保护路径按设计回到登录页，28 次访问均无控制台错误、页面异常或横向溢出。
+- `FeedbackState`、`VisualizationViewport` 和实验结果卡继续遵循“加载、空数据、错误、重试”四态；图谱和实验失败永远不以假数据或成功答案填充。
+- 最终静态审计记录四份全局 CSS 共 67,071 B，`!important` 为 0；任务 2 历史表保留当时的提交快照，最终构建以当前文件字节数为准。

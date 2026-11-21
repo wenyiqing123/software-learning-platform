@@ -149,3 +149,10 @@ Wave 4 将问答生成执行拆为显式策略选择器：普通聊天策略负�
 ## 毕业设计材料
 
 设计与计划在 docs/superpowers/，接口摘要在 docs/api.md，开发记录在 docs/development/continuation-ledger.md。论文应说明控制变量、评测集来源、人工评分规则与实验限制；真实实验完成前不填写虚构效果或性能结论。
+
+## 最终验收收口（2026-11-21）
+
+- 合规守卫测试已加入 AI 服务、learning-service 和前端：覆盖 RANKED 固定系统提示词不泄露、图谱/模型依赖故障诚实降级、学生提交前答案字段隔离和开题报告学术措辞边界。
+- 前端 Vite 已将 `three`、G6、布局/渲染器、Element Plus、Vue 核心和 UI 依赖拆为独立供应商块；最终构建的 `graph-three` 为 565.99 kB（gzip 139.14 kB），不再出现原 2.06 MB Three.js 单块告警。G6 作为图谱路由级供应商块为 1,366.15 kB（gzip 392.77 kB），应用壳和业务页不再携带图形运行时。
+- 最终实测：ai-service 102/102、learning-service 126/126、learning-gateway 5/5；前端 36 个测试文件、68 项通过；`npm run build`、`git diff --check` 通过。1440×900 与 1280×800 预览巡检覆盖 28 个路由访问，无控制台错误、未捕获异常或横向溢出；未登录路径按设计回到 `/login`。
+- 任务 4/5 的答辩点击路径和故障应急命令见 [`docs/答辩现场演示剧本与故障应急清单.md`](docs/答辩现场演示剧本与故障应急清单.md)。

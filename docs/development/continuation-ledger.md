@@ -77,3 +77,11 @@
 - GatewayRouteConfigurationTest 扩展为 5 项：14 个学习服务路径和 7 个 AI/SSE 路径通过 PathPattern 实际匹配断言，并验证 AI route order=-1 与 210s 响应超时。
 - Nginx 文本审计确认 /api/ 关闭代理缓冲、请求缓冲和缓存，设置 X-Accel-Buffering no 与 300s 超时；Vite /api 代理保持指向 Gateway。
 - V1–V15 迁移连续存在。修复部署一致性：learning-service RabbitMQ vhost 改为读取 RABBITMQ_VHOST，Compose 和本地 .env.example 显式提供 /software-learning 默认值。
+
+## 任务 4/5 终版收口（2026-11-21）
+
+- 新增后端/前端合规守卫测试：固定 RANKED 系统提示词仅允许服务端版本/hash元数据；实验导出、Controller 响应和浏览器源码不含提示词正文；图谱/Python 依赖失败不生成假节点；学生提交前题目投影不含答案；核心文案不越过认知负荷与推荐解释边界。
+- Vite 通过 Rolldown `manualChunks` 拆分 `graph-three`、`graph-g6`、`graph-layout`、`graph-renderer`、`graph-ui`、`graph-algorithm`、`element-plus`、`vue-core` 和 `ui-vendor`。最终无 chunk 警告，Three.js 运行时块为 565.99 kB / gzip 139.14 kB，G6 为 1,366.15 kB / gzip 392.77 kB。
+- 使用 `vite preview` + Playwright 在 1440×900 与 1280×800 各访问 14 个入口，共 28 次；未登录页面按设计重定向到 `/login`，无控制台错误、未捕获异常或横向溢出。该结果不冒充已登录业务数据联调。
+- 终版实测：ai-service 102/102、learning-service 126/126、learning-gateway 5/5、前端 36 个测试文件/68 项，生产构建和 `git diff --check` 通过；四份全局 CSS 均为 0 个 `!important`。新增答辩剧本与故障应急清单，README/API/UI/测试报告/工程验收报告均已对齐当前提交。
+- 本轮未修改外部 Mecha-QA、Python Bridge、NebulaGraph 图空间、模型权重或任何凭据；远程仓库保持未推送。

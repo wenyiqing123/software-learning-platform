@@ -52,6 +52,7 @@ public class AiExperimentController {
         var results=experimentType.equals("QWEN_MATRIX")
                 ? ai.compareQwenMatrix(request.question().strip(),authorization)
                 : ai.compare(request.question().strip(),Boolean.TRUE.equals(request.includeAblations()),authorization);
+        results=sanitizeResults(results);
         var perMode=new LinkedHashMap<String,Object>();
         for(var result:results){String mode=String.valueOf(result.getOrDefault("resultKey",result.get("mode")));Object error=result.get("error");if(error==null||String.valueOf(error).isBlank())perMode.put(mode,metrics.evaluate(String.valueOf(result.getOrDefault("answer","")),request.referenceAnswer(),request.expectedEntities()));}
         var evaluation=new LinkedHashMap<String,Object>();
@@ -67,5 +68,23 @@ public class AiExperimentController {
         var ratings=new HashMap<>(existing.ratings());ratings.putAll(request.ratings());entity.setRatingsJson(json.writeValueAsString(ratings));mapper.update(null,new UpdateWrapper<AiExperimentEntity>().eq("id",id).eq("user_id",userId).set("ratings_json",entity.getRatingsJson()));return view(entity);
     }
     private long userId(Authentication auth){return Long.parseLong(auth.getName());}
-    private ExperimentView view(AiExperimentEntity entity){return new ExperimentView(entity.getId().toString(),entity.getQuestion(),entity.getCreatedAt()==null?LocalDateTime.now().toString():entity.getCreatedAt().toString(),json.readValue(entity.getResultsJson(),new TypeReference<>(){}),json.readValue(entity.getRatingsJson(),new TypeReference<>(){}),entity.getEvaluationJson()==null?Map.of("source","LEGACY_BROWSER_IMPORT"):json.readValue(entity.getEvaluationJson(),new TypeReference<>(){}),entity.getTaskId(),entity.getAssignmentId());}
+    static List<Map<String,Object>> sanitizeResults(List<Map<String,Object>> results){
+        return results.stream().map(AiExperimentController::sanitizeResult).toList();
+    }
+    private static Map<String,Object> sanitizeResult(Map<String,Object> raw){
+        var result=new LinkedHashMap<>(raw);
+        String mode=String.valueOf(result.getOrDefault("resultKey",result.get("mode")));
+        if("RANKED".equalsIgnoreCase(mode)){
+            result.remove("prompt");
+            result.remove("systemPrompt");
+            result.remove("systemPromptBody");
+            result.remove("fixedSystemPrompt");
+        }
+        result.entrySet().removeIf(entry -> {
+            String key=entry.getKey().toLowerCase(Locale.ROOT);
+            return key.equals("systemprompttext") || key.equals("fixedsystempromptbody");
+        });
+        return result;
+    }
+    private ExperimentView view(AiExperimentEntity entity){return new ExperimentView(entity.getId().toString(),entity.getQuestion(),entity.getCreatedAt()==null?LocalDateTime.now().toString():entity.getCreatedAt().toString(),sanitizeResults(json.readValue(entity.getResultsJson(),new TypeReference<>(){})),json.readValue(entity.getRatingsJson(),new TypeReference<>(){}),entity.getEvaluationJson()==null?Map.of("source","LEGACY_BROWSER_IMPORT"):json.readValue(entity.getEvaluationJson(),new TypeReference<>(){}),entity.getTaskId(),entity.getAssignmentId());}
 }

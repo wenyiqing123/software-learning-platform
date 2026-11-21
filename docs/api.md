@@ -109,3 +109,11 @@ results 为后端 AI 服务的实际响应；evaluation.source=SERVER_AI_SERVICE
 问答实验页面另外提供客户端 CSV 展平导出和原始 JSON 导出；导出字段包含运行时间、实验类型、策略、模型变体、成功/失败、耗时、分项指标、人工评分、回答和错误信息。失败运行保留在报告中但不进入成功答案指标或人工评分。
 
 ROUGE-L 使用小写 Unicode 字母/数字字符序列的最长公共子序列F1；BLEU 使用同一分词，最大4阶并对短文本采用有效阶数，不做平滑；实体召回率按去重的期望实体是否出现在回答中计算。它们不等同于完整事实正确性。个人跨次统计包含不同问题与配置，正式论文分析应导出后按评测集和配置分组。
+
+## 最终合规守卫
+
+- `backend/ai-service` 的守卫测试确认证据不足时返回结构化失败且不调用答案生成；grounding 轨迹只保留策略版本和提示词 hash，不返回固定系统提示词正文。
+- `AiExperimentController` 在保存和返回实验结果前清洗 RANKED 的 `prompt`、`systemPrompt*` 正文，只保留 `systemPromptVersion`、`systemPromptSha256` 等可复现元数据；DIRECT/TRIPLES 的原始提示兼容保留。
+- `backend/learning-service` 的守卫测试确认实验导出不含 `prompt` 正文，`/knowledge/graph` 的依赖失败直接返回 503/结构化故障，不生成静态节点；学生题目投影在提交前不含 `answer`、`answerJson` 或 `correctAnswer`。
+- 前端守卫测试扫描助教、实验、总览、推荐、评价和登录视图，禁止 RANKED 后台提示词标识及“机器学习知识追踪”“采集生理信号”“已证明降低认知负荷”等越界表述；图谱离线分支必须显示真实错误/等待连接状态。
+- 前端 `/api` 仍只代理到 Gateway；SSE 仍由 Gateway/Nginx 关闭缓冲并使用 300 秒超时。最终 Vite 供应商分包和 28 项 Playwright 路由级巡检记录见验收报告。
