@@ -77,3 +77,10 @@
 - Dashboard、图谱、助教、推荐和实验保留原信息架构，仅调整表面层级和强调色；CourseView 阅读正文限制为约 `76ch`、行高约 `1.75`，Markdown 代码块使用轻量深色代码面板。
 - AdminView 表单、EvaluationView 评估表单和 Paas 量表统一输入边框、圆角、focus 光环和选中态；没有新增后端接口、业务状态或实验结论。
 - 本轮临时截图位于 `frontend/.ui-audit/`，验收完成后删除，不进入仓库。
+
+## 全仓样式体检与全路由验货（2026-11-21）
+
+- 静态幽灵类名扫描覆盖 `App.vue`、全部 views 和 components，并对照四份全局 CSS 与各组件 `<style>`；最终静态缺失类名 `0`。初始问题主要集中在 Evaluation、教师/管理台、实验任务、微课页面，以及拆分后的 Admin 子组件：父组件 `scoped` 样式无法覆盖子组件内部模板。
+- `main.ts` 的 CSS 顺序为 Element Plus → `styles.css` → `styles-graph.css` → `styles-learning.css` → `styles-design-system.css`；没有发现四份全局 CSS 的同名选择器交叉覆盖。新增基础兜底集中在设计系统中，避免次级页面出现浏览器原生控件。
+- `authenticated-ui-smoke.mjs` 现覆盖 router 的 24 条页面路由，在 1440×900 与 1280×800 共执行 48 次已登录态访问；控制台错误、未捕获异常、空挂载、横向溢出、顶部遮挡、按钮文本溢出、默认未美化控件和未样式化表格均为 0。
+- 视觉指标同时记录最大卡片嵌套深度、页头存在性、页头说明存在性、主按钮/控件数量和标题字号；截图只写入临时 `.ui-audit/`，验收后清理。

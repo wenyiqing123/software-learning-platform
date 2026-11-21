@@ -7,9 +7,11 @@ const port = 4174
 const baseUrl = `http://127.0.0.1:${port}`
 const auditDir = path.resolve(process.cwd(), '.ui-audit')
 const routes = [
-  '/', '/courses', '/knowledge?entity=%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90', '/tutor', '/practice',
-  '/wrong-book', '/recommendations', '/study-plan', '/experiments', '/evaluation',
-  '/admin', '/admin/evaluations', '/admin/question-bank', '/admin/experiment-tasks',
+  '/login', '/', '/courses', '/admin', '/admin/teaching-dashboard', '/admin/question-bank',
+  '/admin/micro-lessons', '/admin/diagnostics', '/knowledge?entity=%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90',
+  '/mastery-map', '/tutor', '/practice', '/adaptive-practice', '/wrong-book', '/review', '/study-plan',
+  '/micro-lessons', '/evaluation', '/learning-report', '/admin/evaluations', '/recommendations',
+  '/experiments', '/experiment-tasks', '/admin/experiment-tasks',
 ]
 
 const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) })
@@ -21,6 +23,10 @@ function apiResponse(url) {
   if (path === '/api/knowledge/points') return json([{ id: 11, courseId: 3, chapterId: 1, name: '需求分析', graphEntity: '需求分析', mastery: 42, sortOrder: 1 }])
   if (path === '/api/courses') return json([{ id: 3, code: 'SE', name: '软件工程', term: '2026 秋季', description: '课程阅读与练习' }])
   if (path === '/api/admin/courses') return json([{ id: 3, code: 'SE', name: '软件工程', term: '2026 秋季', description: '课程阅读与练习', graphSpaceId: 1, enabled: true }])
+  if (path === '/api/admin/teaching-dashboard') return json({ from: '2026-11-15', to: '2026-11-21', days: 7, courseId: 3, courseName: '软件工程', overview: { activeLearners: 1, totalSections: 8, completedReads: 3, attempts: 4, correct: 3, openWrong: 2, averageMastery: 42 }, dailyActivity: [], weakPoints: [] })
+  if (path === '/api/admin/question-bank/versions') return json([])
+  if (path === '/api/admin/micro-lessons') return json([])
+  if (path === '/api/admin/diagnostics') return json([])
   if (path.includes('/admin/courses/') && path.endsWith('/prerequisite-quality')) return json({ courseId: 3, pointCount: 1, validEdgeCount: 0, errorCount: 0, warningCount: 0, valid: true, issues: [] })
   if (path === '/api/admin/knowledge-points' || path === '/api/admin/questions') return json([])
   if (path.startsWith('/api/admin/questions/')) return json([])
@@ -28,11 +34,13 @@ function apiResponse(url) {
   if (path === '/api/knowledge/graph') return json({ available: true, nodes: [{ id: '需求分析', label: '需求分析' }, { id: '需求规格说明书', label: '需求规格说明书' }], edges: [{ source: '需求分析', target: '需求规格说明书', label: '输出' }], evidence: [{ subject: '需求分析', predicate: '输出', object: '需求规格说明书', score: 0.9 }] })
   if (path.includes('/knowledge/learning-path')) return json({ targetId: 11, courseId: 3, nodes: [], cycleDetected: false })
   if (path.includes('/knowledge/mastery-map')) return json({ courseId: 3, courseName: '软件工程', nodes: [], edges: [] })
+  if (path === '/api/adaptive-practice') return json([])
   if (path === '/api/recommendations') return json([{ id: 11, knowledgePointId: 11, title: '复习需求分析', reason: '基于掌握度、错题与先修关系的可解释规则推荐。', kind: '薄弱点巩固', score: 0.8, knowledgePoint: '需求分析' }])
   if (path === '/api/wrong-book') return json([{ id: 21, questionId: 101, question: '加工如何命名？', knowledgePoint: '数据流图', wrongCount: 2, status: 'UNMASTERED' }])
   if (path.startsWith('/api/quizzes')) return json([])
   if (path.startsWith('/api/spaced-reviews')) return json([])
   if (path.startsWith('/api/study-plans')) return json({ id: 1, date: '2026-11-21', budgetMinutes: 30, tasks: [] })
+  if (path === '/api/reports/learning') return json({ from: '2026-11-15', to: '2026-11-21', days: 7, courseName: '软件工程', reading: { totalSections: 8, completedSections: 3, completedInPeriod: 0 }, practice: { attempts: 4, correct: 3, accuracy: 75 }, reviews: { reviews: 0, correct: 0, accuracy: 0 }, plans: { totalTasks: 0, completedTasks: 0, plannedMinutes: 0, completedMinutes: 0 }, dailyActivity: [], chapters: [], knowledge: [] })
   if (path === '/api/experiments') return json([])
   if (path.startsWith('/api/experiment-tasks')) return json([])
   if (path.startsWith('/api/evaluations/sessions')) return json([])
@@ -77,6 +85,32 @@ try {
       const metrics = await page.evaluate(() => {
         const visible = (element) => element instanceof HTMLElement && element.offsetParent !== null
         const buttons = [...document.querySelectorAll('button')].filter(visible)
+        const controls = [...document.querySelectorAll('button,input,select,textarea')].filter(visible)
+        const ignoredButtons = new Set(['icon-button', 'nav-item', 'nav-group-toggle', 'course-switch', 'user-menu', 'system-status-button', 'help-quick', 'text-button'])
+        const defaultControls = controls.filter(element => {
+          if (element instanceof HTMLInputElement && (element.type === 'checkbox' || element.type === 'radio')) return false
+          if (element.tagName === 'BUTTON' && [...element.classList].some(name => ignoredButtons.has(name) || name.startsWith('button'))) return false
+          const style = getComputedStyle(element)
+          const radius = parseFloat(style.borderTopLeftRadius || '0')
+          const padding = parseFloat(style.paddingLeft || '0') + parseFloat(style.paddingRight || '0')
+          return style.borderTopStyle === 'inset' || style.borderTopStyle === 'outset' || (radius < 3 && padding < 6 && (style.borderTopColor === 'rgb(118, 118, 118)' || style.borderTopColor === 'rgb(0, 0, 0)'))
+        })
+        const unstyledTables = [...document.querySelectorAll('table')].filter(table => visible(table)).filter(table => {
+          const cell = table.querySelector('th,td')
+          if (!cell) return false
+          const style = getComputedStyle(cell)
+          return !table.querySelector('th') || parseFloat(style.paddingTop || '0') < 6 || getComputedStyle(table).borderTopStyle === 'none'
+        })
+        const cardDepth = [...document.querySelectorAll('.page-content *')].reduce((max, element) => {
+          const style = getComputedStyle(element)
+          if (style.backgroundColor !== 'rgb(255, 255, 255)' && style.backgroundColor !== 'rgba(255, 255, 255, 1)') return max
+          let depth = 0
+          let parent = element.parentElement
+          while (parent) { const parentStyle = getComputedStyle(parent); if (parentStyle.backgroundColor === 'rgb(255, 255, 255)' && parentStyle.borderTopStyle !== 'none') depth++; parent = parent.parentElement }
+          return Math.max(max, depth)
+        }, 0)
+        const pageHeader = document.querySelector('.page-content h1, .page-content .page-heading h1, .page-content .section-heading h1')
+        const pageDescription = document.querySelector('.page-content .section-description, .page-content .page-heading p:not(.eyebrow)')
         return {
           path: location.pathname,
           scrollWidth: document.documentElement.scrollWidth,
@@ -87,18 +121,24 @@ try {
           topbarBottom: document.querySelector('.topbar')?.getBoundingClientRect().bottom ?? 0,
           squeezedButtons: buttons.filter(button => button.scrollWidth > button.clientWidth + 1).length,
           squeezedButtonDetails: buttons.filter(button => button.scrollWidth > button.clientWidth + 1).map(button => ({ text: button.textContent.trim(), title: button.getAttribute('title'), aria: button.getAttribute('aria-label'), width: button.getBoundingClientRect().width, clientWidth: button.clientWidth, scrollWidth: button.scrollWidth })),
+          defaultControls: defaultControls.length,
+          unstyledTables: unstyledTables.length,
+          cardDepth,
+          pageHeader: Boolean(pageHeader),
+          pageDescription: Boolean(pageDescription),
+          headingFontSize: pageHeader ? getComputedStyle(pageHeader).fontSize : '',
         }
       })
       const safeName = route.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'dashboard'
       await page.screenshot({ path: path.join(auditDir, `${viewport.width}x${viewport.height}-${safeName}.png`), fullPage: false })
-      results.push({ viewport: `${viewport.width}x${viewport.height}`, requested: route, final: metrics.path, overflow: metrics.scrollWidth > metrics.viewportWidth + 1, blankRoot: metrics.rootChildren === 0, topbarOverflow: metrics.topbarWidth > metrics.viewportWidth + 1, topbarOverlap: metrics.topbarBottom > metrics.contentTop + 1, squeezedButtons: metrics.squeezedButtons, squeezedButtonDetails: metrics.squeezedButtonDetails, consoleErrors: [...consoleErrors], pageErrors: [...pageErrors] })
+      results.push({ viewport: `${viewport.width}x${viewport.height}`, requested: route, final: metrics.path, overflow: metrics.scrollWidth > metrics.viewportWidth + 1, blankRoot: metrics.rootChildren === 0, topbarOverflow: metrics.topbarWidth > metrics.viewportWidth + 1, topbarOverlap: metrics.topbarBottom > metrics.contentTop + 1, squeezedButtons: metrics.squeezedButtons, squeezedButtonDetails: metrics.squeezedButtonDetails, defaultControls: metrics.defaultControls, unstyledTables: metrics.unstyledTables, cardDepth: metrics.cardDepth, pageHeader: metrics.pageHeader, pageDescription: metrics.pageDescription, headingFontSize: metrics.headingFontSize, consoleErrors: [...consoleErrors], pageErrors: [...pageErrors] })
       consoleErrors.length = 0
       pageErrors.length = 0
     }
     await context.close()
   }
   await browser.close()
-  const report = { scope: 'authenticated frontend rendering only; does not replace full-stack backend or graph integration', total: results.length, failures: results.filter(item => item.overflow || item.blankRoot || item.topbarOverflow || item.topbarOverlap || item.squeezedButtons || item.consoleErrors.length || item.pageErrors.length), results }
+  const report = { scope: 'authenticated frontend rendering only; does not replace full-stack backend or graph integration', total: results.length, failures: results.filter(item => item.overflow || item.blankRoot || item.topbarOverflow || item.topbarOverlap || item.squeezedButtons || item.defaultControls || item.unstyledTables || !item.pageHeader || !item.pageDescription || item.consoleErrors.length || item.pageErrors.length), results }
   await writeFile(path.join(auditDir, 'metrics.json'), JSON.stringify(report, null, 2), 'utf8')
   console.log(JSON.stringify(report, null, 2))
 } finally {
