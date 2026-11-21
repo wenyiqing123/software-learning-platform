@@ -7,6 +7,7 @@ import edu.wfust.learning.platform.entity.ExperimentTaskEntity;
 import edu.wfust.learning.platform.mapper.ExperimentAssignmentMapper;
 import edu.wfust.learning.platform.mapper.ExperimentGroupMapper;
 import edu.wfust.learning.platform.mapper.ExperimentTaskMapper;
+import edu.wfust.learning.platform.mapper.SysUserMapper;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -26,9 +27,9 @@ import java.util.List;
 
 @Service
 public class ExperimentTaskService {
-    private final ExperimentTaskMapper tasks; private final ExperimentGroupMapper groups; private final ExperimentAssignmentMapper assignments; private final ObjectMapper json; private final Clock clock;
-    public ExperimentTaskService(ExperimentTaskMapper tasks,ExperimentGroupMapper groups,ExperimentAssignmentMapper assignments,Clock clock){this(tasks,groups,assignments,new ObjectMapper(),clock);}
-    @Autowired public ExperimentTaskService(ExperimentTaskMapper tasks,ExperimentGroupMapper groups,ExperimentAssignmentMapper assignments,ObjectMapper json,Clock clock){this.tasks=tasks;this.groups=groups;this.assignments=assignments;this.json=json;this.clock=clock;}
+    private final ExperimentTaskMapper tasks; private final ExperimentGroupMapper groups; private final ExperimentAssignmentMapper assignments; private final SysUserMapper users; private final ObjectMapper json; private final Clock clock;
+    public ExperimentTaskService(ExperimentTaskMapper tasks,ExperimentGroupMapper groups,ExperimentAssignmentMapper assignments,Clock clock){this(tasks,groups,assignments,null,new ObjectMapper(),clock);}
+    @Autowired public ExperimentTaskService(ExperimentTaskMapper tasks,ExperimentGroupMapper groups,ExperimentAssignmentMapper assignments,SysUserMapper users,ObjectMapper json,Clock clock){this.tasks=tasks;this.groups=groups;this.assignments=assignments;this.users=users;this.json=json;this.clock=clock;}
 
     @PreAuthorize("hasRole('ADMIN')") @Transactional
     public TaskView createTask(Long userId,CreateTaskRequest request){
@@ -38,7 +39,7 @@ public class ExperimentTaskService {
     }
     @PreAuthorize("hasRole('ADMIN')") public List<TaskView> listTasks(){return tasks.selectList(new QueryWrapper<ExperimentTaskEntity>().orderByDesc("id")).stream().map(this::view).toList();}
     @PreAuthorize("hasRole('ADMIN')") @Transactional public GroupView addGroup(Long taskId,GroupRequest request){task(taskId);var group=new ExperimentGroupEntity();group.setTaskId(taskId);group.setName(request.name().trim());group.setConditionKey(request.conditionKey().trim());group.setSortOrder(request.sortOrder()==null?0:request.sortOrder());groups.insert(group);return new GroupView(group.getId(),taskId,group.getName(),group.getConditionKey(),group.getSortOrder());}
-    @PreAuthorize("hasRole('ADMIN')") @Transactional public void assign(Long taskId,Long groupId,List<Long> userIds){task(taskId);var group=groups.selectById(groupId);if(group==null||!taskId.equals(group.getTaskId()))throw new ResponseStatusException(HttpStatus.NOT_FOUND,"实验组不存在");for(Long userId:userIds)if(userId!=null&&userId>0)assignments.assign(taskId,groupId,userId);}
+    @PreAuthorize("hasRole('ADMIN')") @Transactional public void assign(Long taskId,Long groupId,List<Long> userIds){task(taskId);var group=groups.selectById(groupId);if(group==null||!taskId.equals(group.getTaskId()))throw new ResponseStatusException(HttpStatus.NOT_FOUND,"实验组不存在");for(Long userId:userIds)if(userId!=null&&userId>0){if(users!=null){var user=users.selectById(userId);if(user==null||!"STUDENT".equals(user.getRole()))throw bad("实验任务只能分配给学生账号");}assignments.assign(taskId,groupId,userId);}}
     @PreAuthorize("hasRole('ADMIN')") @Transactional public TaskView setStatus(Long id,String status){if(!List.of("DRAFT","OPEN","CLOSED").contains(status))throw bad("任务状态无效");var row=task(id);row.setStatus(status);tasks.updateById(row);return view(row);}
 
     @PreAuthorize("isAuthenticated()") public List<StudentAssignmentView> studentAssignments(Long userId){return assignments.findForUser(userId).stream().map(this::studentAssignmentView).toList();}

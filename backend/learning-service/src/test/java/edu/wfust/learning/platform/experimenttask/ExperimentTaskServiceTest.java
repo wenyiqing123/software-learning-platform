@@ -5,6 +5,7 @@ import edu.wfust.learning.platform.entity.ExperimentTaskEntity;
 import edu.wfust.learning.platform.mapper.ExperimentAssignmentMapper;
 import edu.wfust.learning.platform.mapper.ExperimentGroupMapper;
 import edu.wfust.learning.platform.mapper.ExperimentTaskMapper;
+import edu.wfust.learning.platform.mapper.SysUserMapper;
 import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
@@ -71,5 +72,20 @@ class ExperimentTaskServiceTest {
             assertThat(view.id()).isEqualTo(21L);
             assertThat(view.getClass().getRecordComponents()).noneMatch(component -> component.getName().equals("userId"));
         });
+    }
+
+    @Test
+    void assignmentRejectsAdministratorAccounts() {
+        var users = mock(SysUserMapper.class);
+        var task = new ExperimentTaskEntity(); task.setId(9L); task.setStatus("OPEN");
+        var group = new edu.wfust.learning.platform.entity.ExperimentGroupEntity(); group.setId(3L); group.setTaskId(9L);
+        var admin = new edu.wfust.learning.platform.entity.SysUserEntity(); admin.setId(1L); admin.setRole("ADMIN");
+        when(tasks.selectById(9L)).thenReturn(task); when(groups.selectById(3L)).thenReturn(group); when(users.selectById(1L)).thenReturn(admin);
+        var guarded = new ExperimentTaskService(tasks, groups, assignments, users, new tools.jackson.databind.ObjectMapper(), Clock.systemUTC());
+
+        assertThatThrownBy(() -> guarded.assign(9L, 3L, List.of(1L)))
+            .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+            .hasMessageContaining("只能分配给学生");
+        verify(assignments, never()).assign(any(), any(), any());
     }
 }

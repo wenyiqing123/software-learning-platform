@@ -3,9 +3,10 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
-@RestController @RequestMapping("/api/tutor/sessions")
+@RestController @RequestMapping("/api/tutor/sessions") @PreAuthorize("hasRole('STUDENT')")
 public class TutorSessionController {
     private final TutorSessionService sessions;
     public TutorSessionController(TutorSessionService sessions){this.sessions=sessions;}

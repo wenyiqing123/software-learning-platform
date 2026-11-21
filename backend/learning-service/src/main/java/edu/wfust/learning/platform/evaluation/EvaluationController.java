@@ -3,11 +3,13 @@ package edu.wfust.learning.platform.evaluation;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/evaluations")
+@PreAuthorize("hasRole('STUDENT')")
 public class EvaluationController {
     private final EvaluationService service;
     public EvaluationController(EvaluationService service){this.service=service;}

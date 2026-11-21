@@ -10,7 +10,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/courses/{courseId}/study")
-@PreAuthorize("isAuthenticated()")
+@PreAuthorize("hasRole('STUDENT')")
 public class CourseStudyController {
     private final CourseStudyService service;
     public CourseStudyController(CourseStudyService service) { this.service = service; }

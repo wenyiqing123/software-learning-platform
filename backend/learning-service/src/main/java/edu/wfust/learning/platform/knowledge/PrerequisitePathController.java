@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/knowledge")
 @Validated
-@PreAuthorize("isAuthenticated()")
+@PreAuthorize("hasRole('STUDENT')")
 public class PrerequisitePathController {
     private final PrerequisitePathService paths;
 

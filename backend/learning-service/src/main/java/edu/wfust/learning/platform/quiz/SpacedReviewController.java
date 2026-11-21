@@ -6,12 +6,14 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/spaced-reviews")
+@PreAuthorize("hasRole('STUDENT')")
 public class SpacedReviewController {
     private final SpacedReviewService service;
     public SpacedReviewController(SpacedReviewService service) { this.service=service; }

@@ -3,6 +3,7 @@ package edu.wfust.learning.platform.knowledge;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -14,6 +15,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/knowledge")
 @Validated
+@PreAuthorize("hasRole('STUDENT')")
 public class KnowledgeController {
     private final PythonGraphClient graphClient;
     public KnowledgeController(PythonGraphClient graphClient) { this.graphClient = graphClient; }

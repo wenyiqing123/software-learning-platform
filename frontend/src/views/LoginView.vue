@@ -22,7 +22,8 @@ async function submit() {
     localStorage.setItem('slp-access-token', result.accessToken)
     localStorage.setItem('slp-refresh-token', result.refreshToken)
     localStorage.setItem('slp-user-name', result.user.displayName)
-    router.replace('/')
+    localStorage.setItem('slp-user-role', result.user.role)
+    router.replace(result.user.role === 'ADMIN' ? '/teaching-dashboard' : '/dashboard')
   } catch (cause) {
     const response = (cause as { response?: { data?: { detail?: string; message?: string } } }).response
     error.value = response?.data?.detail || response?.data?.message || '暂时无法连接账户服务，请确认后端已经启动。'

@@ -20,7 +20,7 @@ import java.nio.charset.StandardCharsets;
 @RestController
 @RequestMapping("/api/reports")
 @Validated
-@PreAuthorize("isAuthenticated()")
+@PreAuthorize("hasRole('STUDENT')")
 public class LearningReportController {
     private final LearningReportService service;
     public LearningReportController(LearningReportService service) { this.service=service; }

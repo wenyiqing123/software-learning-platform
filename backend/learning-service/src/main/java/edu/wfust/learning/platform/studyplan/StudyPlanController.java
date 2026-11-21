@@ -5,11 +5,13 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/study-plans")
+@PreAuthorize("hasRole('STUDENT')")
 public class StudyPlanController {
     private final StudyPlanService service;
     public StudyPlanController(StudyPlanService service){this.service=service;}

@@ -1,4 +1,4 @@
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue'
 import { learningApi } from '../api/client'
 
 export interface KnowledgePointMetric { id: number; courseId?: number; name: string; graphEntity: string; mastery?: number | null; sortOrder: number }
@@ -39,7 +39,8 @@ export function resetLearningMetrics() {
   error.value = ''
 }
 
-function load(): Promise<void> {
+function load(role?: Readonly<Ref<string | undefined>>): Promise<void> {
+  if (role?.value === 'ADMIN') { resetLearningMetrics(); return Promise.resolve() }
   const token = localStorage.getItem('slp-access-token')
   if (!token) { resetLearningMetrics(); return Promise.resolve() }
   if (token === ownerToken && pending) return pending
@@ -64,13 +65,13 @@ function load(): Promise<void> {
   return pending
 }
 
-export function useLearningMetrics() {
-  const reload = () => load()
+export function useLearningMetrics(role?: Readonly<Ref<string | undefined>>) {
+  const reload = () => load(role)
   const onStorage = (event: StorageEvent) => {
-    if (event.key === null || event.key === 'slp-access-token') void load()
+    if (event.key === null || event.key === 'slp-access-token' || event.key === 'slp-user-role') void load(role)
   }
   onMounted(() => {
-    void load()
+    void load(role)
     window.addEventListener('learning:changed', reload)
     window.addEventListener('storage', onStorage)
   })
@@ -78,5 +79,6 @@ export function useLearningMetrics() {
     window.removeEventListener('learning:changed', reload)
     window.removeEventListener('storage', onStorage)
   })
+  if (role) watch(role, () => void load(role))
   return { points, overview, loading, error, reload }
 }

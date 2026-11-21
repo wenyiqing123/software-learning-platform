@@ -123,3 +123,9 @@ ROUGE-L 使用小写 Unicode 字母/数字字符序列的最长公共子序列F1
 - `frontend/src/api/client.ts` 是兼容重导出入口；认证、课程、知识图谱、练习复习、评估、实验、管理、推荐、系统状态和助教请求分别位于 `frontend/src/api/` 对应域模块，既有调用方无需更改 import。
 - `deploy/compose.server.yml` 与 `deploy/.env.server.example` 的变量插值一一对应；`RABBITMQ_VHOST`、`PYTHON_GRAPH_CONNECT_TIMEOUT`、`PYTHON_GRAPH_READ_TIMEOUT`、`AI_MODEL_HTTP_TIMEOUT`、`AI_STREAM_TIMEOUT` 和 RANKED/Qwen 可选参数均有明确默认值或占位符。
 - 本轮没有修改 Mecha-QA、Python Bridge、NebulaGraph 图空间、模型权重或 Java REST/SSE 契约。
+
+## 角色边界
+
+- 学生个人学习接口（课程阅读进度、题库作答、错题/间隔复习、学习计划、推荐、笔记、评估会话、实验任务领取、个人图谱和报告）由 learning-service 使用 `@PreAuthorize("hasRole('STUDENT')")` 保护。
+- 管理接口继续使用 `hasRole('ADMIN')`；实验对照接口按业务同时服务学生任务和管理员工作台，但学生分配只接受 `STUDENT` 账号。
+- 教学看板与评估汇总 SQL 显式连接 `sys_user.role='STUDENT'`，管理员账号不会进入班级学情、薄弱点、评价统计或实验分组样本。

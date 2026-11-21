@@ -23,7 +23,7 @@ public interface EvaluationMapper {
                AVG(pre.score) AS meanPreScore,AVG(post.score) AS meanPostScore,
                AVG(post.score-pre.score) AS meanGain,AVG(s.psychological_effort) AS meanEffort,
                AVG(s.elapsed_seconds) AS meanElapsedSeconds,COUNT(s.feedback) AS feedbackCount
-        FROM learning_evaluation_session s
+        FROM learning_evaluation_session s JOIN sys_user u ON u.id=s.user_id AND u.role='STUDENT'
         LEFT JOIN learning_evaluation_measurement pre ON pre.session_id=s.id AND pre.phase='PRE'
         LEFT JOIN learning_evaluation_measurement post ON post.session_id=s.id AND post.phase='POST'
         WHERE s.completed_at IS NOT NULL AND (#{conditionKey} IS NULL OR s.condition_key=#{conditionKey})
@@ -38,7 +38,7 @@ public interface EvaluationMapper {
                MAX(CASE WHEN m.phase='POST' THEN m.score END) AS postScore,
                MAX(CASE WHEN m.phase='DELAYED' THEN m.score END) AS delayedScore,
                CASE WHEN s.feedback IS NULL OR s.feedback='' THEN FALSE ELSE TRUE END AS feedbackProvided
-        FROM learning_evaluation_session s
+        FROM learning_evaluation_session s JOIN sys_user u ON u.id=s.user_id AND u.role='STUDENT'
         LEFT JOIN learning_evaluation_measurement m ON m.session_id=s.id
         WHERE s.completed_at IS NOT NULL AND (#{conditionKey} IS NULL OR s.condition_key=#{conditionKey})
         GROUP BY s.id,s.user_id,s.condition_key,s.task_key,s.task_order,s.elapsed_seconds,s.psychological_effort

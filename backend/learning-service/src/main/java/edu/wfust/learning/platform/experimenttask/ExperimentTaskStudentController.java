@@ -1,8 +1,9 @@
 package edu.wfust.learning.platform.experimenttask;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
-@RestController @RequestMapping("/api/experiment-tasks")
+@RestController @RequestMapping("/api/experiment-tasks") @PreAuthorize("hasRole('STUDENT')")
 public class ExperimentTaskStudentController {
     private final ExperimentTaskService service;
     public ExperimentTaskStudentController(ExperimentTaskService service){this.service=service;}

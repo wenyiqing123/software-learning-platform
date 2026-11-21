@@ -7,18 +7,30 @@ const port = 4174
 const baseUrl = `http://127.0.0.1:${port}`
 const auditDir = path.resolve(process.cwd(), '.ui-audit')
 const routes = [
-  '/login', '/', '/courses', '/admin', '/admin/teaching-dashboard', '/admin/question-bank',
+  '/login', '/', '/dashboard', '/courses', '/admin', '/teaching-dashboard', '/admin/content', '/admin/experiments', '/admin/teaching-dashboard', '/admin/question-bank',
   '/admin/micro-lessons', '/admin/diagnostics', '/knowledge?entity=%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90',
   '/mastery-map', '/tutor', '/practice', '/adaptive-practice', '/wrong-book', '/review', '/study-plan',
   '/micro-lessons', '/evaluation', '/learning-report', '/admin/evaluations', '/recommendations',
   '/experiments', '/experiment-tasks', '/admin/experiment-tasks',
 ]
+const roleScenarios = [{ role: 'STUDENT', home: '/dashboard' }, { role: 'ADMIN', home: '/teaching-dashboard' }]
+const adminRoute = path => path === '/experiments' || path === '/teaching-dashboard' || path.startsWith('/admin')
+function expectedPath(role, requested) {
+  const path = requested.split('?')[0]
+  if (path === '/login' || path === '/') return role === 'ADMIN' ? '/teaching-dashboard' : '/dashboard'
+  if (role === 'ADMIN' && !adminRoute(path)) return '/teaching-dashboard'
+  if (role === 'STUDENT' && adminRoute(path)) return '/dashboard'
+  if (path === '/admin' || path === '/admin/teaching-dashboard') return '/teaching-dashboard'
+  if (['/admin/question-bank', '/admin/micro-lessons', '/admin/diagnostics'].includes(path)) return '/admin/content'
+  if (['/admin/evaluations', '/admin/experiment-tasks'].includes(path)) return '/admin/experiments'
+  return path
+}
 
 const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) })
 
-function apiResponse(url) {
+function apiResponse(url, role) {
   const path = new URL(url).pathname
-  if (path === '/api/auth/me') return json({ id: 1, username: 'smoke-admin', displayName: '封版巡检管理员', role: 'ADMIN' })
+  if (path === '/api/auth/me') return json({ id: role === 'ADMIN' ? 1 : 2, username: role === 'ADMIN' ? 'smoke-admin' : 'smoke-student', displayName: role === 'ADMIN' ? '封版巡检管理员' : '封版巡检学生', role })
   if (path === '/api/dashboard/overview') return json({ mastery: 42, completed: 4, wrongCount: 2, accuracy: 75, activity: [] })
   if (path === '/api/knowledge/points') return json([{ id: 11, courseId: 3, chapterId: 1, name: '需求分析', graphEntity: '需求分析', mastery: 42, sortOrder: 1 }])
   if (path === '/api/courses') return json([{ id: 3, code: 'SE', name: '软件工程', term: '2026 秋季', description: '课程阅读与练习' }])
@@ -69,17 +81,19 @@ try {
   const browser = await chromium.launch({ headless: true })
   const results = []
   for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 800 }]) {
+    for (const scenario of roleScenarios) {
     const context = await browser.newContext({ viewport })
     const page = await context.newPage()
     const consoleErrors = []
     const pageErrors = []
     page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()) })
     page.on('pageerror', error => pageErrors.push(error.message))
-    await page.route('**/api/**', route => route.fulfill(apiResponse(route.request().url())))
-    await page.addInitScript(() => {
+    await page.route('**/api/**', route => route.fulfill(apiResponse(route.request().url(), scenario.role)))
+    await page.addInitScript((role) => {
       localStorage.setItem('slp-access-token', 'ui-smoke-access-token')
-      localStorage.setItem('slp-user-name', '封版巡检管理员')
-    })
+      localStorage.setItem('slp-user-name', '封版巡检')
+      localStorage.setItem('slp-user-role', role)
+    }, scenario.role)
     for (const route of routes) {
       await page.goto(baseUrl + route, { waitUntil: 'networkidle' })
       const metrics = await page.evaluate(() => {
@@ -130,15 +144,16 @@ try {
         }
       })
       const safeName = route.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'dashboard'
-      await page.screenshot({ path: path.join(auditDir, `${viewport.width}x${viewport.height}-${safeName}.png`), fullPage: false })
-      results.push({ viewport: `${viewport.width}x${viewport.height}`, requested: route, final: metrics.path, overflow: metrics.scrollWidth > metrics.viewportWidth + 1, blankRoot: metrics.rootChildren === 0, topbarOverflow: metrics.topbarWidth > metrics.viewportWidth + 1, topbarOverlap: metrics.topbarBottom > metrics.contentTop + 1, squeezedButtons: metrics.squeezedButtons, squeezedButtonDetails: metrics.squeezedButtonDetails, defaultControls: metrics.defaultControls, unstyledTables: metrics.unstyledTables, cardDepth: metrics.cardDepth, pageHeader: metrics.pageHeader, pageDescription: metrics.pageDescription, headingFontSize: metrics.headingFontSize, consoleErrors: [...consoleErrors], pageErrors: [...pageErrors] })
+      await page.screenshot({ path: path.join(auditDir, `${scenario.role}-${viewport.width}x${viewport.height}-${safeName}.png`), fullPage: false })
+      results.push({ role: scenario.role, viewport: `${viewport.width}x${viewport.height}`, requested: route, final: metrics.path, roleRedirectPass: metrics.path === expectedPath(scenario.role, route), overflow: metrics.scrollWidth > metrics.viewportWidth + 1, blankRoot: metrics.rootChildren === 0, topbarOverflow: metrics.topbarWidth > metrics.viewportWidth + 1, topbarOverlap: metrics.topbarBottom > metrics.contentTop + 1, squeezedButtons: metrics.squeezedButtons, squeezedButtonDetails: metrics.squeezedButtonDetails, defaultControls: metrics.defaultControls, unstyledTables: metrics.unstyledTables, cardDepth: metrics.cardDepth, pageHeader: metrics.pageHeader, pageDescription: metrics.pageDescription, headingFontSize: metrics.headingFontSize, consoleErrors: [...consoleErrors], pageErrors: [...pageErrors] })
       consoleErrors.length = 0
       pageErrors.length = 0
     }
     await context.close()
+    }
   }
   await browser.close()
-  const report = { scope: 'authenticated frontend rendering only; does not replace full-stack backend or graph integration', total: results.length, failures: results.filter(item => item.overflow || item.blankRoot || item.topbarOverflow || item.topbarOverlap || item.squeezedButtons || item.defaultControls || item.unstyledTables || !item.pageHeader || !item.pageDescription || item.consoleErrors.length || item.pageErrors.length), results }
+  const report = { scope: 'authenticated frontend rendering only; does not replace full-stack backend or graph integration', total: results.length, failures: results.filter(item => !item.roleRedirectPass || item.overflow || item.blankRoot || item.topbarOverflow || item.topbarOverlap || item.squeezedButtons || item.defaultControls || item.unstyledTables || !item.pageHeader || !item.pageDescription || item.consoleErrors.length || item.pageErrors.length), results }
   await writeFile(path.join(auditDir, 'metrics.json'), JSON.stringify(report, null, 2), 'utf8')
   console.log(JSON.stringify(report, null, 2))
 } finally {

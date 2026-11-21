@@ -14,6 +14,7 @@ export function resetSession() {
   accessToken = null
   pending = null
   user.value = null
+  localStorage.removeItem('slp-user-role')
   loading.value = false
   error.value = ''
 }
@@ -34,6 +35,7 @@ export function refreshSession(): Promise<void> {
       if (localStorage.getItem('slp-access-token') !== token) { pending = null; return refreshSession() }
       if (!account || !account.username || typeof account.role !== 'string') throw new Error('Invalid account response')
       user.value = account
+      localStorage.setItem('slp-user-role', account.role)
     } catch {
       if (request !== requestId) return
       if (localStorage.getItem('slp-access-token') !== token) { pending = null; return refreshSession() }

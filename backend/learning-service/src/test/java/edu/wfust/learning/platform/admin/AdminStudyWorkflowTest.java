@@ -91,6 +91,10 @@ class AdminStudyWorkflowTest {
         mvc.perform(post("/api/admin/questions").with(user("1").roles("STUDENT")).contentType("application/json").content(VALID)).andExpect(status().isForbidden());
         mvc.perform(put("/api/admin/courses/1/enabled").with(user("1").roles("STUDENT")).contentType("application/json").content("{\"enabled\":false}")).andExpect(status().isForbidden());
     }
+    @Test void administratorsCannotUseStudentPersonalLearningEndpoints() throws Exception {
+        mvc.perform(get("/api/quizzes").with(user("1").roles("ADMIN"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/wrong-book").with(user("1").roles("ADMIN"))).andExpect(status().isForbidden());
+    }
     @Test void administratorCanReadPrerequisiteQualityReport() throws Exception {
         mvc.perform(get("/api/admin/courses/1/prerequisite-quality").with(user("1").roles("ADMIN")))
             .andExpect(status().isOk())
