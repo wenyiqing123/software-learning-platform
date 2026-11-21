@@ -1,8 +1,11 @@
 import { spawn } from 'node:child_process'
+import { mkdir, writeFile } from 'node:fs/promises'
+import path from 'node:path'
 import { chromium } from 'playwright'
 
 const port = 4174
 const baseUrl = `http://127.0.0.1:${port}`
+const auditDir = path.resolve(process.cwd(), '.ui-audit')
 const routes = [
   '/', '/courses', '/knowledge?entity=%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90', '/tutor', '/practice',
   '/wrong-book', '/recommendations', '/study-plan', '/experiments', '/evaluation',
@@ -53,6 +56,7 @@ async function waitForServer() {
 
 const preview = spawn('cmd.exe', ['/d', '/s', '/c', `npm run preview -- --host 127.0.0.1 --port ${port}`], { cwd: process.cwd(), windowsHide: true, stdio: 'ignore' })
 try {
+  await mkdir(auditDir, { recursive: true })
   await waitForServer()
   const browser = await chromium.launch({ headless: true })
   const results = []
@@ -85,6 +89,8 @@ try {
           squeezedButtonDetails: buttons.filter(button => button.scrollWidth > button.clientWidth + 1).map(button => ({ text: button.textContent.trim(), title: button.getAttribute('title'), aria: button.getAttribute('aria-label'), width: button.getBoundingClientRect().width, clientWidth: button.clientWidth, scrollWidth: button.scrollWidth })),
         }
       })
+      const safeName = route.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'dashboard'
+      await page.screenshot({ path: path.join(auditDir, `${viewport.width}x${viewport.height}-${safeName}.png`), fullPage: false })
       results.push({ viewport: `${viewport.width}x${viewport.height}`, requested: route, final: metrics.path, overflow: metrics.scrollWidth > metrics.viewportWidth + 1, blankRoot: metrics.rootChildren === 0, topbarOverflow: metrics.topbarWidth > metrics.viewportWidth + 1, topbarOverlap: metrics.topbarBottom > metrics.contentTop + 1, squeezedButtons: metrics.squeezedButtons, squeezedButtonDetails: metrics.squeezedButtonDetails, consoleErrors: [...consoleErrors], pageErrors: [...pageErrors] })
       consoleErrors.length = 0
       pageErrors.length = 0
@@ -92,7 +98,9 @@ try {
     await context.close()
   }
   await browser.close()
-  console.log(JSON.stringify({ scope: 'authenticated frontend rendering only; does not replace full-stack backend or graph integration', total: results.length, failures: results.filter(item => item.overflow || item.blankRoot || item.topbarOverflow || item.topbarOverlap || item.squeezedButtons || item.consoleErrors.length || item.pageErrors.length), results }, null, 2))
+  const report = { scope: 'authenticated frontend rendering only; does not replace full-stack backend or graph integration', total: results.length, failures: results.filter(item => item.overflow || item.blankRoot || item.topbarOverflow || item.topbarOverlap || item.squeezedButtons || item.consoleErrors.length || item.pageErrors.length), results }
+  await writeFile(path.join(auditDir, 'metrics.json'), JSON.stringify(report, null, 2), 'utf8')
+  console.log(JSON.stringify(report, null, 2))
 } finally {
   preview.kill()
 }
