@@ -4,6 +4,7 @@ import { BarChart3, CircleAlert, RefreshCw, Users } from '@lucide/vue'
 import { api, apiError, type TeachingDashboard } from '../api/client'
 import SectionHeading from '../components/SectionHeading.vue'
 import FeedbackState from '../components/FeedbackState.vue'
+import TeachingDashboardCharts from '../components/TeachingDashboardCharts.vue'
 
 interface Course { id: number; name: string; term: string }
 const courses=ref<Course[]>([]);const courseId=ref<number|undefined>();const days=ref(7);const dashboard=ref<TeachingDashboard|null>(null);const loading=ref(true);const error=ref('')
@@ -22,6 +23,7 @@ onMounted(async()=>{await loadCourses();await load()})
     <FeedbackState v-if="loading" :loading="loading" loading-title="正在汇总课程学习数据" loading-text="正在读取匿名聚合指标和薄弱知识点，请稍候。" />
     <template v-else-if="dashboard">
       <section class="teaching-kpis"><article><span>活跃学习者</span><strong>{{ dashboard.overview.activeLearners }} 人</strong><small>统计周期内有答题记录的账户</small></article><article><span>练习正确率</span><strong>{{ accuracy }}%</strong><small>{{ dashboard.overview.correct }} / {{ dashboard.overview.attempts }} 次答题</small></article><article><span>阅读完成</span><strong>{{ dashboard.overview.completedReads }} / {{ dashboard.overview.totalSections }}</strong><small>周期完成率 {{ readingRate }}%</small></article><article><span>平均掌握度</span><strong>{{ dashboard.overview.averageMastery }}%</strong><small>基于已产生掌握记录的匿名平均值</small></article><article><span>待处理错题</span><strong>{{ dashboard.overview.openWrong }}</strong><small>当前课程未掌握错题</small></article></section>
+      <TeachingDashboardCharts :daily-activity="dashboard.dailyActivity" :weak-points="dashboard.weakPoints" />
       <section class="teaching-columns"><div class="teaching-panel"><div class="teaching-panel-heading"><div><p class="eyebrow">DAILY ACTIVITY</p><h2>每日学习活动</h2></div></div><div class="teaching-table"><div class="teaching-row teaching-head"><span>日期</span><span>活跃人数</span><span>答题</span><span>答对</span><span>阅读</span></div><div v-for="row in dashboard.dailyActivity" :key="row.date" class="teaching-row"><span>{{ row.date }}</span><span>{{ row.activeLearners }}</span><span>{{ row.attempts }}</span><span>{{ row.correct }}</span><span>{{ row.completedReads }}</span></div></div></div><div class="teaching-panel"><div class="teaching-panel-heading"><div><p class="eyebrow">WEAK KNOWLEDGE POINTS</p><h2>薄弱知识点</h2></div></div><div class="weak-point-list"><article v-for="point in dashboard.weakPoints" :key="point.pointId"><div><strong>{{ point.pointName }}</strong><span>{{ point.averageMastery }}%</span></div><div class="weak-progress"><i :style="{width:point.averageMastery+'%'}"></i></div><small>{{ point.learners }} 名学习者 · {{ point.attempts }} 次答题</small></article></div></div></section>
     </template>
     <FeedbackState v-if="!loading && !dashboard && !error" :empty="true" empty-title="暂无教学聚合数据" empty-text="当前筛选范围内还没有可展示的课程学习记录。" />

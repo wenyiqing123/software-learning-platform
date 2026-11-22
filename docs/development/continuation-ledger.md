@@ -105,3 +105,9 @@
 - 管理员菜单收敛为教学总览、内容与题库中心、实验与评价中心；新增两个 Tab 工作台，移除管理员个人学习入口。
 - 学生个人控制器增加角色约束；教学/评价统计过滤管理员账号；实验任务分配校验目标账号必须为 STUDENT。
 - 前端路由与工作台测试新增，前端 43 个测试文件/82 项通过；learning-service 128/128；双角色 Playwright 112/112。
+
+## 教学总览可视化（2026-11-22）
+
+- 管理员教学总览新增真实数据可视化：学习活动趋势和薄弱知识点掌握度排行，复用既有 `TeachingDashboard` DTO 的 `dailyActivity`/`weakPoints` 字段，不改变后端统计接口、匿名口径或外部图谱依赖。
+- 新增 `TeachingDashboardCharts.vue`、`teachingDashboardCharts.ts` 及适配器测试；组件在无数据时显示空态，ECharts 实例在更新、尺寸变化和卸载时清理。
+- 本轮前端实测为 44 个测试文件/84 项通过，生产构建成功且无 chunk warning；双角色 Playwright 112/112；未修改 Mecha-QA、Python Bridge、NebulaGraph、模型权重或任何凭据。

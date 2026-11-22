@@ -3,7 +3,17 @@ import { flushPromises, mount } from '@vue/test-utils'
 import TeachingDashboardView from './TeachingDashboardView.vue'
 
 const http = vi.hoisted(() => ({ get: vi.fn() }))
-vi.mock('../api/client', () => ({ api: http, apiError: vi.fn(() => '看板加载失败') }))
+vi.mock('../api/client', () => ({
+  api: http,
+  apiError: vi.fn(() => '看板加载失败'),
+}))
+
+vi.mock('../components/TeachingDashboardCharts.vue', () => ({
+  default: {
+    template: '<div data-testid="teaching-charts" />',
+    props: ['dailyActivity', 'weakPoints'],
+  },
+}))
 
 beforeEach(() => {
   vi.resetAllMocks()
@@ -21,6 +31,7 @@ describe('TeachingDashboardView', () => {
     expect(wrapper.text()).toContain('匿名聚合')
     expect(wrapper.text()).toContain('4 人')
     expect(wrapper.text()).toContain('数据流图')
+    expect(wrapper.find('[data-testid="teaching-charts"]').exists()).toBe(true)
     await wrapper.get('[data-testid="dashboard-days"]').setValue('14')
     await wrapper.get('button[aria-label="刷新教学看板"]').trigger('click')
     await flushPromises()

@@ -217,3 +217,10 @@ git diff --check:  pass
 - 后端学生专属控制器增加 STUDENT 角色约束；TeachingDashboard/EvaluationMapper 统计只纳入 STUDENT；实验任务分配拒绝 ADMIN 账号。learning-service 全量测试最终 `128/128`。
 - 双角色 Playwright 运行态检查覆盖 28 条路径 × 2 角色 × 2 分辨率，共 `112/112`；角色重定向、控制台错误、横向溢出、默认控件和未样式化表格均为 0。
 - 前端最终 `43` 个测试文件、`82` 项通过；生产构建成功且 0 chunk warnings。
+
+## 教学总览可视化（2026-11-22）
+
+- 新增 `TeachingDashboardCharts.vue` 和 `teachingDashboardCharts.ts`，复用现有 ECharts 依赖渲染学习活动趋势、薄弱知识点掌握度排行；数据完全来自教学看板既有响应，不修改后端接口或匿名统计口径。
+- 定向测试：`teachingDashboardCharts.test.ts` 与 `TeachingDashboardView.test.ts` 共 `2` 个文件 / `3` 项通过。
+- 前端全量回归：`44` 个测试文件 / `84` 项通过；`npm run build` 成功，输出无 chunk warning。
+- 双角色 Playwright：`node scripts/authenticated-ui-smoke.mjs` 覆盖 28 条路径 × 2 角色 × 2 分辨率，共 `112/112`；无控制台错误、页面异常、横向溢出、默认控件或未样式化表格问题。报告只验证已登录态前端渲染与排版，不替代真实后端/图谱联调；临时 `.ui-audit/` 已清理。
