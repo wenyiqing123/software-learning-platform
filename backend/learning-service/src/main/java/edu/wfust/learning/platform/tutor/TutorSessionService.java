@@ -33,6 +33,14 @@ public class TutorSessionService {
         db.update(connection -> { var ps=connection.prepareStatement("INSERT INTO ai_session(user_id,title) VALUES(?,?)",new String[]{"id"}); ps.setLong(1,userId);ps.setString(2,name);return ps; },key);
         return owned(userId,Objects.requireNonNull(key.getKey()).longValue());
     }
+    @Transactional public SessionView rename(long userId, long id, String title) {
+        owned(userId, id);
+        String name = title == null ? "" : title.strip();
+        if (name.isBlank() || name.length() > 120)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "会话标题长度必须为 1-120 个字符");
+        db.update("UPDATE ai_session SET title=? WHERE id=? AND user_id=?", name, id, userId);
+        return owned(userId, id);
+    }
     public List<MessageView> messages(long userId,long id) {
         owned(userId,id);
         return db.query("SELECT * FROM ai_message WHERE session_id=? ORDER BY id ASC LIMIT 200",

@@ -31,4 +31,31 @@ class TutorSessionServiceTest {
         assertThat(service.list(11)).extracting(TutorSessionService.SessionView::id).containsExactly(b.id());
         assertThatThrownBy(() -> service.messages(11, a.id())).isInstanceOf(ResponseStatusException.class);
     }
+
+    @Test void renamingSessionUpdatesOnlyOwnedSession() {
+        var session = service.create(11, "需求分析");
+
+        var renamed = service.rename(11, session.id(), "数据流图复习");
+
+        assertThat(renamed.title()).isEqualTo("数据流图复习");
+        assertThat(service.list(11)).singleElement()
+            .extracting(TutorSessionService.SessionView::title)
+            .isEqualTo("数据流图复习");
+    }
+
+    @Test void renamingSessionRejectsBlankTitle() {
+        var session = service.create(11, "需求分析");
+
+        assertThatThrownBy(() -> service.rename(11, session.id(), "  "))
+            .isInstanceOfSatisfying(ResponseStatusException.class,
+                ex -> assertThat(ex.getStatusCode().value()).isEqualTo(400));
+    }
+
+    @Test void renamingAnotherUsersSessionReturnsNotFound() {
+        var session = service.create(11, "需求分析");
+
+        assertThatThrownBy(() -> service.rename(22, session.id(), "其他会话"))
+            .isInstanceOfSatisfying(ResponseStatusException.class,
+                ex -> assertThat(ex.getStatusCode().value()).isEqualTo(404));
+    }
 }
