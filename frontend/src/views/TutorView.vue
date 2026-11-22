@@ -171,8 +171,11 @@ function selectQuickPrompt(prompt: string) {
   <div class="page-stack tutor-page">
     <SectionHeading eyebrow="基于课程知识图谱" title="AI 学习助教" description="在连续学习会话中提问，查看回答过程和真实图谱证据。"></SectionHeading>
     <section class="tutor-chat-workspace">
-      <TutorConversationList :sessions="sessions" :active-id="sessionId" :disabled="loading" :error="historyError" @select="selectSessionById" @create="newSession" @rename="renameSession" @remove="removeSessionById"></TutorConversationList>
-      <main class="tutor-chat-main">
+      <aside class="tutor-rail">
+        <TutorConversationList :sessions="sessions" :active-id="sessionId" :disabled="loading" :error="historyError" @select="selectSessionById" @create="newSession" @rename="renameSession" @remove="removeSessionById"></TutorConversationList>
+        <section class="tutor-aside" aria-label="回答策略"><div class="tutor-aside-icon"><Sparkles :size="18" /></div><p class="eyebrow">回答策略</p><h3>{{ compareAll ? '控制变量，对照观察' : modes.find((item) => item.key === mode)?.title }}</h3><p v-if="mode === 'DIRECT' && !compareAll">直接将问题交给大模型，适合作为不使用课程图谱的对照基线。</p><p v-else-if="mode === 'TRIPLES' && !compareAll">检索相关三元组作为上下文，不提供相关性分数，观察结构化知识的作用。</p><p v-else>使用 Python 返回的相关性排序与原始提示词，帮助模型聚焦关键证据。</p><div class="strategy-steps"><span><i>1</i>识别问题实体</span><span><i>2</i>检索图谱邻居</span><span><i>3</i>生成有依据的回答</span></div><div class="aside-footnote">回答可能有误，请结合课程材料核对。</div></section>
+      </aside>
+      <div class="tutor-chat-main">
         <TutorMessageList :messages="messages" :streaming-answer="streamingAnswer" :streaming-evidence="streamingEvidence" :loading="loading" :error="error" :retry-question="failedQuestion" :retry-mode="failedMode" @retry="retryQuestion" @copy="copyAnswer"></TutorMessageList>
         <TutorComposer :question="question" :mode="mode" :compare-all="compareAll" :loading="loading" :context="context" :quick-prompts="quickPrompts" :modes="modes" @update:question="question = $event" @update:compare-all="compareAll = $event" @select-mode="selectMode" @quick-prompt="selectQuickPrompt" @submit="submit()" @stop="stopGenerating"></TutorComposer>
         <section class="hint-panel">
@@ -183,15 +186,34 @@ function selectQuickPrompt(prompt: string) {
           <div v-else-if="hintResult" class="hint-result"><MarkdownContent :content="hintResult.content" /><div v-if="hintResult.evidence.length" class="hint-evidence-list"><div v-for="item in hintResult.evidence" :key="item.subject + item.predicate + item.object" class="hint-evidence"><span>{{ item.subject }}</span><i>{{ item.predicate }}</i><span>{{ item.object }}</span></div></div><button v-if="hintResult.nextLevelAvailable" class="button button-outline button-small" @click="requestHint(hintResult.level + 1)">展开第{{ hintResult.level + 1 }}级提示 <ArrowRight :size="14" /></button></div>
           <div v-else class="hint-empty">输入问题后，先点击第1级提示；低层提示不会直接展示完整答案。</div>
         </section>
-      </main>
-      <aside class="tutor-aside"><div class="tutor-aside-icon"><Sparkles :size="18" /></div><p class="eyebrow">回答策略</p><h3>{{ compareAll ? '控制变量，对照观察' : modes.find((item) => item.key === mode)?.title }}</h3><p v-if="mode === 'DIRECT' && !compareAll">直接将问题交给大模型，适合作为不使用课程图谱的对照基线。</p><p v-else-if="mode === 'TRIPLES' && !compareAll">检索相关三元组作为上下文，不提供相关性分数，观察结构化知识的作用。</p><p v-else>使用 Python 返回的相关性排序与原始提示词，帮助模型聚焦关键证据。</p><div class="strategy-steps"><span><i>1</i>识别问题实体</span><span><i>2</i>检索图谱邻居</span><span><i>3</i>生成有依据的回答</span></div><div class="aside-footnote">回答可能有误，请结合课程材料核对。</div></aside>
+      </div>
     </section>
   </div>
 </template>
 
 <style scoped>
-.tutor-chat-workspace{display:grid;grid-template-columns:240px minmax(0,1fr) 220px;gap:16px;align-items:start;min-width:0}.tutor-chat-main{display:grid;gap:14px;min-width:0}.tutor-chat-main .hint-panel{margin-top:0}.tutor-chat-workspace .tutor-aside{position:sticky;top:88px}
-.hint-panel{margin-top:14px;padding:16px 18px;background:#fff;border:1px solid #dfe8df;border-radius:10px}.hint-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;color:#50715b}.hint-heading h2{margin:4px 0 0;color:#3d4d43;font-size:14px}.hint-heading .eyebrow{margin:0}.hint-levels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:13px}.hint-level-button{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-height:48px;padding:9px 11px;background:#fafcf9;border:1px solid #e1e9e1;border-radius:7px;text-align:left;cursor:pointer}.hint-level-button strong{color:#4c6252;font-size:11px}.hint-level-button small{color:#89968d;font-size:10px}.hint-level-button.selected{background:#edf6ef;border-color:#a9c7ae}.hint-level-button:disabled{cursor:not-allowed}.hint-loading,.hint-empty{margin-top:12px;padding:11px;color:#748279;background:#f7faf7;border-radius:7px;font-size:11px}.hint-loading{display:flex;align-items:center;gap:8px}.hint-result{margin-top:12px;padding:13px;color:#526159;background:#f7faf7;border-radius:7px}.hint-result p{margin:0;line-height:1.7;white-space:pre-wrap}.hint-evidence-list{display:grid;gap:6px;margin-top:10px}.hint-evidence{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;padding:7px 9px;background:#fff;border:1px solid #e6ece6;border-radius:5px;font-size:10px}.hint-evidence i{color:#6f8b75;font-style:normal}.hint-result .button{margin-top:11px}@media(max-width:720px){.hint-levels{grid-template-columns:1fr}.hint-evidence{grid-template-columns:1fr;gap:3px}.hint-evidence i{font-size:9px}}
-@media(max-width:1040px){.tutor-chat-workspace{grid-template-columns:220px minmax(0,1fr)}.tutor-chat-workspace .tutor-aside{position:static;grid-column:1 / -1}}
-@media(max-width:720px){.tutor-chat-workspace{grid-template-columns:1fr}.tutor-chat-workspace .tutor-aside{grid-column:auto}}
+.tutor-chat-workspace{display:grid;grid-template-columns:minmax(215px,246px) minmax(0,1fr);gap:20px;align-items:start;min-width:0}
+.tutor-chat-main,.tutor-rail{display:grid;gap:16px;min-width:0}
+.tutor-aside{padding:16px;color:var(--text-muted);background:var(--surface-tint);border-radius:var(--radius-md);font-size:13px}
+.tutor-aside-icon{float:right;display:grid;place-items:center;width:30px;height:30px;color:var(--accent);background:var(--accent-soft);border-radius:var(--radius-sm)}
+.tutor-aside h3{margin:0;font-size:14px;color:var(--text)}
+.tutor-aside>p:not(.eyebrow){margin:8px 0;line-height:1.65}
+.strategy-steps{display:grid;gap:6px;margin-block:12px}
+.strategy-steps span{display:flex;align-items:center;gap:8px;font-size:12px}
+.strategy-steps i{display:grid;place-items:center;width:22px;height:22px;color:var(--accent-strong);background:var(--accent-soft);border-radius:50%;font-size:12px;font-style:normal;font-weight:650}
+.aside-footnote{padding-top:10px;border-top:1px solid var(--border-default);font-size:12px}
+.hint-panel{padding-top:16px;border-top:1px solid var(--border-default)}
+.hint-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--accent)}
+.hint-heading h2{margin:0;color:var(--text);font-size:16px}
+.hint-levels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.hint-level-button{display:grid;justify-items:start;gap:2px;min-height:48px;padding:8px 12px;text-align:left}
+.hint-level-button small,.hint-empty,.hint-loading{color:var(--text-muted);font-size:12px}
+.hint-level-button.selected,.hint-result{background:var(--accent-soft);border-color:var(--border-focus)}
+.hint-loading,.hint-empty,.hint-result{margin-top:12px;padding:12px;border-radius:var(--radius-sm)}
+.hint-loading{display:flex;align-items:center;gap:8px}
+.hint-evidence-list{margin-top:10px}
+.hint-evidence{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;padding:8px 0;border-top:1px solid var(--border-default);font-size:12px;overflow-wrap:anywhere}
+.hint-evidence i{color:var(--accent-strong);font-style:normal}
+.hint-result .button{margin-top:10px}
+@media(max-width:760px){.tutor-chat-workspace{grid-template-columns:1fr}.tutor-rail{display:contents}.tutor-aside{grid-row:3}}
 </style>

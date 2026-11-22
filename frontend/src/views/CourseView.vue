@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../api/client'
 import SectionHeading from '../components/SectionHeading.vue'
+import FeedbackState from '../components/FeedbackState.vue'
 import LearningNotesPanel from '../components/LearningNotesPanel.vue'
 import LearningContextActions from '../components/LearningContextActions.vue'
 import { rememberLearningContext } from '../domain/learningContext'
@@ -90,18 +91,26 @@ onMounted(loadCourses)
     <div v-if="loading" class="study-empty" role="status">正在加载课程与阅读进度…</div>
     <div v-else-if="!courses.length && !error" class="study-empty">暂无可学习的课程。课程启用后会显示在这里。</div>
     <template v-else-if="study">
-      <section class="study-summary"><div><p class="eyebrow">{{ study.code }} / {{ study.term }}</p><h2>{{ study.name }}</h2><p>{{ study.description }}</p><div class="study-summary-actions"><RouterLink class="button button-outline button-small" :to="{ path: '/knowledge', query: { courseId: study.courseId, entity: active?.graphEntity, knowledgePointId: active?.knowledgePointId } }">浏览课程图谱</RouterLink><RouterLink class="button button-dark button-small" :to="{ path: '/practice', query: { courseId: study.courseId, knowledgePointId: active?.knowledgePointId } }">开始课程练习</RouterLink></div></div><div class="study-progress"><strong>{{ study.completedSections }} / {{ study.totalSections }}</strong><span>小节已读 · {{ progress }}%</span><progress :value="study.completedSections" :max="Math.max(1, study.totalSections)" aria-label="阅读完成进度"></progress><div class="progress-caption"><span>学习进度</span><strong>{{ progress }}%</strong></div></div></section>
-      <div v-if="!sections.length" class="study-empty">本课程的阅读内容正在准备中。<RouterLink :to="{ path: '/knowledge', query: { courseId } }">浏览知识图谱</RouterLink></div>
+      <section class="study-summary" aria-label="课程阅读进度">
+        <div><p class="eyebrow">{{ study.code }} · {{ study.term }}</p><h2>{{ study.name }}</h2><p>{{ study.description }}</p></div>
+        <div class="study-progress" v-if="study.totalSections">
+          <span>阅读进度 <strong>{{ study.completedSections }} / {{ study.totalSections }} 小节</strong></span>
+          <progress :value="study.completedSections" :max="study.totalSections" aria-label="阅读完成进度"></progress>
+          <span>{{ progress }}% 已完成</span>
+        </div>
+      </section>
+      <FeedbackState v-if="!sections.length" empty empty-title="本课程的阅读内容正在准备中。" empty-text="可先查看课程知识关系。" empty-action-label="浏览知识图谱" @action="router.push({ path: '/knowledge', query: { courseId } })" />
       <div v-else class="study-layout">
-        <aside id="course-outline" class="study-outline" aria-label="章节目录"><div class="outline-heading"><div><p class="eyebrow">章节目录</p><strong>{{ study.completedSections }} / {{ study.totalSections }} 小节</strong></div><span>{{ progress }}%</span></div><section v-for="(chapter, index) in study.chapters" :key="chapter.id"><h3>{{ String(index + 1).padStart(2, '0') }} {{ chapter.name }}</h3><p>{{ chapter.description }}</p><button v-for="section in chapter.sections" :key="section.id" class="outline-item" :class="{ active: active?.id === section.id }" :aria-current="active?.id === section.id ? 'page' : undefined" :aria-controls="'section-' + section.id" @click="chooseSection(section)"><span class="outline-status" aria-hidden="true">{{ section.completed ? '✓' : '○' }}</span><span>{{ section.title }}<small>{{ section.completed ? '已完成阅读' : section.knowledgePointName }}</small></span></button></section></aside>
+        <div class="study-rail">
+        <aside id="course-outline" class="study-outline" aria-label="章节目录"><div class="outline-heading"><h2>章节目录</h2><span>{{ sections.length }} 节</span></div><section v-for="(chapter, index) in study.chapters" :key="chapter.id"><h3>{{ String(index + 1).padStart(2, '0') }} {{ chapter.name }}</h3><p>{{ chapter.description }}</p><button v-for="section in chapter.sections" :key="section.id" class="outline-item" :class="{ active: active?.id === section.id }" :aria-current="active?.id === section.id ? 'page' : undefined" :aria-controls="'section-' + section.id" @click="chooseSection(section)"><span class="outline-status" aria-hidden="true">{{ section.completed ? '✓' : '○' }}</span><span>{{ section.title }}<small>{{ section.completed ? '已完成阅读' : section.knowledgePointName }}</small></span></button></section></aside>
+          <LearningNotesPanel v-if="active" :section-id="active.id" :knowledge-point-id="active.knowledgePointId" start-collapsed />
+        </div>
         <article v-if="active" :id="'section-' + active.id" class="study-reading" :aria-labelledby="'section-title-' + active.id">
           <p class="eyebrow">小节 {{ position + 1 }} / {{ sections.length }} · {{ active.knowledgePointName }}</p><h2 :id="'section-title-' + active.id">{{ active.title }}</h2>
           <section class="study-objectives"><h3>本节学习目标</h3><ul><li v-for="objective in active.objectives" :key="objective">{{ objective }}</li></ul></section>
           <section v-for="block in active.content" :key="block.heading" class="reading-block"><h3>{{ block.heading }}</h3><p v-for="paragraph in block.paragraphs" :key="paragraph">{{ paragraph }}</p></section>
            <section v-if="active.resources.length" class="study-resources"><h3>延伸阅读</h3><div v-for="resource in active.resources" :key="resource.url"><a v-if="safeUrl(resource.url)" :href="safeUrl(resource.url)" target="_blank" rel="noopener noreferrer">{{ resource.title }} ↗</a><strong v-else>{{ resource.title }}</strong><p>{{ resource.description }}</p></div></section>
-           <LearningNotesPanel :section-id="active.id" :knowledge-point-id="active.knowledgePointId" />
-           <LearningContextActions :context="{ courseId: courseId ?? undefined, sectionId: active.id, knowledgePointId: active.knowledgePointId, entity: active.graphEntity }" />
-           <div class="study-actions"><RouterLink class="button button-outline" :to="{ path: '/knowledge', query: { entity: active.graphEntity, courseId, knowledgePointId: active.knowledgePointId, sectionId: active.id } }">在图谱中建立联系 ↗</RouterLink><RouterLink class="button button-dark" :to="{ path: '/practice', query: { knowledgePointId: active.knowledgePointId, courseId, sectionId: active.id } }">练习本节知识 →</RouterLink></div>
+          <LearningContextActions :context="{ courseId: courseId ?? undefined, sectionId: active.id, knowledgePointId: active.knowledgePointId, entity: active.graphEntity }" />
            <footer class="study-footer"><div><button class="button button-outline" :disabled="saving" @click="markRead">{{ saving ? '正在保存…' : active.completed ? '✓ 已读 · 撤销标记' : '标记本节已读' }}</button><p>阅读记录与练习掌握度分别统计。</p><span v-if="progressError" role="alert">{{ progressError }}</span></div><div class="section-paging"><button class="text-button" :disabled="position <= 0" @click="sections[position - 1] && chooseSection(sections[position - 1]!)">上一节</button><button class="text-button" :disabled="position >= sections.length - 1" @click="sections[position + 1] && chooseSection(sections[position + 1]!)">下一节 →</button></div></footer>
         </article>
       </div>
@@ -110,13 +119,47 @@ onMounted(loadCourses)
 </template>
 
 <style scoped>
-.course-picker { display:grid; gap:7px; color:var(--muted); font-size:12px; }
-select { max-width:100%; padding:10px 12px; color:var(--ink); background:white; border:1px solid var(--line); border-radius:7px; font:inherit; }
-.study-summary { display:flex; justify-content:space-between; gap:24px; padding:24px; background:white; border:1px solid var(--line); border-radius:10px; }
-.study-summary h2 { margin:0 0 10px; font-size:22px; }.study-summary p { margin-bottom:0; color:var(--muted); font-size:13px; line-height:1.8; }
-.study-progress { display:grid; align-content:center; gap:7px; min-width:150px; }.study-progress strong { font-size:22px; }.study-progress span { color:var(--muted); font-size:12px; }progress { width:100%; height:8px; accent-color:var(--green); }
-.study-layout { display:grid; grid-template-columns:250px minmax(0,1fr); align-items:start; gap:24px; }.study-outline { padding:20px 16px; background:white; border:1px solid var(--line); border-radius:10px; }.study-outline section + section { margin-top:25px; }.study-outline h3 { font-size:13px; line-height:1.6; }.study-outline section > p { color:var(--muted); font-size:11px; line-height:1.7; }
-.outline-item { display:flex; align-items:start; gap:9px; width:100%; padding:11px 8px; text-align:left; line-height:1.6; font-size:12px; background:transparent; border:0; border-radius:7px; cursor:pointer; }.outline-item.active { color:var(--green); background:var(--green-pale); }.outline-item small { display:block; margin-top:3px; color:var(--muted); font-size:10px; }
-.study-reading { padding:32px clamp(20px,4vw,50px); background:var(--surface); border:1px solid var(--border-default); border-radius:var(--radius-md); box-shadow:var(--shadow-sm)}.study-reading > h2 { max-width:76ch;margin:0 0 24px; font-size:clamp(20px,2vw,26px); line-height:1.45; }.study-objectives { max-width:76ch;padding:17px 22px; background:var(--accent-soft); border:1px solid var(--border-soft); border-radius:var(--radius-md); }.study-reading h3 { margin:0 0 12px; font-size:16px; line-height:1.6; }.study-objectives ul { margin:0; padding-left:20px; font-size:13px; line-height:1.8; }.reading-block { max-width:76ch;margin-top:30px; }.reading-block p { color:var(--text-muted); font-size:14px; line-height:1.75; overflow-wrap:anywhere; }.study-resources { max-width:76ch;margin-top:30px; padding:20px; background:var(--surface-soft);border:1px solid var(--border-soft); border-radius:var(--radius-md); }.study-resources a { color:var(--accent); font-size:13px; }.study-resources p { color:var(--text-muted); font-size:12px; line-height:1.75; }.study-actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:25px; }.study-actions a { text-decoration:none; }.study-footer { display:flex; align-items:center; justify-content:space-between; gap:20px; margin-top:28px; padding-top:24px; border-top:1px solid var(--border-soft); }.study-footer p { color:var(--text-muted); font-size:11px; }.study-footer [role=alert] { color:var(--danger); font-size:12px; }.section-paging { display:flex; gap:18px; }.study-notice { padding:16px; color:var(--danger); background:var(--danger-soft); border:1px solid var(--border-soft);border-radius:var(--radius-md); }.study-empty { display:grid; gap:15px; padding:40px; color:var(--text-muted); text-align:center; background:var(--surface); border:1px solid var(--border-default); border-radius:var(--radius-md); }
-@media(max-width:1050px) { .study-layout { grid-template-columns:210px minmax(0,1fr); gap:14px; }.study-reading { padding:24px; } }@media(max-width:760px) { .study-layout { grid-template-columns:1fr; }.study-summary,.study-footer { flex-direction:column; align-items:stretch; }.study-outline { max-height:320px; overflow:auto; }.study-reading { padding:22px 18px; }.study-summary { padding:20px; } }
+.course-picker{display:grid;gap:6px;color:var(--text-muted);font-size:12px}
+.study-summary{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:16px 24px;border-radius:var(--radius-md);background:var(--surface-tint)}
+.study-summary h2,.outline-heading h2{margin:0;font-size:16px}
+.study-summary p:not(.eyebrow){margin:4px 0 0;color:var(--text-muted);font-size:13px}
+.study-progress{display:grid;gap:6px;min-width:min(100%,180px);color:var(--text-muted);font-size:12px;font-variant-numeric:tabular-nums}
+.study-progress strong{color:var(--text);margin-left:8px}
+.study-progress progress{width:100%;height:6px;appearance:none;border:0;border-radius:var(--radius-pill);background:var(--border-default)}
+.study-progress progress::-webkit-progress-bar{background:var(--border-default);border-radius:inherit}
+.study-progress progress::-webkit-progress-value{background:var(--accent);border-radius:inherit}
+.study-progress progress::-moz-progress-bar{background:var(--accent);border-radius:inherit}
+.study-layout{display:grid;grid-template-columns:minmax(214px,254px) minmax(0,1fr);align-items:start;gap:20px}
+.study-rail{display:grid;gap:16px;min-width:0}
+.study-outline,.study-reading{min-width:0;background:var(--surface);border:1px solid var(--border-default);border-radius:var(--radius-md);box-shadow:var(--shadow-xs)}
+.study-outline{max-height:420px;overflow:auto;padding:16px}
+.outline-heading{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding-bottom:12px;border-bottom:1px solid var(--border-soft)}
+.outline-heading span,.study-outline section>p{color:var(--text-muted);font-size:12px}
+.study-outline h3{margin:14px 0 3px;font-size:13px}
+.study-outline section>p{margin:0 0 8px}
+.outline-item{display:flex;align-items:flex-start;gap:8px;width:100%;padding:8px;text-align:left;border:0;background:transparent;border-radius:var(--radius-sm);font-size:13px}
+.outline-item>span:last-child{min-width:0;overflow-wrap:anywhere}
+.outline-item.active{color:var(--accent-strong);background:var(--accent-soft);box-shadow:inset 2px 0 var(--accent)}
+.outline-item small,.outline-status{font-size:12px;color:var(--text-muted)}
+.outline-item small{display:block;margin-top:2px}
+.outline-status{flex:0 0 16px;color:var(--accent);text-align:center}
+.study-reading{padding:24px clamp(20px,3vw,40px)}
+.study-reading>h2{margin:0 0 20px;font-size:24px;line-height:1.35}
+.study-reading h3{margin:0 0 8px;font-size:16px;line-height:1.55}
+.study-objectives,.reading-block,.study-resources{max-width:var(--reading-width);font-size:15px;line-height:1.7}
+.study-objectives{padding:14px 16px;background:var(--surface-soft);border-left:2px solid var(--border-focus);border-radius:0 var(--radius-sm) var(--radius-sm) 0}
+.study-objectives ul{margin:0;padding-left:20px}
+.reading-block,.study-resources{margin-top:24px}
+.reading-block p,.study-resources p{margin:0 0 12px;overflow-wrap:anywhere}
+.study-resources{padding-top:16px;border-top:1px solid var(--border-soft)}
+.study-resources a{color:var(--accent-strong);font-weight:600}
+.study-resources p{color:var(--text-muted);font-size:13px}
+.study-footer,.section-paging{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}
+.study-footer{margin-top:20px;padding-top:16px;border-top:1px solid var(--border-soft)}
+.study-footer p{margin:8px 0 0;color:var(--text-muted);font-size:12px}
+.study-footer [role=alert]{color:var(--danger);font-size:13px}
+.study-notice,.study-empty{padding:20px;border-radius:var(--radius-md)}
+.study-notice{color:var(--danger);background:var(--danger-soft)}
+.study-empty{color:var(--text-muted);text-align:center;background:var(--surface);border:1px solid var(--border-default)}
+@media(max-width:760px){.study-layout{grid-template-columns:1fr}.study-summary{align-items:flex-start;flex-direction:column}.study-outline{max-height:240px}.study-reading{padding:20px 16px}}
 </style>

@@ -41,7 +41,7 @@ function rebuild() {
     const position = new THREE.Vector3(radius * Math.cos(theta) * Math.sin(phi), radius * Math.cos(phi), radius * Math.sin(theta) * Math.sin(phi))
     positions.set(node.id, position)
     const selected = node.id === props.selectedId
-    const mesh = new THREE.Mesh(new THREE.SphereGeometry(selected ? 13 : 10, 20, 14), new THREE.MeshStandardMaterial({ color: selected ? '#0d5545' : '#8fc7aa', emissive: selected ? '#54d39c' : '#000000', emissiveIntensity: selected ? .42 : 0, roughness: .55, metalness: .08 }))
+    const mesh = new THREE.Mesh(new THREE.SphereGeometry(selected ? 13 : 10, 20, 14), new THREE.MeshStandardMaterial({ color: selected ? '#0f665e' : '#8fc7aa', roughness: .75 }))
     mesh.position.copy(position); mesh.userData.id = node.id; nodeMeshes.push(mesh); group.add(mesh)
     const label = labelSprite(node.label)
     if (label) { label.position.copy(position).add(new THREE.Vector3(0, -18, 0)); group.add(label) }
@@ -72,7 +72,7 @@ function animate() { frame = requestAnimationFrame(animate); controls?.update();
 
 onMounted(() => {
   if (!host.value) return
-  scene = new THREE.Scene(); scene.background = new THREE.Color('#f7fbf8')
+  scene = new THREE.Scene(); scene.background = new THREE.Color('#f7f8fa')
   camera = new THREE.PerspectiveCamera(45, 1, 1, 1600); camera.position.set(0, 0, 360)
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true }); renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); host.value.appendChild(renderer.domElement)
   controls = new OrbitControls(camera, renderer.domElement); controls.enableDamping = true; controls.dampingFactor = .08; controls.minDistance = 140; controls.maxDistance = 700
@@ -85,4 +85,10 @@ onBeforeUnmount(() => { cancelAnimationFrame(frame); resizeObserver?.disconnect(
 
 <template><div ref="host" class="three-graph-canvas" data-testid="three-graph-canvas" aria-label="Three.js 三维知识图谱"><span class="three-graph-hint">拖拽旋转 · 滚轮缩放 · 点击节点查看证据</span></div></template>
 
-<style scoped>.three-graph-canvas{position:relative;width:100%;height:100%;min-height:430px;overflow:hidden;cursor:grab;background:radial-gradient(circle at 50% 35%,rgba(39,118,83,.08),transparent 42%)}.three-graph-hint{position:absolute;right:12px;bottom:10px;z-index:1;padding:5px 8px;color:var(--text-muted);background:rgba(255,255,255,.82);border:1px solid var(--border-soft);border-radius:var(--radius-sm);font-size:10px;pointer-events:none}.three-graph-canvas:active{cursor:grabbing}.three-graph-canvas :deep(canvas){display:block;width:100%;height:100%}</style>
+<style scoped>
+.three-graph-canvas{position:relative;min-width:0;min-height:390px;overflow:hidden;cursor:grab}
+.three-graph-canvas:active{cursor:grabbing}
+.three-graph-canvas :deep(canvas){position:absolute;inset:0;display:block;width:100%;height:100%}
+.three-graph-hint{position:absolute;right:12px;bottom:12px;z-index:1;max-width:calc(100% - 24px);padding:5px 8px;color:var(--text-muted);background:var(--surface);border-radius:var(--radius-sm);font-size:12px;pointer-events:none}
+@media(max-width:700px){.three-graph-canvas{min-height:320px}}
+</style>

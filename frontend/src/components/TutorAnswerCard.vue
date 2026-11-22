@@ -20,5 +20,20 @@ const emit = defineEmits<{ copy: [value: string] }>()
 </template>
 
 <style scoped>
-.tutor-answer-card{position:relative}.answer-card-meta{display:flex;align-items:center;gap:9px;margin-bottom:10px;color:var(--text-subtle);font-size:10px}.answer-card-meta .text-button{margin-left:auto}.answer-state{padding:3px 7px;border-radius:var(--radius-sm);font-weight:650}.answer-state.is-ready{color:var(--accent);background:var(--accent-soft)}.answer-state.is-error{color:var(--danger);background:var(--danger-soft)}.answer-result-failed{border-color:#e9cfc7;background:var(--danger-soft)}
+.answer-card-meta,.evidence-title,.entity-tags{display:flex;align-items:center;gap:8px}
+.answer-card-meta{flex-wrap:wrap;margin-bottom:10px;color:var(--text-muted);font-size:12px;font-variant-numeric:tabular-nums}
+.answer-card-meta .text-button,.evidence-title span{margin-left:auto}
+.answer-state,.entity-tags span{padding:3px 8px;border-radius:var(--radius-pill);font-weight:600;font-size:12px}
+.answer-state.is-ready,.entity-tags span{color:var(--accent-strong);background:var(--accent-soft)}
+.answer-state.is-error,.compare-error{color:var(--danger);background:var(--danger-soft)}
+.compare-error{padding:10px;border-radius:var(--radius-sm)}
+.result-mode-label{margin-bottom:6px;font-weight:650}
+.entity-tags{flex-wrap:wrap;margin-top:10px}
+.evidence-block{margin-top:12px;padding:0 12px;background:var(--surface-tint);border-radius:var(--radius-sm)}
+.evidence-title{min-height:40px;cursor:pointer;font-size:13px}
+.evidence-title svg{flex:none;color:var(--accent)}
+.evidence-title span,.evidence-triple small{color:var(--text-muted);font-size:12px}
+.evidence-triple{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto;gap:8px;padding:8px 0;border-top:1px solid var(--border-default);font-size:13px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.evidence-triple i{color:var(--accent-strong);font-style:normal}
+@media(max-width:520px){.evidence-triple small{grid-column:1/-1}}
 </style>

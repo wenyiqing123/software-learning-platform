@@ -57,6 +57,23 @@ function onInput(event: Event) {
 </template>
 
 <style scoped>
-.tutor-composer{display:grid;gap:12px;padding:16px 18px;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--surface);box-shadow:var(--shadow-sm)}.tutor-context-row,.tutor-quick-prompts{display:flex;align-items:center;flex-wrap:wrap;gap:7px}.tutor-context-caption,.tutor-quick-prompts>span{color:var(--text-subtle);font-size:10px}.tutor-context-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid var(--accent-border);border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:10px}.tutor-context-chip strong{font-weight:700}.tutor-quick-prompt{padding:5px 9px;border:1px solid var(--line);border-radius:999px;background:var(--surface-soft);color:var(--text-muted);font-size:10px;cursor:pointer;transition:color 150ms ease,border-color 150ms ease,background-color 150ms ease}.tutor-quick-prompt:hover{border-color:var(--accent-border);background:var(--accent-soft);color:var(--accent)}.tutor-quick-prompt:disabled{cursor:not-allowed;opacity:.55}.tutor-composer-label{color:var(--ink);font-size:12px;font-weight:650}.tutor-composer textarea{width:100%;min-height:104px;resize:vertical}.tutor-composer-footer{display:flex;align-items:center;flex-wrap:wrap;gap:10px}.tutor-composer-tip{flex:1;color:var(--text-subtle);font-size:10px}.compare-toggle{display:inline-flex;align-items:center;gap:7px;color:var(--text-muted);font-size:10px}.compare-toggle input{position:absolute;width:1px;height:1px;opacity:0}.toggle-track{position:relative;width:28px;height:16px;border-radius:999px;background:var(--border-strong);transition:background-color 150ms ease}.toggle-track::after{position:absolute;top:3px;left:3px;width:10px;height:10px;border-radius:50%;background:var(--surface);content:"";transition:transform 150ms ease}.compare-toggle input:checked + .toggle-track{background:var(--accent)}.compare-toggle input:checked + .toggle-track::after{transform:translateX(12px)}
-@media(max-width:640px){.tutor-composer{padding:14px}.tutor-composer-footer{align-items:stretch}.tutor-composer-tip{order:3;width:100%;flex-basis:100%}.tutor-composer-footer .button{flex:1;justify-content:center}}
+.tutor-composer{display:grid;gap:10px;min-width:0;padding:16px;background:var(--surface);border:1px solid var(--border-default);border-radius:var(--radius-md);box-shadow:var(--shadow-sm)}
+.tutor-context-row,.tutor-quick-prompts,.tutor-composer-footer{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.tutor-context-caption,.tutor-quick-prompts>span,.tutor-composer-tip{color:var(--text-muted);font-size:12px}
+.tutor-context-chip,.tutor-quick-prompt{display:inline-flex;align-items:center;gap:5px;max-width:100%;padding:4px 9px;border-radius:var(--radius-pill);font-size:12px;overflow-wrap:anywhere}
+.tutor-context-chip{color:var(--accent-strong);background:var(--accent-soft)}
+.tutor-quick-prompt{min-height:30px;color:var(--text-muted);background:var(--surface-soft);border-color:var(--border-soft);text-align:left}
+.tutor-quick-prompt:hover{color:var(--accent-strong);background:var(--accent-soft)}
+.tutor-composer-label{color:var(--text);font-size:13px;font-weight:650}
+.tutor-composer textarea{width:100%;min-height:78px;background:var(--surface-soft);font-size:14px;line-height:1.6}
+.tutor-composer textarea:focus{background:var(--surface);box-shadow:var(--focus-ring)}
+.tutor-composer-tip{flex:1}
+.compare-toggle{display:inline-flex;align-items:center;gap:7px;color:var(--text-muted);font-size:12px;cursor:pointer}
+.compare-toggle input{position:absolute;width:1px;height:1px;opacity:0}
+.toggle-track{position:relative;width:30px;height:18px;border-radius:var(--radius-pill);background:var(--border-strong);transition:background-color var(--motion)}
+.toggle-track::after{position:absolute;top:3px;left:3px;width:12px;height:12px;border-radius:50%;background:var(--surface);content:"";transition:transform var(--motion)}
+.compare-toggle input:checked+.toggle-track{background:var(--accent)}
+.compare-toggle input:checked+.toggle-track::after{transform:translateX(12px)}
+.compare-toggle input:focus-visible+.toggle-track{outline:2px solid var(--accent);outline-offset:2px}
+@media(max-width:550px){.tutor-composer{padding:12px}.tutor-composer-tip{order:1;flex-basis:100%}.tutor-composer-footer>.button{margin-left:auto}}
 </style>

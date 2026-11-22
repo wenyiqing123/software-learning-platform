@@ -60,10 +60,10 @@ async function toggleFullscreen() {
       <div v-if="searchable" class="visualization-search"><Search :size="14" /><input :value="searchValue" :placeholder="searchPlaceholder" aria-label="搜索图谱节点" @input="emit('search', ($event.target as HTMLInputElement).value)" @keydown.enter.prevent="emit('search', ($event.target as HTMLInputElement).value)" /></div>
       <div class="visualization-actions" aria-label="图谱工具">
         <ElTooltip content="2D 图谱" placement="top">
-          <ElButton text :type="mode === '2d' ? 'primary' : 'info'" aria-label="2D 图谱" @click="emit('mode-change', '2d')"><Network :size="15" /></ElButton>
+          <ElButton text :type="mode === '2d' ? 'primary' : 'info'" aria-label="2D 图谱" :aria-pressed="mode === '2d'" @click="emit('mode-change', '2d')"><Network :size="15" /></ElButton>
         </ElTooltip>
         <ElTooltip content="Three.js 3D 图谱" placement="top">
-          <ElButton text :type="mode === '3d' ? 'primary' : 'info'" aria-label="3D 图谱" @click="emit('mode-change', '3d')"><Box :size="15" /></ElButton>
+          <ElButton text :type="mode === '3d' ? 'primary' : 'info'" aria-label="3D 图谱" :aria-pressed="mode === '3d'" @click="emit('mode-change', '3d')"><Box :size="15" /></ElButton>
         </ElTooltip>
         <ElTooltip content="重置视图" placement="top">
           <ElButton text aria-label="重置视图" @click="emit('reset')"><RotateCcw :size="15" /></ElButton>
@@ -76,11 +76,11 @@ async function toggleFullscreen() {
         </ElTooltip>
       </div>
     </header>
-    <div class="visualization-stage">
+    <div class="visualization-stage" :class="{ 'has-feedback': loading || error || unavailable || empty }">
       <slot />
       <div v-if="loading" class="visualization-state" role="status"><RefreshCw class="spin" :size="23" /><strong>正在加载可视化数据</strong><span>请稍候，正在整理知识节点与关系。</span></div>
       <div v-else-if="error" class="visualization-state visualization-error" role="alert"><Network :size="26" /><strong>可视化数据暂时不可用</strong><span>{{ error }}</span><ElButton type="primary" plain size="small" aria-label="重试图谱" @click="emit('retry')">重新连接</ElButton></div>
-      <div v-else-if="unavailable" class="visualization-state" role="status"><Network :size="26" /><strong>等待知识服务连接</strong><span>启动图谱服务后，这里会显示课程知识关系。</span><ElButton plain size="small" aria-label="重试图谱" @click="emit('retry')">检查连接</ElButton></div>
+      <div v-else-if="unavailable" class="visualization-state visualization-error" role="status"><Network :size="26" /><strong>等待知识服务连接</strong><span>图谱暂未返回数据，恢复连接后才能查看真实知识关系。</span><ElButton plain size="small" aria-label="重试图谱" @click="emit('retry')">检查连接</ElButton></div>
       <div v-else-if="empty" class="visualization-state" role="status"><Network :size="26" /><strong>暂无可显示的知识关系</strong><span>尝试搜索其他课程概念或调整筛选条件。</span></div>
     </div>
     <footer v-if="$slots.footer" class="visualization-footer"><slot name="footer" /></footer>
@@ -88,11 +88,30 @@ async function toggleFullscreen() {
 </template>
 
 <style scoped>
-.visualization-viewport { --viewport-border: var(--border-default); --viewport-bg: var(--surface-soft); display: grid; overflow: hidden; min-height: 500px; background: var(--viewport-bg); border: 1px solid var(--viewport-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); }
-.visualization-viewport:fullscreen { width: 100vw; height: 100vh; min-height: 100vh; border-radius: 0; background: var(--surface-soft); }
-.visualization-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 65px; padding: 12px 16px; background: rgba(255,255,255,.94); border-bottom: 1px solid var(--viewport-border); }
-.visualization-heading,.visualization-title-row,.visualization-actions { display: flex; align-items: center; }.visualization-heading { min-width: 0; gap: 10px; }.visualization-mark { width: 32px; height: 32px; display: grid; flex: 0 0 auto; place-items: center; color: #176b57; background: #e2f1e8; border-radius: 9px; }.visualization-title-row { flex-wrap: wrap; gap: 8px; }.visualization-title-row strong { color: #25362c; font-size: 13px; }.visualization-heading p { margin: 3px 0 0; color: #819087; font-size: 10px; }.visualization-actions { gap: 2px; }.visualization-actions :deep(.el-button) { width: 32px; height: 32px; margin: 0; border-radius: 8px; }.visualization-actions :deep(.el-button:hover) { background: #edf6ef; }
-.visualization-stage { position: relative; min-height: 430px; isolation: isolate; background-color: #f8fbf9; background-image: linear-gradient(rgba(94, 139, 111, .07) 1px, transparent 1px), linear-gradient(90deg, rgba(94, 139, 111, .07) 1px, transparent 1px); background-size: 32px 32px; }.visualization-stage > :slotted(*) { position: relative; z-index: 1; }.visualization-state { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 24px; color: #718078; text-align: center; background: rgba(248,251,249,.88); backdrop-filter: blur(3px); }.visualization-state strong { color: #44574b; font-size: 12px; }.visualization-state span { max-width: 340px; color: #84928a; font-size: 10px; line-height: 1.7; }.visualization-error { color: #a35c43; }.visualization-error strong { color: #914e38; }.visualization-footer { display: flex; align-items: center; min-height: 48px; padding: 8px 16px; background: #fff; border-top: 1px solid var(--viewport-border); }
-.spin { animation: viewport-spin .9s linear infinite; color: #4b986b; }@keyframes viewport-spin { to { transform: rotate(360deg); } }
-@media(max-width:700px){.visualization-viewport{min-height:390px;border-radius:10px}.visualization-toolbar{align-items:flex-start;min-height:58px;padding:10px}.visualization-heading p{display:none}.visualization-stage{min-height:320px;background-size:24px 24px}.visualization-actions :deep(.el-button){width:29px;height:29px}.visualization-footer{padding:7px 10px}}
+.visualization-viewport{display:grid;min-width:0;overflow:hidden;background:var(--surface);border:1px solid var(--border-default);border-radius:var(--radius-md);box-shadow:var(--shadow-xs)}
+.visualization-viewport:fullscreen{height:100vh;width:100vw;border:0;border-radius:0}
+.visualization-toolbar{position:relative;z-index:2;display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:12px 16px;border-bottom:1px solid var(--border-soft)}
+.visualization-heading,.visualization-title-row,.visualization-actions,.visualization-search{display:flex;align-items:center;gap:8px}
+.visualization-heading{flex:1 1 190px;min-width:0}
+.visualization-mark{display:grid;place-items:center;flex:0 0 32px;height:32px;color:var(--accent);background:var(--accent-soft);border-radius:var(--radius-sm)}
+.visualization-title-row{flex-wrap:wrap;font-size:14px}
+.visualization-heading p{margin:3px 0 0;color:var(--text-muted);font-size:12px;line-height:1.5}
+.visualization-search{flex:1 1 140px;min-width:0;padding:0 10px;color:var(--text-muted);background:var(--surface-soft);border:1px solid var(--border-default);border-radius:var(--radius-sm)}
+.visualization-search input{width:100%;min-height:34px;padding:4px 0;border:0;background:transparent;outline:0;font-size:13px}
+.visualization-search:focus-within{border-color:var(--border-focus);box-shadow:var(--focus-ring)}
+.visualization-actions{gap:2px;padding:3px;background:var(--surface-tint);border-radius:var(--radius-sm)}
+.visualization-actions :deep(.el-button){width:32px;height:32px;padding:0;margin:0;color:var(--text-muted);border-radius:var(--radius-sm)}
+.visualization-actions :deep(.el-button:hover),.visualization-actions :deep(.el-button[aria-pressed=true]){color:var(--accent-strong);background:var(--surface);box-shadow:var(--shadow-xs)}
+.visualization-stage{position:relative;display:grid;isolation:isolate;min-height:390px;background:var(--surface-soft) radial-gradient(var(--border-default) 1px,transparent 1px) 0 0 / 20px 20px}
+.visualization-stage > :slotted(*){width:100%;min-width:0}
+.visualization-stage.has-feedback{min-height:240px;background:var(--surface-soft)}
+.visualization-state{display:grid;place-items:center;align-content:center;gap:8px;padding:24px;color:var(--text-muted);text-align:center;font-size:13px}
+.visualization-stage:has(.visualization-state) > :slotted(*){display:none}
+.visualization-state strong{color:var(--text);font-size:16px}
+.visualization-state span{max-width:44ch}
+.visualization-state svg{color:var(--accent)}
+.visualization-error{background:var(--danger-soft)}
+.visualization-error :is(strong,svg){color:var(--danger)}
+.visualization-footer{padding:10px 16px;border-top:1px solid var(--border-soft)}
+@media(max-width:700px){.visualization-stage{min-height:320px}.visualization-toolbar,.visualization-footer{padding-inline:12px}}
 </style>

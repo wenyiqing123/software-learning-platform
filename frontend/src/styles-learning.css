@@ -91,32 +91,12 @@
 .run-mode small{color:#99a29b;font-size:8px;white-space:nowrap}
 .run-mode b{color:#63836a;font-weight:500}
 .compact-empty{min-height:160px}
-.compare-toggle:focus-within .toggle-track{outline:2px solid #8bbca7;outline-offset:2px}
 @media (max-width:900px){
-.graph-explore-layout{grid-template-columns:minmax(0,1fr) 225px}
-.tutor-workspace,.quiz-layout{grid-template-columns:minmax(0,1fr) 220px}
+.quiz-layout{grid-template-columns:minmax(0,1fr) 220px}
 .recommend-overview{grid-template-columns:minmax(0,1fr) 185px}
 }
 @media (max-width:700px){
-.graph-toolbar{flex-wrap:wrap;gap:9px;padding:8px}
-.graph-search{min-width:100%;gap:7px}
-.graph-search .button{min-height:33px;padding:0 9px;font-size:9px}
-.toolbar-divider{display:none}
-.graph-count{font-size:8px}
-.graph-explore-layout{grid-template-columns:minmax(0,1fr)}
-.graph-canvas{min-height:330px}
-.graph-legend{flex-wrap:wrap;gap:9px}
-.graph-hint{display:none}
-.entity-panel{padding:14px}
-.entity-stats{margin-top:12px}
-.relation-list{max-height:220px;overflow:auto}
-.mode-selector{grid-template-columns:1fr}
-.mode-option{min-height:55px}
-.mode-option small{font-size:9px}
-.tutor-workspace,.quiz-layout{grid-template-columns:minmax(0,1fr)}
-.tutor-aside{position:static}
-.strategy-steps{flex-direction:row;flex-wrap:wrap}
-.strategy-steps span{font-size:8px}
+.quiz-layout{grid-template-columns:minmax(0,1fr)}
 .quiz-main{padding:16px 13px}
 .question-stem{margin-top:18px;font-size:15px}
 .answer-option{min-height:48px;font-size:10px}

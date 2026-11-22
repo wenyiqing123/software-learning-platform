@@ -61,7 +61,7 @@ async function drawGraph() {
         source: edge.source,
         target: edge.target,
         data: { label: edge.label },
-        style: { stroke: '#91aaa0', lineWidth: 1.2, endArrow: true, labelText: edge.label, labelFill: '#60766e', labelFontSize: 10, labelBackground: true, labelBackgroundFill: '#fbfcfa' },
+        style: { stroke: '#849b95', lineWidth: 1.4, endArrow: true, labelText: edge.label, labelFill: '#475b56', labelFontSize: 12, labelBackground: true, labelBackgroundFill: '#f7f8fa' },
       })),
     },
     layout: { type: 'force', preventOverlap: true, linkDistance: 160, nodeSize: 48 },
@@ -153,11 +153,11 @@ onBeforeUnmount(() => {
     </SectionHeading>
     <div class="graph-mode-switch" role="tablist" aria-label="知识关系视图"><button :class="{ active: mode === 'graph' }" role="tab" aria-label="图谱浏览" :aria-selected="mode === 'graph'" aria-controls="knowledge-graph-panel" @click="switchMode('graph')">图谱浏览</button><button :class="{ active: mode === 'path' }" role="tab" aria-label="先修学习路径" :aria-selected="mode === 'path'" aria-controls="prerequisite-path-panel" @click="switchMode('path')">先修学习路径</button></div>
     <PrerequisitePathPanel v-if="mode === 'path'" id="prerequisite-path-panel" role="tabpanel" :course-id="courseId" :initial-target-id="pathTargetId" @target-change="setPathEntity" />
-    <template v-else>
-    <section id="knowledge-graph-panel" class="graph-toolbar" role="tabpanel">
+    <div v-else id="knowledge-graph-panel" class="graph-browser" role="tabpanel">
+    <section class="graph-toolbar" aria-label="图谱数据概况">
       <span class="graph-count"><Network :size="16" />{{ graphData.nodes.length }} 个实体</span>
       <span class="graph-count">{{ graphData.edges.length }} 条关系</span>
-      <span class="toolbar-divider"></span><span class="graph-count">当前节点：{{ selectedNode }}</span>
+      <span class="graph-count">当前查询：{{ selectedNode }}</span>
     </section>
     <section class="graph-explore-layout">
       <div class="graph-panel">
@@ -170,14 +170,13 @@ onBeforeUnmount(() => {
         </VisualizationViewport>
       </div>
       <aside class="entity-panel">
-        <p class="eyebrow">当前选中实体</p><h2>{{ selectedNode }}</h2><span class="entity-type">软件工程知识点</span>
+        <p class="eyebrow">{{ graphData.available ? '当前选中实体' : '查询实体' }}</p><h2>{{ selectedNode }}</h2><span v-if="graphData.available" class="entity-type">软件工程知识点</span>
         <div class="entity-stats"><div><strong>{{ selectedRelations.length }}</strong><span>关联关系</span></div><div><strong>{{ graphData.evidence.length }}</strong><span>证据三元组</span></div></div>
         <div v-if="renderMode === '3d'" class="graph-analysis"><p class="mini-heading">交互分析</p><label>关系筛选<select v-model="relationFilter" aria-label="关系类型筛选"><option value="ALL">全部关系</option><option v-for="item in relationOptions" :key="item" :value="item">{{ item }}</option></select></label><div><span>节点度数</span><strong>{{ selectedRelations.length }}</strong></div><div><span>平均证据分</span><strong>{{ averageEvidenceScore }}</strong></div></div>
         <div class="relation-list"><p class="mini-heading">相邻知识</p><div v-if="selectedRelations.length === 0" class="empty-relations">搜索并加载图谱后查看相邻知识。</div><button v-for="edge in selectedRelations" :key="edge.source + edge.label + edge.target" class="relation-item" @click="searchEntity(edge.source === selectedNode ? edge.target : edge.source)"><span>{{ edge.source === selectedNode ? edge.label + ' →' : '← ' + edge.label }}</span><strong>{{ edge.source === selectedNode ? edge.target : edge.source }}</strong><ArrowUpRight :size="14" /></button></div>
          <GraphEvidenceDrawer v-model="evidenceOpen" :node="selectedNode" :triples="selectedEvidence" @ask="emit('navigate', 'tutor', $event)" />
-         <button class="button button-dark entity-ask" @click="emit('navigate', 'tutor', selectedNode)"><Sparkles :size="16" />向 AI 助教提问</button>
       </aside>
     </section>
-    </template>
+    </div>
   </div>
 </template>

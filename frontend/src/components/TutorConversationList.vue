@@ -75,7 +75,7 @@ function submitRename(id: number) {
           <button class="icon-button icon-button-small" type="button" title="取消重命名" aria-label="取消重命名" @click="cancelRename"><X :size="14" /></button>
         </form>
         <template v-else>
-          <button class="tutor-session-select" type="button" :disabled="disabled" @click="emit('select', session.id)">
+          <button class="tutor-session-select" type="button" :title="session.title" :aria-current="activeId === session.id ? 'true' : undefined" :disabled="disabled" @click="emit('select', session.id)">
             <span class="tutor-session-dot" aria-hidden="true"></span>
             <span class="tutor-session-title">{{ session.title }}</span>
           </button>
@@ -90,12 +90,26 @@ function submitRename(id: number) {
 </template>
 
 <style scoped>
-.tutor-conversation-list{display:grid;align-content:start;gap:14px;min-width:0;padding:18px;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--surface);box-shadow:var(--shadow-sm)}
-.tutor-conversation-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.tutor-conversation-heading .eyebrow{margin:0 0 4px}.tutor-conversation-heading h2{margin:0;color:var(--ink);font-size:15px}
-.tutor-conversation-error{margin:0;padding:9px 10px;color:var(--danger);border:1px solid var(--danger-border);border-radius:var(--radius-sm);background:var(--danger-soft);font-size:11px;line-height:1.55}
-.tutor-conversation-items{display:grid;gap:5px;max-height:430px;overflow:auto;padding-right:2px}.tutor-conversation-item{display:flex;align-items:center;gap:4px;min-width:0;padding:4px;border:1px solid transparent;border-radius:var(--radius-sm);transition:background-color 150ms ease,border-color 150ms ease}.tutor-conversation-item:hover,.tutor-conversation-item.active{border-color:var(--accent-border);background:var(--accent-soft)}
-.tutor-session-select{display:flex;align-items:center;gap:8px;min-width:0;flex:1;padding:8px;border:0;background:transparent;color:var(--text-muted);text-align:left;cursor:pointer}.tutor-session-select:disabled{cursor:not-allowed;opacity:.6}.tutor-session-dot{width:6px;height:6px;flex:0 0 auto;border-radius:50%;background:var(--border-strong)}.active .tutor-session-dot{background:var(--accent)}.tutor-session-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}.active .tutor-session-title{color:var(--ink);font-weight:650}
-.tutor-session-actions{display:flex;gap:2px;opacity:0;transition:opacity 150ms ease}.tutor-conversation-item:hover .tutor-session-actions,.tutor-conversation-item.active .tutor-session-actions{opacity:1}.icon-button{display:inline-grid;place-items:center;width:30px;height:30px;padding:0;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:color 150ms ease,background-color 150ms ease,border-color 150ms ease}.icon-button:hover{border-color:var(--accent-border);background:var(--accent-soft);color:var(--accent)}.icon-button:disabled{cursor:not-allowed;opacity:.55}.icon-button-small{width:25px;height:25px}.icon-button.danger:hover{border-color:var(--danger-border);background:var(--danger-soft);color:var(--danger)}
-.tutor-session-rename{display:flex;align-items:center;gap:4px;width:100%;padding:3px}.tutor-session-rename input{min-width:0;flex:1;height:30px;padding:0 8px;border:1px solid var(--accent-border);border-radius:var(--radius-sm);background:var(--surface);color:var(--ink);font:inherit;font-size:12px}.tutor-conversation-empty{display:grid;justify-items:center;gap:8px;padding:22px 10px;color:var(--text-muted);text-align:center;background:var(--surface-soft);border:1px dashed var(--line);border-radius:var(--radius-sm)}.tutor-conversation-empty strong{color:var(--ink);font-size:12px}.tutor-conversation-empty span{font-size:10px;line-height:1.55}
-@media(max-width:860px){.tutor-conversation-list{padding:14px}.tutor-conversation-items{max-height:250px}}
+.tutor-conversation-list{display:grid;align-content:start;gap:12px;min-width:0;padding:14px;border:1px solid var(--border-default);border-radius:var(--radius-md);background:var(--surface)}
+.tutor-conversation-heading,.tutor-conversation-item,.tutor-session-select,.tutor-session-rename,.tutor-session-actions{display:flex;align-items:center;gap:4px}
+.tutor-conversation-heading{justify-content:space-between}
+.tutor-conversation-heading h2{margin:0;font-size:16px}
+.tutor-conversation-error{margin:0;padding:8px;color:var(--danger);background:var(--danger-soft);border-radius:var(--radius-sm);font-size:12px}
+.tutor-conversation-items{display:grid;gap:4px;max-height:360px;overflow:auto}
+.tutor-conversation-item{min-width:0;padding-inline:4px;border-radius:var(--radius-sm)}
+.tutor-conversation-item:focus-within,.tutor-conversation-item:hover{background:var(--surface-soft)}
+.tutor-conversation-item.active{color:var(--accent-strong);background:var(--accent-soft);box-shadow:inset 2px 0 var(--accent)}
+.tutor-session-select{min-width:0;flex:1;padding:8px 4px;border:0;background:transparent;text-align:left}
+.tutor-session-select:hover{background:transparent}
+.tutor-session-dot{width:6px;height:6px;flex:none;border-radius:50%;background:var(--border-strong)}
+.active .tutor-session-dot{background:var(--accent)}
+.tutor-session-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.active .tutor-session-title{font-weight:650}
+.tutor-session-actions .icon-button,.tutor-session-rename .icon-button{width:26px;height:28px;padding:0;flex:none}
+.tutor-session-actions .danger:hover{color:var(--danger);background:var(--danger-soft)}
+.tutor-session-rename{width:100%;padding-block:4px}
+.tutor-session-rename input{min-width:0;flex:1;font-size:13px}
+.tutor-conversation-empty{display:grid;justify-items:start;gap:6px;color:var(--text-muted);font-size:12px}
+.tutor-conversation-empty strong{color:var(--text);font-size:13px}
+@media(max-width:760px){.tutor-conversation-items{max-height:170px}}
 </style>

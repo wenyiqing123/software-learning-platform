@@ -31,12 +31,33 @@ function expectedPath(role, requested) {
 
 const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) })
 
+const course = { id: 3, code: 'SE', name: '软件工程', term: '2026 秋季', description: '从需求到测试，逐章阅读并用练习核验理解。' }
+const courseSections = ['需求分析', '数据流图', '需求规格说明书'].map((title, index) => ({
+  id: 31 + index, title, knowledgePointId: 11 + index, knowledgePointName: title, graphEntity: title,
+  completed: index === 0,
+  objectives: ['区分系统边界、业务目标与约束。', '用明确、可验证的语言描述需求。'],
+  content: [
+    { heading: '从问题域出发', paragraphs: ['需求分析把用户的目标、所处的环境和现有约束整理为可以沟通的说明。先把业务目标和候选解决方案分开，再确认系统负责什么、哪些工作仍由使用者完成。', '例如，在图书借阅场景里，先描述借阅者、库存与归还规则，再讨论由哪个界面或服务实现这些步骤。'] },
+    { heading: '核验需求', paragraphs: ['为每项需求写出可观察的通过条件，并记录尚未解决的问题。评审时对照这些条件检查歧义与遗漏。'] },
+  ],
+  resources: [{ title: '需求建模参考', url: 'https://example.org/requirements', description: '对比目标、约束与验收条件。' }],
+}))
+const coursePoints = courseSections.map((section, index) => ({ id: section.knowledgePointId, courseId: 3, chapterId: 1, name: section.title, graphEntity: section.graphEntity, mastery: [85, 42, 0][index], sortOrder: index + 1 }))
+const evidence = [
+  { subject: '需求分析', predicate: '输出', object: '需求规格说明书', score: 0.92 },
+  { subject: '需求分析', predicate: '使用', object: '数据流图', score: 0.81 },
+]
+const graphNodes = coursePoints.map(point => ({ id: point.graphEntity, label: point.name, type: 'knowledge' }))
+const pathNodes = coursePoints.map((point, index) => ({ ...point, status: ['MASTERED', 'IN_PROGRESS', 'BLOCKED'][index], prerequisiteIds: index ? [point.id - 1] : [] }))
+const chatQuestion = '软件需求规格说明书应该包含哪些内容？'
+const chatAnswer = '## 从边界开始\n\n先说明目标、业务边界和参与者，再分别写出功能需求与约束。最后为每项需求补上可验证的验收条件。\n\n- 功能：记录借阅申请\n- 约束：库存不足时说明原因\n\n```text\n条件：库存大于 0\n预期：生成借阅记录\n```'
+
 function apiResponse(url, role, scenario) {
   const path = new URL(url).pathname
   if (path === '/api/auth/me') return json({ id: role === 'ADMIN' ? 1 : 2, username: role === 'ADMIN' ? 'smoke-admin' : 'smoke-student', displayName: role === 'ADMIN' ? '封版巡检管理员' : '封版巡检学生', role })
   if (path === '/api/dashboard/overview') return json({ mastery: 42, completed: 4, wrongCount: 2, accuracy: 75, activity: [] })
-  if (path === '/api/knowledge/points') return json([{ id: 11, courseId: 3, chapterId: 1, name: '需求分析', graphEntity: '需求分析', mastery: 42, sortOrder: 1 }])
-  if (path === '/api/courses') return json([{ id: 3, code: 'SE', name: '软件工程', term: '2026 秋季', description: '课程阅读与练习' }])
+  if (path === '/api/knowledge/points') return json(coursePoints)
+  if (path === '/api/courses') return json([course])
   if (path === '/api/admin/courses') return json([{ id: 3, code: 'SE', name: '软件工程', term: '2026 秋季', description: '课程阅读与练习', graphSpaceId: 1, enabled: true }])
   if (path === '/api/admin/teaching-dashboard') {
     const empty = scenario === 'teaching-empty'
@@ -53,10 +74,22 @@ function apiResponse(url, role, scenario) {
   if (path.includes('/admin/courses/') && path.endsWith('/prerequisite-quality')) return json({ courseId: 3, pointCount: 1, validEdgeCount: 0, errorCount: 0, warningCount: 0, valid: true, issues: [] })
   if (path === '/api/admin/knowledge-points' || path === '/api/admin/questions') return json([])
   if (path.startsWith('/api/admin/questions/')) return json([])
-  if (path.endsWith('/study')) return json({ course: { id: 3, name: '软件工程' }, chapters: [], sections: [] })
-  if (path === '/api/knowledge/graph') return json({ available: true, nodes: [{ id: '需求分析', label: '需求分析' }, { id: '需求规格说明书', label: '需求规格说明书' }], edges: [{ source: '需求分析', target: '需求规格说明书', label: '输出' }], evidence: [{ subject: '需求分析', predicate: '输出', object: '需求规格说明书', score: 0.9 }] })
-  if (path.includes('/knowledge/learning-path')) return json({ targetId: 11, courseId: 3, nodes: [], cycleDetected: false })
-  if (path.includes('/knowledge/mastery-map')) return json({ courseId: 3, courseName: '软件工程', nodes: [], edges: [] })
+  if (path.endsWith('/study')) {
+    const empty = scenario === 'course-empty'
+    return json({ ...course, courseId: course.id, chapters: empty ? [] : [{ id: 1, name: '软件需求', description: '理解需求、建模与核验。', sections: courseSections }], totalSections: empty ? 0 : courseSections.length, completedSections: empty ? 0 : 1 })
+  }
+  if (/^\/api\/courses\/3\/study\/sections\/\d+\/micro-lesson$/.test(path)) return json({
+    id: 4, courseId: 3, sectionId: 31, title: '从业务问题到需求描述', status: 'PUBLISHED',
+    generatedText: '需求分析从问题域开始。先明确系统的使用者、输入输出以及要解决的问题，再把期望功能与限制条件分别记录下来。\n\n以图书借阅为例，先描述借阅期限与库存校验的规则，最后为规则补上可观察的验收结果。',
+    objectives: ['判断一项需求能否被验证'], prerequisites: [{ id: 11, name: '需求分析', graphEntity: '需求分析' }], triples: evidence,
+    commonErrors: [{ stem: '把实现方案写成用户目标', explanation: '先描述业务需要，再比较解决方案。', wrongCount: 2 }],
+    selfTests: [{ questionId: 101, stem: '如何核验一条借阅需求？', options: [] }], evidence: { graphEntity: '需求分析', tripleCount: evidence.length },
+  })
+  if (path === '/api/knowledge/graph') return json(scenario === 'graph-offline'
+    ? { available: false, nodes: [], edges: [], evidence: [] }
+    : { available: true, nodes: graphNodes, edges: evidence.map(({ subject, object, predicate, score }) => ({ source: subject, target: object, label: predicate, score })), evidence })
+  if (path === '/api/knowledge/learning-path') return json({ targetId: Number(new URL(url).searchParams.get('targetId')), courseId: 3, nodes: pathNodes, cycleDetected: false })
+  if (path === '/api/knowledge/mastery-map') return json({ courseId: 3, courseName: '软件工程', nodes: pathNodes.map((point, index) => ({ ...point, attemptCount: index < 2 ? 4 : 0, correctCount: 4 - index * 2, dueReviewCount: index === 1 ? 2 : 0 })), edges: [{ source: 11, target: 12, relation: '先修' }, { source: 12, target: 13, relation: '先修' }] })
   if (path === '/api/adaptive-practice') return json([])
   if (path === '/api/recommendations') return json([{ id: 11, knowledgePointId: 11, title: '复习需求分析', reason: '基于掌握度、错题与先修关系的可解释规则推荐。', kind: '薄弱点巩固', score: 0.8, knowledgePoint: '需求分析' }])
   if (path === '/api/wrong-book') return json([{ id: 21, questionId: 101, question: '加工如何命名？', knowledgePoint: '数据流图', wrongCount: 2, status: 'UNMASTERED' }])
@@ -69,8 +102,12 @@ function apiResponse(url, role, scenario) {
   if (path.startsWith('/api/evaluations/sessions')) return json([])
   if (path === '/api/admin/evaluations/summary') return json([{ conditionKey: 'METHODS', sampleCount: 3, meanPreScore: 3, medianPreScore: 3, meanPostScore: 4, medianPostScore: 4, meanEffort: 4, medianEffort: 4, feedbackCount: 2 }])
   if (path === '/api/admin/evaluations/export') return { status: 200, contentType: 'text/csv', body: 'participant,condition\nanon-001,METHODS\n' }
-  if (path === '/api/tutor/sessions') return json([])
-  if (path.startsWith('/api/learning/notes')) return json([])
+  if (path === '/api/tutor/sessions') return json(scenario === 'tutor-history' ? [{ id: 7, title: '需求规格说明书练习' }, { id: 8, title: '数据流图复习' }] : [])
+  if (path === '/api/tutor/sessions/7/messages') return json([
+    { id: 1, role: 'USER', content: chatQuestion, mode: 'TRIPLES' },
+    { id: 2, role: 'ASSISTANT', content: chatAnswer, mode: 'TRIPLES', metadata: { results: [{ mode: 'TRIPLES', answer: chatAnswer, triples: evidence, latencyMs: 920 }] } },
+  ])
+  if (path.startsWith('/api/learning/notes')) return json(scenario === 'course-notes' ? [{ id: 1, sectionId: 32, title: '先画系统边界', content: '先列出外部实体，再检查每条输入和输出。', tags: ['数据流图'] }] : [])
   if (path.startsWith('/api/learning/bookmarks')) return json({ bookmarked: false })
   if (path === '/api/ai/dependencies') return json({ configured: true, pythonKnowledgeStatus: 'UP', rankedModelEnabled: false, rankedModelConfigured: false, rankedModelStatus: 'DISABLED' })
   if (path === '/api/system/status') return json({ checkedAt: new Date().toISOString(), dependencies: [{ key: 'mysql', label: 'MySQL', status: 'UP', impact: '' }, { key: 'python', label: 'Python Bridge', status: 'UP', impact: '' }] })
@@ -81,7 +118,64 @@ function apiResponse(url, role, scenario) {
 await access(path.join(root, 'dist/index.html')).catch(() => { throw new Error('Run npm run build before the visual smoke test') })
 const server = await preview({ root, configFile: path.join(root, 'vite.config.ts'), preview: { host: '127.0.0.1', port: 0, strictPort: true, proxy: {} } })
 const visualScenarios = {
-  STUDENT: [],
+  STUDENT: [
+    { route: '/courses?courseId=3&sectionId=32', name: 'course-notes', async check(page) {
+      const toggle = page.getByRole('button', { name: /展开笔记/ })
+      if (await toggle.count()) await toggle.click()
+      await page.getByText('先画系统边界').waitFor()
+    } },
+    { route: '/courses', name: 'course-empty', check: page => page.getByText('本课程的阅读内容正在准备中。', { exact: false }).waitFor() },
+    { route: '/knowledge', name: 'graph-offline', async check(page) {
+      await page.getByText('等待知识服务连接').waitFor()
+      if (await page.locator('.graph-panel canvas, .evidence-triple-card').count()) throw new Error('Unavailable graph rendered replacement data')
+    } },
+    { route: '/knowledge', name: 'graph-evidence', async check(page) {
+      await page.locator('.graph-panel canvas').first().waitFor()
+      await page.getByRole('button', { name: '查看详情' }).click()
+      await page.locator('.evidence-triple-card').first().waitFor()
+    } },
+    { route: '/knowledge', name: 'graph-3d', async check(page) {
+      await page.locator('.graph-panel canvas').first().waitFor()
+      await page.getByRole('button', { name: '3D 图谱', exact: true }).click()
+      const canvas = page.getByTestId('three-graph-canvas').locator('canvas')
+      await canvas.waitFor()
+      // A WebGL canvas with only its flat background passes DOM visibility checks.
+      const sample = () => canvas.evaluate(element => {
+        const image = document.createElement('canvas')
+        image.width = image.height = 64
+        const ctx = image.getContext('2d')
+        ctx.drawImage(element, 0, 0, 64, 64)
+        const rgba = ctx.getImageData(0, 0, 64, 64).data
+        const rgb = []
+        for (let i = 0; i < rgba.length; i += 4) rgb.push((rgba[i] << 16) | (rgba[i + 1] << 8) | rgba[i + 2])
+        return rgb
+      })
+      await page.getByText('交互分析').waitFor()
+      const before = await sample()
+      if (new Set(before).size < 6) throw new Error('3D viewport has no visible graph')
+      const bounds = await canvas.boundingBox()
+      const x = bounds.x + bounds.width / 2
+      const y = bounds.y + bounds.height / 2
+      await page.mouse.move(x, y)
+      await page.mouse.down()
+      await page.mouse.move(x + 85, y + 20, { steps: 5 })
+      await page.mouse.up()
+      const after = await sample()
+      if (before.every((color, i) => color === after[i])) throw new Error('3D viewport did not react to dragging')
+    } },
+    { route: '/knowledge?view=path&knowledgePointId=13', name: 'prerequisite-path', check: page => page.getByTestId('path-node').first().waitFor() },
+    { route: '/mastery-map', name: 'mastery-data', async check(page) {
+      await page.locator('.mastery-canvas canvas').first().waitFor()
+      await page.locator('.mastery-node h2').first().click()
+      await page.locator('.evidence-drawer.open').getByText('当前节点：', { exact: false }).waitFor()
+      if (await page.locator('.evidence-triple-card').count()) throw new Error('Mastery graph rendered synthetic triples')
+    } },
+    { route: '/tutor?courseId=3&sectionId=32&entity=数据流图', name: 'tutor-history', async check(page) {
+      await page.getByRole('button', { name: '需求规格说明书练习', exact: true }).click()
+      await page.locator('.tutor-message-bubble pre').waitFor()
+      await page.locator('.evidence-block summary').click()
+    } },
+  ],
   ADMIN: [{ route: '/teaching-dashboard', name: 'teaching-empty', check: page => page.getByText('当前范围内暂无学习活动数据。').waitFor() }],
   GUEST: [],
 }
@@ -110,11 +204,16 @@ try {
       localStorage.setItem('slp-user-role', role)
     }, role)
     const visits = (role === 'GUEST' ? ['/login'] : routes).map(route => ({ route, name: '', check: null }))
-    for (const { route, name, check } of [...visits, ...visualScenarios[role]]) {
+    const scenariosOnly = process.env.UI_REVIEW_SCENARIOS_ONLY === '1'
+    for (const { route, name, check } of [...(scenariosOnly ? [] : visits), ...visualScenarios[role]]) {
       scenario = name
       await page.goto(baseUrl + route, { waitUntil: 'networkidle' })
       await check?.(page)
-      await page.evaluate(async () => { await document.fonts?.ready })
+      await page.evaluate(async () => {
+        await document.fonts?.ready
+        // Playwright may scroll to a clicked control. Check first-screen layout at the initial scroll position.
+        window.scrollTo({ top: 0, behavior: 'instant' })
+      })
       const metrics = await page.evaluate(() => {
         const visible = element => element instanceof HTMLElement && element.getClientRects().length > 0 && getComputedStyle(element).visibility === 'visible'
         const buttons = [...document.querySelectorAll('button')].filter(visible)

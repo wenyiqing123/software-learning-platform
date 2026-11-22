@@ -3,7 +3,7 @@ import { onMounted, reactive, ref, watch } from 'vue'
 import { Bookmark, ChevronDown, FilePlus2, Pencil, Save, Trash2, X } from '@lucide/vue'
 import { api, apiError, type LearningBookmark, type LearningNote } from '../api/client'
 
-const props = defineProps<{ sectionId: number; knowledgePointId?: number }>()
+const props = defineProps<{ sectionId: number; knowledgePointId?: number; startCollapsed?: boolean }>()
 const notes = ref<LearningNote[]>([])
 const bookmarked = ref(false)
 const loading = ref(true)
@@ -11,7 +11,7 @@ const saving = ref(false)
 const error = ref('')
 const notice = ref('')
 const editingId = ref<number | null>(null)
-const collapsed = ref(false)
+const collapsed = ref(Boolean(props.startCollapsed))
 const draft = reactive({ title: '', content: '', tags: '' })
 
 function resetDraft() { editingId.value = null; draft.title = ''; draft.content = ''; draft.tags = '' }
@@ -61,7 +61,11 @@ onMounted(() => void load())
 
 <template>
   <section class="learning-notes-panel" aria-label="我的学习记录">
-    <header class="notes-panel-heading"><div><p class="eyebrow">PERSONAL STUDY LOG</p><h3>我的学习记录</h3><span>笔记和收藏只对当前账户可见</span></div><button class="notes-collapse" type="button" :aria-expanded="!collapsed" @click="collapsed = !collapsed"><ChevronDown :size="15" :class="{ rotated: collapsed }" />{{ collapsed ? '展开' : '收起' }}</button><button class="notes-bookmark" :class="{ active: bookmarked }" :aria-label="bookmarked ? '取消收藏本节' : '收藏本节'" :disabled="saving || loading" @click="toggleBookmark"><Bookmark :size="16" :fill="bookmarked ? 'currentColor' : 'none'" />{{ bookmarked ? '已收藏' : '收藏本节' }}</button></header>
+    <header class="notes-panel-heading">
+      <div><h3>我的学习记录</h3><span>笔记和收藏只对当前账户可见</span></div>
+      <button class="notes-collapse icon-button" type="button" :aria-expanded="!collapsed" :aria-label="collapsed ? '展开笔记' : '收起笔记'" :title="collapsed ? '展开笔记' : '收起笔记'" @click="collapsed = !collapsed"><ChevronDown :size="16" :class="{ rotated: collapsed }" /></button>
+      <button class="notes-bookmark icon-button" :class="{ active: bookmarked }" :aria-label="bookmarked ? '取消收藏本节' : '收藏本节'" :title="bookmarked ? '取消收藏本节' : '收藏本节'" :aria-pressed="bookmarked" :disabled="saving || loading" @click="toggleBookmark"><Bookmark :size="16" :fill="bookmarked ? 'currentColor' : 'none'" /></button>
+    </header>
     <div v-if="!collapsed">
     <div v-if="error" class="notes-message error" role="alert">{{ error }}</div><div v-if="notice" class="notes-message success" role="status">{{ notice }}</div>
     <form class="notes-editor" @submit.prevent="save"><div class="notes-editor-top"><strong>{{ editingId ? '编辑笔记' : '添加一条笔记' }}</strong><button v-if="editingId" type="button" class="icon-button" aria-label="取消编辑笔记" @click="resetDraft"><X :size="15" /></button></div><input v-model="draft.title" aria-label="笔记标题" maxlength="160" placeholder="标题（可选）" /><textarea v-model="draft.content" aria-label="笔记内容" rows="3" maxlength="10000" placeholder="记录你的理解、疑问或易错点"></textarea><div class="notes-editor-bottom"><input v-model="draft.tags" aria-label="笔记标签" placeholder="标签，用逗号分隔" /><button class="button button-dark button-small" type="submit" aria-label="保存笔记" :disabled="saving || !draft.content.trim()"><Save :size="14" />保存</button></div></form>
@@ -71,6 +75,26 @@ onMounted(() => void load())
 </template>
 
 <style scoped>
-.learning-notes-panel { display:grid; gap:14px; margin-top:28px; padding:18px; background:var(--surface-soft); border:1px solid var(--border-default); border-radius:var(--radius-md); }.notes-panel-heading,.notes-editor-top,.notes-editor-bottom,.note-item-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }.notes-panel-heading h3 { margin:0 0 4px; color:var(--text); font-size:15px; }.notes-panel-heading span { color:var(--text-muted); font-size:10px; }.notes-panel-heading .eyebrow { margin:0 0 4px; color:var(--accent); }.notes-collapse{display:inline-flex;align-items:center;gap:4px;margin-left:auto;padding:0 7px;min-height:28px;color:var(--text-muted);background:transparent;border:1px solid transparent;border-radius:var(--radius-sm);font-size:10px;cursor:pointer}.notes-collapse:hover{color:var(--accent);background:var(--accent-soft)}.notes-collapse .rotated{transform:rotate(-90deg)}.notes-bookmark { display:inline-flex; align-items:center; gap:6px; min-height:34px; padding:0 10px; color:var(--text-muted); background:var(--surface); border:1px solid var(--border-default); border-radius:var(--radius-sm); font-size:11px; cursor:pointer; }.notes-panel-heading>div{min-width:0}.notes-panel-heading{align-items:flex-start}.notes-bookmark.active { color:var(--accent); background:var(--accent-soft); border-color:var(--border-focus); }.notes-editor { display:grid; gap:8px; padding:13px; background:var(--surface); border:1px solid var(--border-default); border-radius:var(--radius-md); }.notes-editor-top { color:var(--text); font-size:11px; }.notes-editor input,.notes-editor textarea { width:100%; padding:9px 10px; color:var(--text); background:var(--surface); border:1px solid var(--border-default); border-radius:var(--radius-sm); font:inherit; font-size:11px; outline:none; }.notes-editor input:focus,.notes-editor textarea:focus { border-color:var(--border-focus); box-shadow:var(--focus-ring); }.notes-editor textarea { resize:vertical; line-height:1.65; }.notes-editor-bottom { align-items:center; }.notes-editor-bottom input { flex:1; }.notes-empty { display:flex; align-items:center; justify-content:center; gap:8px; min-height:65px; color:var(--text-muted); font-size:11px; text-align:center; }.notes-list { display:grid; gap:9px; }.note-item { padding:12px 13px; background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--radius-md); }.note-item-heading strong { color:var(--text); font-size:11px; }.note-item-heading .icon-button { width:27px; height:27px; }.note-item p { margin:8px 0; color:var(--text-muted); font-size:11px; line-height:1.7; white-space:pre-wrap; }.note-tags { display:flex; flex-wrap:wrap; gap:5px; }.note-tags span { padding:3px 6px; color:var(--accent); background:var(--accent-soft); border-radius:4px; font-size:9px; }.notes-message { padding:8px 10px; border-radius:var(--radius-sm); font-size:10px; }.notes-message.error { color:var(--danger); background:var(--danger-soft); }.notes-message.success { color:var(--accent-strong); background:var(--accent-soft); }.notes-editor .button { justify-self:end; }
-@media(max-width:600px){.learning-notes-panel{padding:13px}.notes-panel-heading{align-items:flex-start;flex-direction:column}.notes-bookmark{align-self:flex-start}.notes-editor-bottom{align-items:stretch;flex-direction:column}.notes-editor-bottom .button{width:100%}}
+.learning-notes-panel{display:grid;gap:12px;min-width:0;padding:14px;background:var(--surface-tint);border-radius:var(--radius-md)}
+.notes-panel-heading,.note-item-heading,.notes-editor-top{display:flex;align-items:flex-start;justify-content:space-between;gap:4px}
+.notes-panel-heading>div,.note-item-heading>strong{min-width:0;flex:1}
+.notes-panel-heading h3{margin:0;font-size:14px}
+.notes-panel-heading span,.notes-empty,.note-item p{color:var(--text-muted);font-size:12px}
+.notes-panel-heading .icon-button,.note-item-heading .icon-button{flex:0 0 30px;width:30px;height:30px}
+.notes-collapse svg{transition:transform var(--motion)}
+.notes-collapse .rotated{transform:rotate(-90deg)}
+.notes-bookmark.active{color:var(--accent-strong);background:var(--accent-soft)}
+.notes-editor,.notes-editor-bottom{display:grid;gap:8px}
+.notes-editor-top,.note-item-heading strong{font-size:13px}
+.notes-editor :is(input,textarea){width:100%;font-size:13px}
+.notes-editor .button{justify-self:end}
+.notes-empty{display:flex;align-items:center;gap:8px;margin-top:12px}
+.notes-empty svg{flex:0 0 auto;color:var(--accent)}
+.note-item{padding-top:12px;margin-top:12px;border-top:1px solid var(--border-default);overflow-wrap:anywhere}
+.note-item-heading>div,.note-tags{display:flex;gap:4px}
+.note-item p{margin:6px 0 8px;white-space:pre-wrap;line-height:1.7}
+.note-tags{flex-wrap:wrap}
+.note-tags span,.notes-message{padding:3px 8px;color:var(--accent-strong);background:var(--accent-soft);border-radius:var(--radius-pill);font-size:12px}
+.notes-message{margin-bottom:8px;border-radius:var(--radius-sm)}
+.notes-message.error{color:var(--danger);background:var(--danger-soft)}
 </style>
