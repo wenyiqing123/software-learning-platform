@@ -91,96 +91,13 @@
 .run-mode small{color:#99a29b;font-size:8px;white-space:nowrap}
 .run-mode b{color:#63836a;font-weight:500}
 .compact-empty{min-height:160px}
-.login-page{min-height:100vh;display:grid;grid-template-columns:minmax(0,1fr) minmax(390px,500px);background:#f5f7f4}
-.login-art{min-height:100vh;position:relative;display:grid;place-items:center;overflow:hidden;color:#c8e2d1;background:#174b3d}
-.login-art::before,.login-art::after{content:"";position:absolute;width:420px;height:420px;border:1px solid rgba(191,224,202,.12);border-radius:50%}
-.login-art::after{width:610px;height:610px}
-.login-orbit{width:240px;height:240px;position:absolute;border:1px solid rgba(196,227,207,.35);border-radius:50%}
-.login-orbit.inner{width:150px;height:150px;border-style:dashed;border-color:rgba(196,227,207,.25)}
-.login-core{width:86px;height:86px;position:relative;z-index:1;display:grid;place-items:center;color:#e0f2e5;background:#286d55;border:1px solid #74ad89;border-radius:22px;box-shadow:0 15px 45px rgba(4,34,25,.24)}
-.login-node{position:absolute;z-index:2;padding:8px 13px;color:#e4f0e6;background:#225b49;border:1px solid rgba(198,230,208,.3);border-radius:6px;font-size:11px}
-.login-node.first{margin-top:-245px}
-.login-node.second{margin-left:255px;margin-top:80px}
-.login-node.third{margin-left:-250px;margin-top:120px}
-.login-panel{width:min(100%,500px);align-self:center;justify-self:center;padding:48px 55px}
-.login-brand{margin-bottom:57px;padding:0}
-.login-panel>.eyebrow{color:#688371}
-.login-panel h1{margin:0;color:#26352c;font-size:26px}
-.login-subtitle{margin:9px 0 25px;color:#818c84;font-size:11px;line-height:1.7}
-.login-form{display:flex;flex-direction:column;gap:14px}
-.login-field>span{display:block;margin-bottom:6px;color:#5b675f;font-size:10px;font-weight:600}
-.login-field>div{height:43px;display:flex;align-items:center;gap:9px;padding:0 11px;color:#89948c;background:#fff;border:1px solid #e1e7e1;border-radius:6px}
-.login-field input{min-width:0;flex:1;color:#2c3a31;background:transparent;border:0;outline:0;font-size:11px}
-.login-field input::placeholder{color:#abb3ad}
-.login-submit{width:100%;justify-content:space-between;margin-top:5px}
-.login-error{margin:-2px 0 0;color:#aa5238;font-size:10px;line-height:1.5}
-.login-switch{margin:20px 0 0;color:#849087;font-size:10px;text-align:center}
-.login-switch button{padding:0;color:#277258;background:transparent;border:0;font-size:inherit;font-weight:600;cursor:pointer}
-.login-footnote{display:block;margin-top:39px;color:#a0a8a2;font-size:9px;text-align:center}
 .compare-toggle:focus-within .toggle-track{outline:2px solid #8bbca7;outline-offset:2px}
-@media (max-width:1180px){.app-shell{grid-template-columns:218px minmax(0,1fr)}
-.sidebar{padding-right:12px;padding-left:12px}
-.page-content{padding-right:25px;padding-left:25px}
-.topbar{padding-right:25px;padding-left:25px}
-.dashboard-hero{grid-template-columns:minmax(270px,1fr) 230px 110px;padding-right:24px;padding-left:24px}
-.hero-art{transform:scale(.9)}
-}
-@media (max-width:900px){.dashboard-hero{grid-template-columns:minmax(0,1fr) 145px}
-.hero-art{display:none}
-.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-.dashboard-columns{grid-template-columns:1fr}
+@media (max-width:900px){
 .graph-explore-layout{grid-template-columns:minmax(0,1fr) 225px}
 .tutor-workspace,.quiz-layout{grid-template-columns:minmax(0,1fr) 220px}
 .recommend-overview{grid-template-columns:minmax(0,1fr) 185px}
 }
-@media (max-width:700px){.login-page{min-height:100dvh;display:block;padding:10px 0;background:linear-gradient(155deg,#174b3d 0,#174b3d 165px,#f5f7f4 165px)}
-.login-art{display:none}
-.login-panel{width:calc(100% - 28px);margin:115px auto 0;padding:26px 21px 31px;background:#fff;border:1px solid #e8ece7;border-radius:9px}
-.login-brand{margin-bottom:29px}
-.login-footnote{margin-top:24px}
-.app-shell{display:block}
-.sidebar{width:100%;height:auto;position:sticky;top:0;display:block;padding:10px 12px 7px;border-right:0;border-bottom:1px solid var(--line)}
-.brand{width:max-content;padding:0 4px}
-.brand-mark{width:34px;height:34px}
-.brand strong{font-size:14px}
-.brand small{display:none}
-.course-switch,.sidebar-bottom,.nav-label{display:none}
-.primary-nav{padding-top:8px;overflow-x:auto}
-.nav-group{display:flex;width:max-content;gap:3px}
-.nav-group+.nav-group{margin:0 0 0 7px;padding-left:7px;border-left:1px solid #e8ece7}
-.nav-item{width:auto;min-height:35px;gap:6px;padding:0 9px}
-.nav-item span{font-size:9px;white-space:nowrap}
-.nav-item>svg{width:15px;height:15px}
-.nav-count{min-width:16px;height:16px;font-size:8px}
-.topbar{height:48px;padding:0 14px}
-.breadcrumb{gap:6px;font-size:10px}
-.topbar-actions{gap:8px}
-.course-status,.help-quick{display:none}
-.user-menu{gap:6px;font-size:10px}
-.avatar{width:26px;height:26px}
-.page-content{padding:22px 13px 36px}
-.page-stack{gap:14px}
-.section-heading{align-items:flex-start;gap:8px}
-.section-heading h1{font-size:20px}
-.section-description{max-width:92%;font-size:10px}
-.section-heading>.button,.section-heading>.compare-toggle{align-self:center;flex:0 0 auto}
-.section-heading .button{min-height:34px;gap:5px;padding:0 9px;font-size:9px}
-.dashboard-hero{min-height:210px;grid-template-columns:minmax(0,1fr) 81px;padding:20px 17px}
-.hero-copy h2{font-size:18px}
-.hero-copy p{max-width:230px;font-size:9px}
-.hero-progress{gap:7px;font-size:8px}
-.progress-ring{width:64px;height:64px}
-.progress-ring::before{width:53px;height:53px}
-.progress-ring strong{font-size:16px}
-.metric-grid{gap:8px}
-.metric-tile{min-height:98px;padding:12px}
-.metric-tile strong{font-size:18px}
-.metric-tile span{font-size:8px}
-.content-section{padding:15px 13px}
-.recommend-strip{grid-template-columns:34px minmax(0,1fr);gap:9px;padding:13px}
-.recommend-strip>.button{grid-column:2;justify-self:start;min-height:34px}
-.recommend-check{display:none}
-.recommend-strip h2{font-size:10px;line-height:1.5}
+@media (max-width:700px){
 .graph-toolbar{flex-wrap:wrap;gap:9px;padding:8px}
 .graph-search{min-width:100%;gap:7px}
 .graph-search .button{min-height:33px;padding:0 9px;font-size:9px}

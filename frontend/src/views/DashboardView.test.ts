@@ -41,6 +41,8 @@ describe('DashboardView', () => {
     expect(wrapper.text()).toContain('今天，从一个知识点开始')
     expect(wrapper.text()).toContain('42%')
     expect(wrapper.text()).toContain('有 2 道错题待处理')
+    expect(wrapper.find('.dashboard-hero').exists()).toBe(true)
+    expect(wrapper.findAll('.metric-tile')).toHaveLength(4)
     expect(wrapper.find('a.learning-next-card').attributes('href')).toContain('/courses')
     expect(wrapper.findAll('a.learning-next-card')[2].attributes('href')).toContain('/practice')
     wrapper.unmount()

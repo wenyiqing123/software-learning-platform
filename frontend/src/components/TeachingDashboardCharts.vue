@@ -39,5 +39,11 @@ onBeforeUnmount(() => { window.removeEventListener('resize', resizeCharts); acti
 </template>
 
 <style scoped>
-.teaching-chart-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(360px,.75fr);gap:16px}.teaching-chart-card{min-width:0}.teaching-panel-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.teaching-panel-heading small{color:var(--text-subtle);font-size:10px}.teaching-chart{width:100%;height:280px}.teaching-chart-empty{display:grid;place-items:center;height:280px;color:var(--text-muted);font-size:11px;background:var(--surface-soft);border:1px dashed var(--border-default);border-radius:var(--radius-sm)}@media(max-width:900px){.teaching-chart-grid{grid-template-columns:1fr}}@media(max-width:600px){.teaching-chart{height:240px}.teaching-chart-empty{height:240px}.teaching-panel-heading{display:block}.teaching-panel-heading small{display:block;margin-top:5px}}
+.teaching-chart-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.95fr);gap:16px;align-items:start}
+.teaching-chart-card{min-width:0;padding:16px;background:var(--surface);border:1px solid var(--border-default);border-radius:var(--radius-md);box-shadow:var(--shadow-xs)}
+.teaching-panel-heading{display:flex;align-items:end;justify-content:space-between;gap:6px 12px;flex-wrap:wrap;margin-bottom:12px}
+.teaching-panel-heading h2,.teaching-panel-heading p{margin:0}.teaching-panel-heading h2{font-size:16px}.teaching-panel-heading small{color:var(--text-muted);font-size:12px}
+.teaching-chart{width:100%;height:252px}
+.teaching-chart-empty{display:grid;place-items:center;min-height:80px;padding:12px;text-align:center;color:var(--text-muted);font-size:13px;background:var(--surface-soft);border-radius:var(--radius-sm)}
+@media(max-width:850px){.teaching-chart-grid{grid-template-columns:minmax(0,1fr)}}
 </style>
