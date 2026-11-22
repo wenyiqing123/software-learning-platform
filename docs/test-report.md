@@ -218,6 +218,14 @@ git diff --check:  pass
 - 双角色 Playwright 运行态检查覆盖 28 条路径 × 2 角色 × 2 分辨率，共 `112/112`；角色重定向、控制台错误、横向溢出、默认控件和未样式化表格均为 0。
 - 前端最终 `43` 个测试文件、`82` 项通过；生产构建成功且 0 chunk warnings。
 
+## 学习助手多会话对话（2026-11-22）
+
+- 后端新增 `PATCH /api/tutor/sessions/{id}` 会话重命名，并继续执行 `STUDENT` 角色和 `user_id` 归属校验；`TutorSessionServiceTest` 全量 `5/5`，learning-service 全量 `131/131`。
+- 前端新增会话列表、消息列表、输入区和助教消息类型；组件测试覆盖会话操作、快捷提问、停止生成、历史 Markdown/证据和失败重试。前端全量 `48` 个测试文件、`92` 项通过。
+- `npm run build` 成功，Vite 输出无 chunk warning；ai-service `102/102`、learning-gateway `5/5`。
+- 双角色 Playwright 巡检覆盖 28 条路径 × 2 角色 × 2 分辨率，共 `112/112`；无控制台错误、未捕获异常、角色重定向错误、横向溢出、默认控件或未样式化表格问题。该巡检仅验证已登录态前端渲染与排版，不替代真实后端/图谱联调；临时 `.ui-audit/` 已清理。
+- 本轮未修改外部 Mecha-QA、Python Bridge、NebulaGraph 图空间、模型权重或凭据；RANKED 固定系统提示词守卫继续通过。
+
 ## 教学总览可视化（2026-11-22）
 
 - 新增 `TeachingDashboardCharts.vue` 和 `teachingDashboardCharts.ts`，复用现有 ECharts 依赖渲染学习活动趋势、薄弱知识点掌握度排行；数据完全来自教学看板既有响应，不修改后端接口或匿名统计口径。

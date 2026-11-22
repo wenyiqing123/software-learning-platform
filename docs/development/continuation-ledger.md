@@ -111,3 +111,11 @@
 - 管理员教学总览新增真实数据可视化：学习活动趋势和薄弱知识点掌握度排行，复用既有 `TeachingDashboard` DTO 的 `dailyActivity`/`weakPoints` 字段，不改变后端统计接口、匿名口径或外部图谱依赖。
 - 新增 `TeachingDashboardCharts.vue`、`teachingDashboardCharts.ts` 及适配器测试；组件在无数据时显示空态，ECharts 实例在更新、尺寸变化和卸载时清理。
 - 本轮前端实测为 44 个测试文件/84 项通过，生产构建成功且无 chunk warning；双角色 Playwright 112/112；未修改 Mecha-QA、Python Bridge、NebulaGraph、模型权重或任何凭据。
+
+## 学习助手多会话对话（2026-11-22）
+
+- 按已确认设计完成学习助手工作台：复用 SSE 流式问答和 V5 会话表，新增会话重命名接口；没有引入 WebSocket AI 通道或示例项目的社交功能。
+- 新增 `TutorConversationList`、`TutorMessageList`、`TutorComposer` 和 `domain/tutorChat.ts`；`TutorView` 保留提示分层、三种问答模式、对比实验、证据展示、停止和历史持久化。
+- 路由上下文 `courseId/sectionId/knowledgePointId/entity` 以可见标签保留，不自动发起请求；会话重命名、读写、删除均保持当前用户归属检查。
+- 最终实测：ai-service `102/102`、learning-service `131/131`、learning-gateway `5/5`、前端 `48` 个测试文件/`92` 项；生产构建成功且无 chunk warning；双角色 Playwright `112/112`；临时巡检目录已清理。
+- 未修改 Mecha-QA、Python Bridge、NebulaGraph 图空间、模型权重或任何凭据；RANKED 后台提示词、离线图谱和学术措辞合规边界保持不变。

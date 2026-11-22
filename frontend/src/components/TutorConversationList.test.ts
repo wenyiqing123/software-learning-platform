@@ -28,6 +28,6 @@ describe('TutorConversationList', () => {
     const wrapper = mount(TutorConversationList, { props: { sessions: [], activeId: null } })
 
     expect(wrapper.text()).toContain('还没有学习会话')
-    expect(wrapper.get('[data-testid="tutor-new-session"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="tutor-new-session"]').exists()).toBe(true)
   })
 })

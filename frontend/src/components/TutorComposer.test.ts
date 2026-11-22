@@ -30,6 +30,6 @@ describe('TutorComposer', () => {
     const wrapper = mount(TutorComposer, { props: { ...baseProps, question: '正在提问', loading: true } })
 
     expect(wrapper.find('[data-testid="tutor-send"]').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="tutor-stop"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="tutor-stop"]').exists()).toBe(true)
   })
 })

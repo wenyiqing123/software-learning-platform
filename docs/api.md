@@ -40,6 +40,7 @@
 | GET / PUT | /learning/bookmarks | 查询或设置本人课程小节/知识点收藏状态 |
 | GET / POST | /tutor/sessions | 查询个人会话 / 创建会话 title |
 | GET / POST | /tutor/sessions/{id}/messages | 查询 / 保存 role、content、mode、metadata；每会话最多200条 |
+| PATCH | /tutor/sessions/{id} | 重命名本人会话；title 必须为1–120个非空字符；不属于当前用户时返回404 |
 | DELETE | /tutor/sessions/{id} | 仅删除本人会话，204 |
 | POST | /ai/ask | question、mode；可带有界 historyMessages/historyEntities |
 | POST | /ai/micro-lesson | 内部微课生成接口；使用直接输出 system prompt 和 2048 token 专用上限，避免推理型模型耗尽默认 1024 token 后正文为空 |
@@ -67,6 +68,12 @@
 | GET | /admin/evaluations/export | 去标识化 CSV；参与者真实 userId 转为稳定匿名编号，保留分组、任务顺序、条件、用时、Paas、前/后/延后测验，不导出身份字段 |
 
 问答实验导出中的 `promptVersion`、`promptSha256`、`systemPromptSha256` 只用于复现和版本核对；服务端不会导出提示词正文，尤其不会导出 RANKED 后台固定证据约束系统提示词。自动指标与人工评分分栏保存；失败条件保留错误状态但不进入成功答案统计。
+
+### 学习助手多会话对话
+
+`/tutor` 仅允许 `STUDENT` 角色访问。页面复用 `/tutor/sessions` 会话列表和 `/tutor/sessions/{id}/messages` 历史消息，通过 `PATCH /tutor/sessions/{id}` 重命名；所有读写、重命名和删除操作都按 JWT 当前用户校验 `ai_session.user_id`。
+
+`POST /ai/ask/stream` 的 SSE 事件保持兼容：`status` 表示生成阶段，`knowledge` 返回真实实体/三元组证据，`delta` 返回增量回答，`done` 返回完成结果，`error` 返回结构化失败。学习助手支持停止生成和失败重试；中断或失败的回答不会被当作有效成功答案。课程/图谱页面可通过 `courseId`、`sectionId`、`knowledgePointId`、`entity` 查询参数进入助教，参数只用于显示学习上下文和构造有限历史，不会把隐藏系统提示词发送到浏览器或保存到消息 metadata。
 | GET / POST | /admin/courses | 查询全部课程 / 创建课程 |
 | PUT | /admin/courses/{id} | code、name、term、description；图空间固定1 |
 | PUT | /admin/courses/{id}/enabled | enabled |
