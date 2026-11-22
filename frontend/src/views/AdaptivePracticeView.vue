@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { ArrowRight, CircleAlert, Clock3, RotateCcw, Target, TriangleAlert } from '@lucide/vue'
+import { ArrowRight, Clock3, RotateCcw, Target, TriangleAlert } from '@lucide/vue'
 import { useRouter } from 'vue-router'
 import { api, apiError, learningApi, type AdaptivePracticeItem } from '../api/client'
 import SectionHeading from '../components/SectionHeading.vue'
@@ -79,8 +79,6 @@ onMounted(() => {
     <SectionHeading eyebrow="规则式选题" title="自适应专项练习" description="从真实题库中优先安排到期错题、薄弱知识点和先修关系相关题目。">
       <button class="button button-outline" aria-label="刷新专项练习" :disabled="loading" @click="loadCandidates"><RotateCcw :size="15" />刷新</button>
     </SectionHeading>
-
-    <div v-if="error" class="inline-notice" role="alert"><CircleAlert :size="16" /><span>{{ error }}</span><button class="text-button" @click="loadCandidates">重试</button></div>
 
     <section class="adaptive-controls" aria-label="专项练习筛选">
       <label><Target :size="15" />练习数量<select v-model.number="limit" data-testid="adaptive-limit"><option :value="5">5 题</option><option :value="10">10 题</option><option :value="15">15 题</option><option :value="20">20 题</option><option :value="30">30 题</option></select></label>

@@ -28,7 +28,7 @@ const emit = defineEmits<{ toggle: [key: string]; submit: []; retrySubmit: []; r
 </script>
 
 <template>
-  <div class="quiz-main practice-question-card">
+  <div class="quiz-main">
     <div class="quiz-topline"><span class="question-count">{{ String(index + 1).padStart(2, '0') }} <i>/ {{ String(total).padStart(2, '0') }}</i></span><span class="question-type">{{ questionType }}</span><span v-if="question.knowledgePoint" class="question-point">{{ question.knowledgePoint }}</span></div>
     <div class="question-progress" role="progressbar" aria-label="当前题目位置" :aria-valuenow="index + 1" :aria-valuemax="total" aria-valuemin="1"><i :style="{ width: progress + '%' }"></i></div>
     <h2 class="question-stem">{{ question.stem }}</h2>
@@ -43,5 +43,14 @@ const emit = defineEmits<{ toggle: [key: string]; submit: []; retrySubmit: []; r
 </template>
 
 <style scoped>
-.practice-question-card{min-width:0}.diagnosis-feedback{margin-top:16px;padding:16px;background:var(--surface-soft);border:1px solid var(--border-default);border-radius:var(--radius-md)}.diagnosis-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.diagnosis-heading .eyebrow{margin:0 0 4px;color:var(--accent)}.diagnosis-heading h3{margin:0;color:var(--text);font-size:14px}.diagnosis-loading{color:var(--text-muted);font-size:10px}.diagnosis-note{margin:12px 0 0;color:var(--text-muted);font-size:11px;line-height:1.7}.diagnosis-error{color:var(--danger)}.diagnosis-item{margin-top:12px;padding-top:12px;border-top:1px solid var(--border-soft)}.diagnosis-item>div:first-child{display:grid;gap:4px;color:var(--text);font-size:11px}.diagnosis-item>div:first-child span{color:var(--accent)}.diagnosis-item p{margin:8px 0;color:var(--text-muted);font-size:11px;line-height:1.7}.diagnosis-actions{display:flex;flex-wrap:wrap;gap:14px}
+.diagnosis-feedback{margin-top:12px;padding:14px 16px;background:var(--surface-soft);border-radius:var(--radius-sm)}
+.diagnosis-heading{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.diagnosis-heading .eyebrow{margin:0 0 3px}
+.diagnosis-heading h3{margin:0;font-size:16px}
+.diagnosis-loading,.diagnosis-note,.diagnosis-item p{color:var(--text-muted);font-size:13px;line-height:1.65}
+.diagnosis-error{color:var(--danger)}
+.diagnosis-item{margin-top:10px;padding-top:10px;border-top:1px solid var(--border-default)}
+.diagnosis-item>div:first-child,.diagnosis-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;font-size:13px}
+.diagnosis-item>div:first-child span{color:var(--accent-strong)}
+.diagnosis-item p{margin:6px 0}
 </style>

@@ -137,6 +137,6 @@ onMounted(() => void load())
       </div>
       <div v-if="!showingPaused" class="review-footer"><button class="text-button" @click="router.push('/wrong-book')"><BookOpen :size="14" />错题整理</button><button class="text-button" @click="setState('MASTERED')">手动标记已掌握</button></div>
     </section>
-    <section v-else class="empty-state review-empty"><CircleCheck :size="25" /><strong>{{ showingPaused ? '没有暂停的错题' : dueCards.length ? '本次到期复习已完成' : '目前没有到期复习' }}</strong><span>{{ dueCards.length ? '稍后刷新查看新到期任务。' : '错题答错后会进入复习队列。' }}</span><button v-if="showingPaused" class="button button-outline" @click="showDue">返回到期队列</button><button v-else class="button button-outline" @click="router.push('/study-plan')">查看每日计划<ArrowRight :size="15" /></button></section>
+    <section v-else class="empty-state"><CircleCheck :size="25" /><strong>{{ showingPaused ? '没有暂停的错题' : dueCards.length ? '本次到期复习已完成' : '目前没有到期复习' }}</strong><span>{{ dueCards.length ? '稍后刷新查看新到期任务。' : '错题答错后会进入复习队列。' }}</span><button v-if="showingPaused" class="button button-outline" @click="showDue">返回到期队列</button><button v-else class="button button-outline" @click="router.push('/study-plan')">查看每日计划<ArrowRight :size="15" /></button></section>
   </div>
 </template>

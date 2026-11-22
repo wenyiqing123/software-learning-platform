@@ -31,14 +31,28 @@ onMounted(async () => { await loadCourses(); await load() })
 <template>
   <div class="page-stack report-page">
     <SectionHeading eyebrow="学习过程记录" title="阶段性学习报告" description="按时间范围汇总可追溯的阅读、练习、复习和计划执行数据，不用单一分数给学习者贴标签。">
-      <button class="button button-outline" aria-label="刷新学习报告" :disabled="loading" @click="load"><RotateCcw :size="15" />刷新</button><button class="button button-dark" :disabled="!report || exporting" @click="download"><Download :size="15" />{{ exporting ? '导出中…' : '导出 CSV' }}</button>
+      <div class="report-actions"><button class="button button-outline" aria-label="刷新学习报告" :disabled="loading" @click="load"><RotateCcw :size="15" />刷新</button><button class="button button-dark" :disabled="!report || exporting" @click="download"><Download :size="15" />{{ exporting ? '导出中…' : '导出 CSV' }}</button></div>
     </SectionHeading>
     <div v-if="error" class="inline-notice" role="alert"><CircleAlert :size="16" />{{ error }}<button class="text-button" @click="load">重试</button></div>
     <section class="report-controls"><label><BarChart3 :size="15" />统计范围<select v-model.number="days" data-testid="report-days"><option :value="7">近 7 天</option><option :value="14">近 14 天</option><option :value="30">近 30 天</option></select></label><label><BookOpenCheck :size="15" />课程<select v-model.number="courseId" @change="load"><option :value="undefined">全部课程</option><option v-for="course in courses" :key="course.id" :value="course.id">{{ course.name }} · {{ course.term }}</option></select></label><span v-if="report" class="report-period">{{ report.from }} 至 {{ report.to }} · {{ report.courseName }}</span></section>
     <FeedbackState v-if="loading" :loading="loading" loading-title="正在汇总学习记录" loading-text="正在读取阅读、练习、复习和计划数据，请稍候。" />
     <template v-else-if="report">
       <section class="report-kpis"><article><span>课程阅读</span><strong>{{ report.reading.completedSections }} / {{ report.reading.totalSections }}</strong><small>总完成率 {{ completionRate }}% · 本期新增 {{ report.reading.completedInPeriod }} 节</small></article><article><span>练习正确率</span><strong>{{ report.practice.accuracy }}%</strong><small>{{ report.practice.correct }} / {{ report.practice.attempts }} 次答题</small></article><article><span>复习正确率</span><strong>{{ report.reviews.accuracy }}%</strong><small>{{ report.reviews.correct }} / {{ report.reviews.reviews }} 次到期复习</small></article><article><span>计划执行</span><strong>{{ report.plans.completedMinutes }} / {{ report.plans.plannedMinutes }} 分钟</strong><small>{{ report.plans.completedTasks }} / {{ report.plans.totalTasks }} 个任务 · {{ planRate }}%</small></article></section>
-      <section class="report-columns"><div class="report-panel"><div class="report-panel-heading"><div><p class="eyebrow">DAILY ACTIVITY</p><h2>每日学习活动</h2></div><Target :size="18" /></div><div class="activity-table"><div class="activity-row activity-head"><span>日期</span><span>答题</span><span>答对</span><span>阅读完成</span></div><div v-for="day in report.dailyActivity" :key="day.date" class="activity-row"><span>{{ day.date }}</span><span>{{ day.attempts }}</span><span>{{ day.correct }}</span><span>{{ day.readingCompleted }}</span></div></div></div><div class="report-panel"><div class="report-panel-heading"><div><p class="eyebrow">BY CHAPTER</p><h2>章节阅读进度</h2></div><BookOpenCheck :size="18" /></div><div class="chapter-list"><article v-for="chapter in report.chapters" :key="chapter.chapterId"><div><strong>{{ chapter.chapterName }}</strong><span>{{ chapter.completedSections }} / {{ chapter.totalSections }}</span></div><div class="chapter-progress"><i :style="{ width: (chapter.totalSections ? chapter.completedSections / chapter.totalSections * 100 : 0) + '%' }"></i></div><small>本期完成 {{ chapter.completedInPeriod }} 节</small></article></div></div></section>
+      <section class="report-columns">
+        <div class="report-panel">
+          <div class="report-panel-heading"><h2 id="report-activity-title">每日学习活动</h2><Target :size="18" /></div>
+          <table v-if="report.dailyActivity.length" class="report-activity" aria-labelledby="report-activity-title">
+            <thead><tr><th scope="col">日期</th><th scope="col">答题</th><th scope="col">答对</th><th scope="col">读完</th></tr></thead>
+            <tbody><tr v-for="day in report.dailyActivity" :key="day.date"><td>{{ day.date }}</td><td>{{ day.attempts }}</td><td>{{ day.correct }}</td><td>{{ day.readingCompleted }}</td></tr></tbody>
+          </table>
+          <p v-else class="report-empty">当前范围内暂无学习活动。</p>
+        </div>
+        <div class="report-panel">
+          <div class="report-panel-heading"><h2>章节阅读进度</h2><BookOpenCheck :size="18" /></div>
+          <div v-if="report.chapters.length" class="chapter-list"><article v-for="chapter in report.chapters" :key="chapter.chapterId"><div><strong>{{ chapter.chapterName }}</strong><span>{{ chapter.completedSections }} / {{ chapter.totalSections }}</span></div><div class="chapter-progress"><i :style="{ width: (chapter.totalSections ? chapter.completedSections / chapter.totalSections * 100 : 0) + '%' }"></i></div><small>本期完成 {{ chapter.completedInPeriod }} 节</small></article></div>
+          <p v-else class="report-empty">当前范围内暂无章节进度。</p>
+        </div>
+      </section>
       <section class="report-panel knowledge-report"><div class="report-panel-heading"><div><p class="eyebrow">BY KNOWLEDGE POINT</p><h2>知识点掌握记录</h2></div><span>掌握度来自答题统计</span></div><div class="knowledge-report-list"><article v-for="point in report.knowledge" :key="point.pointId"><div class="knowledge-name"><strong>{{ point.pointName }}</strong><span>{{ Math.round(point.mastery) }}%</span></div><div class="knowledge-progress"><i :style="{ width: point.mastery + '%' }"></i></div><small>{{ point.correct }} / {{ point.attempts }} 次答对<span v-if="point.dueReviewCount"> · 待复习 {{ point.dueReviewCount }}</span></small></article></div></section>
     </template>
     <FeedbackState v-if="!loading && !report && !error" :empty="true" empty-title="暂无学习报告" empty-text="完成一次阅读或练习后，这里会显示阶段性记录。" />
@@ -46,5 +60,30 @@ onMounted(async () => { await loadCourses(); await load() })
 </template>
 
 <style scoped>
-.report-controls,.report-kpis,.report-panel { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-md); }.report-controls{display:flex;align-items:center;flex-wrap:wrap;gap:15px;padding:15px 18px}.report-controls label{display:flex;align-items:center;gap:8px;color:var(--text-muted);font-size:12px}.report-controls select{min-height:34px;padding:0 28px 0 9px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);color:var(--ink)}.report-period{margin-left:auto;color:var(--muted);font-size:11px}.report-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:hidden}.report-kpis article{display:grid;gap:7px;padding:18px;border-right:1px solid var(--line)}.report-kpis article:last-child{border-right:0}.report-kpis span{color:var(--muted);font-size:11px}.report-kpis strong{color:var(--ink);font-size:22px}.report-kpis small{color:var(--text-subtle);font-size:10px;line-height:1.5}.report-columns{display:grid;grid-template-columns:1fr 1fr;gap:16px}.report-panel{padding:20px}.report-panel-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:17px;color:var(--green)}.report-panel-heading .eyebrow{margin:0 0 5px}.report-panel-heading h2{margin:0;color:var(--ink);font-size:15px}.report-panel-heading span{color:var(--muted);font-size:10px}.activity-table{display:grid}.activity-row{display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:8px;padding:10px 0;border-top:1px solid var(--border-soft);color:var(--text-muted);font-size:11px}.activity-head{border-top:0;color:var(--muted);font-size:10px}.activity-row span:not(:first-child){text-align:right}.chapter-list,.knowledge-report-list{display:grid;gap:15px}.chapter-list article{display:grid;gap:7px}.chapter-list article>div:first-child,.knowledge-name{display:flex;justify-content:space-between;gap:10px;color:var(--text-muted);font-size:11px}.chapter-list article span,.chapter-list small,.knowledge-report small{color:var(--muted);font-size:10px}.chapter-progress,.knowledge-progress{height:5px;overflow:hidden;background:var(--border-soft);border-radius:var(--radius-sm)}.chapter-progress i,.knowledge-progress i{display:block;height:100%;background:var(--accent);border-radius:inherit}.knowledge-report{padding-bottom:22px}.knowledge-report-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:17px 25px}.knowledge-report-list article{display:grid;gap:7px}.knowledge-progress i{background:var(--warning)}@media(max-width:900px){.report-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.report-kpis article:nth-child(2){border-right:0}.report-kpis article:nth-child(n+3){border-top:1px solid var(--line)}}@media(max-width:700px){.report-columns,.knowledge-report-list{grid-template-columns:1fr}.report-period{width:100%;margin-left:0}.report-panel{padding:16px}}
+.report-page{font-variant-numeric:tabular-nums}
+.report-actions,.report-controls,.report-controls label,.report-panel-heading{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px}
+.report-controls{padding:12px 16px;background:var(--surface-tint);border-radius:var(--radius-md);color:var(--text-muted);font-size:13px}
+.report-controls select{min-height:var(--control-height-small)}
+.report-period{margin-left:auto;font-size:12px}
+.report-kpis,.report-panel{min-width:0;background:var(--surface);border:1px solid var(--border-default);border-radius:var(--radius-md)}
+.report-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.report-kpis article{display:grid;align-content:start;gap:4px;padding:16px;border-inline-end:1px solid var(--border-soft)}
+.report-kpis article:last-child{border-inline-end:0}
+.report-kpis span,.report-empty,.report-panel-heading span,.chapter-list small,.knowledge-report small{color:var(--text-muted);font-size:13px}
+.report-kpis strong{font-size:24px;line-height:1.35;overflow-wrap:anywhere}
+.report-kpis small{color:var(--text-muted);font-size:12px}
+.report-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.report-panel{padding:18px}
+.report-panel-heading{justify-content:space-between;margin-bottom:12px;color:var(--accent)}
+.report-panel-heading h2{margin:0;color:var(--text);font-size:16px}
+.report-activity{overflow:hidden}
+.report-activity :is(th,td):not(:first-child){text-align:right}
+.chapter-list,.knowledge-report-list{display:grid;gap:12px 20px}
+.chapter-list article,.knowledge-report-list article{display:grid;gap:6px;min-width:0}
+.chapter-list article>div:first-child,.knowledge-name{display:flex;justify-content:space-between;gap:8px;color:var(--text);font-size:14px;overflow-wrap:anywhere}
+.chapter-progress,.knowledge-progress{height:5px;overflow:hidden;background:var(--surface-tint);border-radius:var(--radius-pill)}
+.chapter-progress i,.knowledge-progress i{display:block;height:100%;background:var(--accent);border-radius:inherit}
+.knowledge-report-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:900px){.report-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.report-kpis article:nth-child(2){border-inline-end:0}.report-kpis article:nth-child(n+3){border-top:1px solid var(--border-soft)}}
+@media(max-width:700px){.report-columns,.knowledge-report-list{grid-template-columns:1fr}.report-period{width:100%;margin-left:0}.report-panel{padding:14px}.report-activity :is(th,td){padding-inline:7px}}
 </style>

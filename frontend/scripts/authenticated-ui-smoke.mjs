@@ -51,6 +51,22 @@ const graphNodes = coursePoints.map(point => ({ id: point.graphEntity, label: po
 const pathNodes = coursePoints.map((point, index) => ({ ...point, status: ['MASTERED', 'IN_PROGRESS', 'BLOCKED'][index], prerequisiteIds: index ? [point.id - 1] : [] }))
 const chatQuestion = '软件需求规格说明书应该包含哪些内容？'
 const chatAnswer = '## 从边界开始\n\n先说明目标、业务边界和参与者，再分别写出功能需求与约束。最后为每项需求补上可验证的验收条件。\n\n- 功能：记录借阅申请\n- 约束：库存不足时说明原因\n\n```text\n条件：库存大于 0\n预期：生成借阅记录\n```'
+const quiz = { id: 101, stem: '在数据流图中，表示数据变换的加工通常怎样命名？', knowledgePoint: '数据流图', type: 'SINGLE', options: [
+  { key: 'A', text: '用动词与宾语描述对数据执行的操作' },
+  { key: 'B', text: '用名词短语写出保存的数据对象' },
+  { key: 'C', text: '用系统名称代替加工名称' },
+  { key: 'D', text: '只记录数据流的编号' },
+] }
+const wrongItems = [
+  { id: 21, questionId: 101, question: quiz.stem, knowledgePoint: '数据流图', wrongCount: 2, status: 'UNMASTERED' },
+  { id: 22, questionId: 102, question: '需求规格说明书中，怎样区分业务目标和验收条件？', knowledgePoint: '需求分析', wrongCount: 1, status: 'UNMASTERED' },
+]
+const reviewCard = { wrongQuestionId: 21, questionId: quiz.id, question: quiz.stem, knowledgePoint: quiz.knowledgePoint, questionType: quiz.type, options: quiz.options, wrongCount: 2, dueAt: '2026-11-21T08:00:00', previousIntervalMinutes: 1440 }
+const planTasks = [
+  { id: 1, type: 'REVIEW', targetId: 21, title: '复习数据流图的加工命名', minutes: 8, path: '/review?wrongQuestionId=21', state: 'PENDING', detail: '到期复习 · 数据流图', reason: '这道错题已到复习时间。' },
+  { id: 2, type: 'READING', targetId: 32, title: '阅读数据流图', minutes: 12, path: '/courses?courseId=3&sectionId=32', state: 'PENDING', detail: '软件工程 · 软件需求', reason: '该小节尚未完成阅读。' },
+  { id: 3, type: 'PRACTICE', targetId: 11, title: '练习写出验收条件', minutes: 10, path: '/practice?knowledgePointId=11', state: 'COMPLETED', detail: '课程练习 · 需求分析', reason: '结合近期答题记录安排。' },
+]
 
 function apiResponse(url, role, scenario) {
   const path = new URL(url).pathname
@@ -90,13 +106,20 @@ function apiResponse(url, role, scenario) {
     : { available: true, nodes: graphNodes, edges: evidence.map(({ subject, object, predicate, score }) => ({ source: subject, target: object, label: predicate, score })), evidence })
   if (path === '/api/knowledge/learning-path') return json({ targetId: Number(new URL(url).searchParams.get('targetId')), courseId: 3, nodes: pathNodes, cycleDetected: false })
   if (path === '/api/knowledge/mastery-map') return json({ courseId: 3, courseName: '软件工程', nodes: pathNodes.map((point, index) => ({ ...point, attemptCount: index < 2 ? 4 : 0, correctCount: 4 - index * 2, dueReviewCount: index === 1 ? 2 : 0 })), edges: [{ source: 11, target: 12, relation: '先修' }, { source: 12, target: 13, relation: '先修' }] })
-  if (path === '/api/adaptive-practice') return json([])
-  if (path === '/api/recommendations') return json([{ id: 11, knowledgePointId: 11, title: '复习需求分析', reason: '基于掌握度、错题与先修关系的可解释规则推荐。', kind: '薄弱点巩固', score: 0.8, knowledgePoint: '需求分析' }])
-  if (path === '/api/wrong-book') return json([{ id: 21, questionId: 101, question: '加工如何命名？', knowledgePoint: '数据流图', wrongCount: 2, status: 'UNMASTERED' }])
-  if (path.startsWith('/api/quizzes')) return json([])
-  if (path.startsWith('/api/spaced-reviews')) return json([])
-  if (path.startsWith('/api/study-plans')) return json({ id: 1, date: '2026-11-21', budgetMinutes: 30, tasks: [] })
-  if (path === '/api/reports/learning') return json({ from: '2026-11-15', to: '2026-11-21', days: 7, courseName: '软件工程', reading: { totalSections: 8, completedSections: 3, completedInPeriod: 0 }, practice: { attempts: 4, correct: 3, accuracy: 75 }, reviews: { reviews: 0, correct: 0, accuracy: 0 }, plans: { totalTasks: 0, completedTasks: 0, plannedMinutes: 0, completedMinutes: 0 }, dailyActivity: [], chapters: [], knowledge: [] })
+  if (path === '/api/adaptive-practice') return json([{ questionId: quiz.id, stem: quiz.stem, knowledgePointId: 12, knowledgePointName: quiz.knowledgePoint, difficulty: 2, mastery: 42, wrongCount: 2, due: true, score: 84, reason: '已到复习时间；掌握度相对较低，建议先复习加工命名。' }])
+  if (path === '/api/recommendations') return json(scenario === 'recommendation-empty' ? [] : [
+    { id: 11, knowledgePointId: 12, title: '巩固数据流图的加工命名', reason: '该知识点的待复习错题已到期，且近期作答中的加工与数据存储概念容易混淆。建议先对照课程中的数据流图示例，再练习一题判断加工的命名是否能准确描述数据变换。', kind: '薄弱点巩固', score: 0.91, knowledgePoint: '数据流图' },
+    { id: 12, knowledgePointId: 11, title: '回顾需求分析的验收条件', reason: '这是理解需求规格说明书的先修知识点。', kind: '先修补齐', score: 0.73, knowledgePoint: '需求分析' },
+  ])
+  if (path === '/api/wrong-book') return json(wrongItems)
+  if (path === '/api/quizzes') return json([quiz])
+  if (path === '/api/quizzes/101/submit') return json({ questionId: 101, correct: false, correctAnswer: ['A'], explanation: '加工描述对数据执行的操作；数据存储描述被保存的对象。' })
+  if (path === '/api/quizzes/101/diagnosis') return json([{ optionKey: 'B', optionText: quiz.options[1].text, knowledgePointId: 12, knowledgePointName: '加工命名', rationale: '用名词短语命名的是数据存储；加工应描述输入如何变成输出。', sectionId: 32, sectionTitle: '数据流图', practiceQuestionId: 101 }])
+  if (path === '/api/spaced-reviews/due') return json([reviewCard])
+  if (path === '/api/spaced-reviews/paused') return json([])
+  if (path === '/api/spaced-reviews/21/review') return json({ attemptId: 8, questionId: 101, correct: true, correctAnswer: ['A'], explanation: '加工名称应能说明数据变换。', recallRating: 2, intervalMinutes: 4320, nextDueAt: '2026-11-26T08:00:00', mastered: false, consecutiveSuccessfulReviews: 1 })
+  if (path === '/api/study-plans/today') return json({ id: 1, date: '2026-11-21', budgetMinutes: 30, tasks: planTasks })
+  if (path === '/api/reports/learning') return json({ from: '2026-11-15', to: '2026-11-21', days: 7, courseName: '软件工程', reading: { totalSections: 8, completedSections: 3, completedInPeriod: 2 }, practice: { attempts: 12, correct: 9, accuracy: 75 }, reviews: { reviews: 2, correct: 1, accuracy: 50 }, plans: { totalTasks: 3, completedTasks: 1, plannedMinutes: 30, completedMinutes: 10 }, dailyActivity: [3, 4, 5].map((attempts, index) => ({ date: `2026-11-${19 + index}`, attempts, correct: attempts - 1, readingCompleted: index === 0 ? 0 : 1 })), chapters: [{ chapterId: 1, chapterName: '软件需求', totalSections: 4, completedSections: 2, completedInPeriod: 1 }, { chapterId: 2, chapterName: '软件设计', totalSections: 4, completedSections: 1, completedInPeriod: 1 }], knowledge: coursePoints.map(point => ({ pointId: point.id, pointName: point.name, mastery: point.mastery, attempts: 4, correct: Math.round(point.mastery / 25), dueReviewCount: point.id === 12 ? 1 : 0 })) })
   if (path === '/api/experiments') return json([])
   if (path.startsWith('/api/experiment-tasks')) return json([])
   if (path.startsWith('/api/evaluations/sessions')) return json([])
@@ -175,6 +198,32 @@ const visualScenarios = {
       await page.locator('.tutor-message-bubble pre').waitFor()
       await page.locator('.evidence-block summary').click()
     } },
+    { route: '/practice', name: 'practice-selected', check: page => page.locator('.answer-option').nth(1).click() },
+    { route: '/practice', name: 'practice-diagnosis', async check(page) {
+      await page.locator('.answer-option').nth(1).click()
+      await page.getByRole('button', { name: '提交答案' }).click()
+      await page.getByText('可能混淆：加工命名').waitFor()
+      const resultOptions = await page.locator('.answer-option.correct, .answer-option.incorrect').evaluateAll(items => items.map(item => getComputedStyle(item).opacity))
+      if (resultOptions.length !== 2 || resultOptions.some(opacity => opacity !== '1')) throw new Error('Graded answers lost visual contrast')
+    } },
+    { route: '/review', name: 'review-result', async check(page) {
+      await page.locator('.answer-option').first().click()
+      await page.getByRole('radio', { name: '一般' }).check()
+      await page.getByRole('button', { name: '提交复习' }).click()
+      await page.getByText('4320 分钟后', { exact: false }).waitFor()
+    } },
+    { route: '/recommendations', name: 'recommendation-empty', check: page => page.getByText('当前暂无学习建议').waitFor() },
+    { route: '/recommendations', name: 'recommendation-reason', async check(page) {
+      const reason = page.locator('.rec-copy p').first()
+      await reason.waitFor()
+      if (await reason.evaluate(element => element.scrollWidth > element.clientWidth + 1 || getComputedStyle(element).whiteSpace === 'nowrap')) throw new Error('Full recommendation reason is not readable')
+    } },
+    { route: '/wrong-book', name: 'wrong-search', async check(page) {
+      const search = page.getByPlaceholder('搜索题目或知识点')
+      await search.fill('数据流图')
+      if (await page.locator('.wrong-row').count() !== 1) throw new Error('Wrong-book filter did not narrow the list')
+      if (await search.evaluate(element => getComputedStyle(element).borderTopWidth !== '0px')) throw new Error('Wrong-book search has two visible borders')
+    } },
   ],
   ADMIN: [{ route: '/teaching-dashboard', name: 'teaching-empty', check: page => page.getByText('当前范围内暂无学习活动数据。').waitFor() }],
   GUEST: [],
@@ -205,10 +254,13 @@ try {
     }, role)
     const visits = (role === 'GUEST' ? ['/login'] : routes).map(route => ({ route, name: '', check: null }))
     const scenariosOnly = process.env.UI_REVIEW_SCENARIOS_ONLY === '1'
+    const pathFilter = process.env.UI_REVIEW_PATHS?.split(',').filter(Boolean)
     for (const { route, name, check } of [...(scenariosOnly ? [] : visits), ...visualScenarios[role]]) {
+      if (pathFilter && !pathFilter.includes(route.split('?')[0])) continue
       scenario = name
       await page.goto(baseUrl + route, { waitUntil: 'networkidle' })
-      await check?.(page)
+      let scenarioError = ''
+      try { await check?.(page) } catch (error) { scenarioError = error.message }
       await page.evaluate(async () => {
         await document.fonts?.ready
         // Playwright may scroll to a clicked control. Check first-screen layout at the initial scroll position.
@@ -294,18 +346,19 @@ try {
       const safeName = route.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'root'
       const screenshot = `${role}-${viewport.width}x${viewport.height}-${safeName}${name ? `-${name}` : ''}.png`
       await page.screenshot({ path: path.join(auditDir, screenshot), fullPage: true, animations: 'disabled' })
-      results.push({ ...metrics, role, viewport: `${viewport.width}x${viewport.height}`, requested: route, scenario, final: metrics.path, roleRedirectPass: metrics.path === expectedPath(role, route), overflow: metrics.scrollWidth > metrics.viewportWidth + 1, blankRoot: metrics.rootChildren === 0, topbarOverflow: metrics.topbarWidth > metrics.viewportWidth + 1, topbarOverlap: metrics.topbarBottom > metrics.contentTop + 1, screenshot, consoleErrors: [...consoleErrors], pageErrors: [...pageErrors] })
+      results.push({ ...metrics, role, viewport: `${viewport.width}x${viewport.height}`, requested: route, scenario, scenarioError, final: metrics.path, roleRedirectPass: metrics.path === expectedPath(role, route), overflow: metrics.scrollWidth > metrics.viewportWidth + 1, blankRoot: metrics.rootChildren === 0, topbarOverflow: metrics.topbarWidth > metrics.viewportWidth + 1, topbarOverlap: metrics.topbarBottom > metrics.contentTop + 1, screenshot, consoleErrors: [...consoleErrors], pageErrors: [...pageErrors] })
       consoleErrors.length = 0
       pageErrors.length = 0
     }
     await context.close()
     }
   }
-  const failures = results.filter(item => !item.roleRedirectPass || item.overflow || item.blankRoot || item.topbarOverflow || item.topbarOverlap || item.squeezedButtons || item.defaultControls || item.unstyledTables || !item.pageHeader || !item.pageDescription || item.consoleErrors.length || item.pageErrors.length || (item.role === 'GUEST' && !(item.loginContrast >= 4.5)))
+  if (!results.length) throw new Error('No routes matched the visual review filters')
+  const failures = results.filter(item => item.scenarioError || !item.roleRedirectPass || item.overflow || item.blankRoot || item.topbarOverflow || item.topbarOverlap || item.squeezedButtons || item.defaultControls || item.unstyledTables || !item.pageHeader || !item.pageDescription || item.consoleErrors.length || item.pageErrors.length || (item.role === 'GUEST' && !(item.loginContrast >= 4.5)))
   const reportPath = path.join(auditDir, 'metrics.json')
   await writeFile(reportPath, JSON.stringify({ scope: 'Browser rendering with intercepted API fixtures, not live backend integration', total: results.length, failures, results }, null, 2), 'utf8')
   console.log(`UI smoke: ${results.length - failures.length}/${results.length} passed. ${reportPath}`)
-  for (const item of failures) console.error(`${item.role} ${item.viewport} ${item.requested}: ${item.screenshot}`)
+  for (const item of failures) console.error(`${item.role} ${item.viewport} ${item.requested}: ${item.screenshot}${item.scenarioError ? ` (${item.scenarioError})` : ''}`)
   if (failures.length) process.exitCode = 1
 } finally {
   try { await browser?.close() } finally { await server.close() }

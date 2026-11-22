@@ -184,21 +184,3 @@ onBeforeUnmount(() => { loadId++; window.removeEventListener('keydown', onAnswer
     <div v-else-if="!serviceError" class="empty-state"><CircleHelp :size="24" /><strong>当前范围暂无可用题目</strong><span>可返回课程列表选择其他知识点。</span><button class="text-button" @click="router.push('/courses')">查看课程 <ArrowRight :size="14" /></button></div>
   </div>
 </template>
-
-<style scoped>
-.submit-error { margin-top: 16px; flex-wrap: wrap; }
-.answer-option:disabled { cursor: default; }
-.quiz-actions { flex-wrap: wrap; }
-.diagnosis-feedback { margin-top: 16px; padding: 16px; background: #f7faf7; border: 1px solid #dce8de; border-radius: 8px; }
-.diagnosis-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.diagnosis-heading .eyebrow { margin: 0 0 4px; color: var(--green); }
-.diagnosis-heading h3 { margin: 0; color: var(--ink); font-size: 14px; }
-.diagnosis-loading { color: var(--muted); font-size: 10px; }
-.diagnosis-note { margin: 12px 0 0; color: #718077; font-size: 11px; line-height: 1.7; }
-.diagnosis-error { color: #9a5e4b; }
-.diagnosis-item { margin-top: 12px; padding-top: 12px; border-top: 1px solid #e1eae2; }
-.diagnosis-item > div:first-child { display: grid; gap: 4px; color: var(--ink); font-size: 11px; }
-.diagnosis-item > div:first-child span { color: #557262; }
-.diagnosis-item p { margin: 8px 0; color: #68766d; font-size: 11px; line-height: 1.7; }
-.diagnosis-actions { display: flex; flex-wrap: wrap; gap: 14px; }
-</style>
