@@ -28,6 +28,9 @@ const emit = defineEmits<{ copy: [value: string] }>()
 .answer-state.is-error,.compare-error{color:var(--danger);background:var(--danger-soft)}
 .compare-error{padding:10px;border-radius:var(--radius-sm)}
 .result-mode-label{margin-bottom:6px;font-weight:650}
+.prompt-details{margin-top:12px;color:var(--text-muted);font-size:12px}
+.prompt-details summary{cursor:pointer}
+.prompt-details pre{max-height:170px;overflow:auto;padding:10px;background:var(--surface-soft);border-radius:var(--radius-sm);white-space:pre-wrap;overflow-wrap:anywhere}
 .entity-tags{flex-wrap:wrap;margin-top:10px}
 .evidence-block{margin-top:12px;padding:0 12px;background:var(--surface-tint);border-radius:var(--radius-sm)}
 .evidence-title{min-height:40px;cursor:pointer;font-size:13px}

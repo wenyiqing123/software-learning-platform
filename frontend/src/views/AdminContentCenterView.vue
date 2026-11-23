@@ -26,6 +26,6 @@ function selectTab(key: string) { void router.replace({ path: '/admin/content', 
     <nav class="admin-center-tabs" role="tablist" aria-label="内容与题库中心">
       <button v-for="tab in tabs" :key="tab.key" type="button" role="tab" :aria-selected="activeKey === tab.key" :class="{ active: activeKey === tab.key }" @click="selectTab(tab.key)">{{ tab.label }}</button>
     </nav>
-    <component :is="activeTab.component" />
+    <component :is="activeTab.component" embedded />
   </div>
 </template>

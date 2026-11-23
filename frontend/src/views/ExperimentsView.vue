@@ -5,6 +5,8 @@ import { apiError, learningApi } from '../api/client'
 import SectionHeading from '../components/SectionHeading.vue'
 import { experimentCsv, experimentJson, type ExperimentExportRun } from '../domain/experimentExport'
 import ExperimentResultGrid from '../components/ExperimentResultGrid.vue'
+
+defineProps<{ embedded?: boolean }>()
 interface Answer { mode: string; answer: string; latencyMs: number; error?: string; prompt?: string; triples?: Array<{ subject: string; predicate: string; object: string; score?: number }>; provenance?: Record<string, unknown>; grounding?: { strategyVersion: string; status: string; candidates: unknown[]; selectedIds: string[]; selectedEvidence: unknown[]; selectionMs: number; answerMs: number; modelCallCount: number }; experimentType?: string; modelVariant?: string; resultKey?: string }
 interface Scores { rougeL?: number; bleu4?: number; bleuOrder?: number; entityRecall?: number }
 interface Run { id: string; question: string; createdAt: string; results: Answer[]; ratings: Record<string, number>; evaluation?: { source?: string; experimentType?: string; metricsByMode?: Record<string, Scores>; note?: string } }
@@ -69,11 +71,45 @@ async function exportCsv() { try { const blob = await learningApi.exportExperime
 function score(value?: number) { return value == null ? '未测评' : (value * 100).toFixed(1) + '%' }
 </script>
 <template>
-  <div class="page-stack">
-    <SectionHeading eyebrow="研究与评测" title="问答实验" description="同一问题、模型配置和证据集，对照观察三种问答策略。"><div class="experiment-export-actions"><button class="button button-outline" :disabled="!history.length" @click="exportResults"><ArrowDownToLine :size="16" />导出 JSON</button><button class="button button-outline" :disabled="!history.length" @click="exportCsv"><ArrowDownToLine :size="16" />导出 CSV</button></div></SectionHeading>
-    <section class="experiment-intro"><span class="experiment-icon"><FlaskConical :size="20" /></span><div><p class="eyebrow">对照实验</p><h2>分别比较问答方法与 Qwen 微调效果</h2><p>方法实验固定默认模型；Qwen 矩阵复用同一次图谱证据，比较基座与 LoRA 在三种策略下的表现。</p></div></section>
-    <section class="experiment-modes"><article><span class="mode-index">A</span><strong>大模型直答</strong><p>直接提问，不访问图谱。</p></article><article><span class="mode-index">B</span><strong>三元组 + 大模型</strong><p>使用共享证据，不向提示词注入分数。</p></article><article><span class="mode-index">C</span><strong>排序评分 + 原始提示词</strong><p>使用排序评分证据和原始提示词，先选择直接作答证据，再生成答案。</p></article></section>
-    <section class="experiment-run-form"><label for="experiment-type">实验方案</label><select id="experiment-type" v-model="experimentType"><option value="METHODS">方法对照：固定默认模型</option><option value="QWEN_MATRIX">模型对照：Qwen 基座 × LoRA × 三种方法</option></select><p v-if="experimentType === 'QWEN_MATRIX'" class="matrix-notice">此方案只调用本地 Qwen 基座和 LoRA，不调用 DeepSeek/M3E；六种组合共用一次图谱检索，逐项运行。训练标签尚未经教师审校，结果仅作探索性比较。</p><label for="experiment-question">统一测试问题</label><textarea id="experiment-question" v-model="question" maxlength="2000" rows="2"></textarea><label for="reference-answer">参考答案（可选）</label><textarea id="reference-answer" v-model="referenceAnswer" maxlength="4000" rows="2" placeholder="由教师或教材确定；留空时不生成文本相似度指标"></textarea><label>期望答案实体（可选）</label><div class="expected-entity-list"><div v-for="(entity, index) in expectedEntityInputs" :key="index" class="expected-entity-row"><input v-model="expectedEntityInputs[index]" data-testid="expected-entity-input" :aria-label="`期望实体 ${index + 1}`" maxlength="100" placeholder="一个实体或答案短语，可含标点" /><button type="button" class="entity-icon-button" :aria-label="`移除期望实体 ${index + 1}`" title="移除期望实体" :disabled="expectedEntityInputs.length <= 3" @click="removeExpectedEntity(index)"><X :size="15" /></button></div></div><button type="button" class="entity-add-button" aria-label="添加期望实体" :disabled="expectedEntityInputs.length >= 40" @click="addExpectedEntity"><Plus :size="15" />添加实体</button><small>每格内容整体作为一个答案实体或短语，可包含逗号、顿号等标点。本题可将完整目标句填写在一个框中；多个目标请分别填写或添加输入框。答案实体不是三元组的主语、关系、宾语；最多 40 项，空白不参与评分。</small><div class="experiment-actions"><label v-if="experimentType === 'METHODS'" class="ablation-control"><input v-model="includeAblations" type="checkbox" />附加消融实验</label><span v-else class="matrix-run-note">串行运行 6 个条件；RANKED 每个模型均执行证据筛选和答案校验</span><button class="button button-dark" :disabled="running || !question.trim()" @click="runComparison"><Play :size="15" />{{ running ? '矩阵实验运行中…' : '开始对比实验' }}</button></div><small v-if="experimentType === 'METHODS'">各模式使用相同模型与生成参数；排序评分组包含证据选择和生成两次调用，总耗时与 token 按实际记录。失败结果不参与评分，参考答案与期望实体仅用于生成后的评价。</small></section>
+  <div class="page-stack experiment-page">
+    <SectionHeading :embedded="embedded" title="问答实验" description="固定问题与实验条件，对照问答策略或 Qwen 基座与 LoRA。"><div class="experiment-export-actions"><button class="button button-outline" :disabled="!history.length" @click="exportResults"><ArrowDownToLine :size="16" />导出 JSON</button><button class="button button-outline" :disabled="!history.length" @click="exportCsv"><ArrowDownToLine :size="16" />导出 CSV</button></div></SectionHeading>
+    <details class="experiment-methods">
+      <summary>实验条件说明</summary>
+      <dl>
+        <div><dt>大模型直答</dt><dd>直接提问，不访问图谱。</dd></div>
+        <div><dt>三元组 + 大模型</dt><dd>使用共享证据，不向提示词注入分数。</dd></div>
+        <div><dt>排序评分 + 原始提示词</dt><dd>先从排序评分证据中选择依据，再生成回答。</dd></div>
+      </dl>
+    </details>
+    <section class="content-section experiment-run-form" aria-label="配置对照实验">
+      <label for="experiment-type">实验方案</label>
+      <select id="experiment-type" v-model="experimentType">
+        <option value="METHODS">方法对照：固定默认模型</option>
+        <option value="QWEN_MATRIX">模型对照：Qwen 基座 × LoRA × 三种方法</option>
+      </select>
+      <p v-if="experimentType === 'QWEN_MATRIX'" class="matrix-notice">此方案只调用本地 Qwen 基座和 LoRA，不调用 DeepSeek/M3E；六种组合共用一次图谱检索，逐项运行。训练标签尚未经教师审校，结果仅作探索性比较。</p>
+      <div class="experiment-input-pair">
+        <label for="experiment-question">统一测试问题<textarea id="experiment-question" v-model="question" maxlength="2000" rows="3"></textarea></label>
+        <label for="reference-answer">参考答案（可选）<textarea id="reference-answer" v-model="referenceAnswer" maxlength="4000" rows="3" placeholder="由教师或教材确定；留空时不生成文本相似度指标"></textarea></label>
+      </div>
+      <fieldset class="expected-entities">
+        <legend>期望答案实体（可选）</legend>
+        <div class="expected-entity-list">
+          <div v-for="(entity, index) in expectedEntityInputs" :key="index" class="expected-entity-row">
+            <input v-model="expectedEntityInputs[index]" data-testid="expected-entity-input" :aria-label="`期望实体 ${index + 1}`" maxlength="100" placeholder="一个实体或答案短语，可含标点" />
+            <button type="button" class="icon-button" :aria-label="`移除期望实体 ${index + 1}`" title="移除期望实体" :disabled="expectedEntityInputs.length <= 3" @click="removeExpectedEntity(index)"><X :size="15" /></button>
+          </div>
+        </div>
+        <button type="button" class="text-button" aria-label="添加期望实体" :disabled="expectedEntityInputs.length >= 40" @click="addExpectedEntity"><Plus :size="15" />添加实体</button>
+        <p>每格内容整体作为一个答案实体或短语，可包含逗号、顿号等标点。本题可将完整目标句填写在一个框中；多个目标请分别填写或添加输入框。答案实体不是三元组的主语、关系、宾语；最多 40 项，空白不参与评分。</p>
+      </fieldset>
+      <div class="experiment-actions">
+        <label v-if="experimentType === 'METHODS'" class="ablation-control"><input v-model="includeAblations" type="checkbox" />附加消融实验</label>
+        <span v-else>串行运行 6 个条件；RANKED 每个模型均执行证据筛选和答案校验</span>
+        <button class="button button-dark" :disabled="running || !question.trim()" @click="runComparison"><Play :size="15" />{{ running ? '矩阵实验运行中…' : '开始对比实验' }}</button>
+      </div>
+      <small v-if="experimentType === 'METHODS'">各模式使用相同模型与生成参数；排序评分组包含证据选择和生成两次调用，总耗时与 token 按实际记录。失败结果不参与评分，参考答案与期望实体仅用于生成后的评价。</small>
+    </section>
     <section class="experiment-execution-status" aria-live="polite"><div><p class="eyebrow">批量执行状态</p><strong>{{ executionStatusText }}</strong></div><div class="execution-status-meta"><span>预期条件 {{ expectedConditions }}</span><span v-if="executionPhase === 'running'">已运行 {{ executionElapsed }} 秒</span><span v-if="latest">实际返回 {{ latest.results.length }} 条</span></div><small v-if="executionPhase === 'running'">失败条件会保留为失败状态，不会生成或参与答案评分。</small></section>
     <div v-if="error" class="inline-notice" role="alert"><CircleHelp :size="16" />{{ error }}</div>
     <section v-if="latest" class="content-section experiment-history"><div class="section-title-row"><div><p class="eyebrow">{{ latest.evaluation?.experimentType === 'QWEN_MATRIX' ? 'Qwen 基座 × LoRA 实验矩阵' : '本次结果' }}</p><h2>{{ latest.question }}</h2></div><span class="history-count"><Timer :size="13" />{{ new Date(latest.createdAt).toLocaleString('zh-CN') }}</span></div><ExperimentResultGrid :results="latest.results" :ratings="latest.ratings" :metrics="latest.evaluation?.metricsByMode" :mode-names="modeNames" :score="score" @rate="rate" /><small class="local-history-note">{{ latest.evaluation?.note || '早期导入记录，未生成可复核的实验指标。自动指标与人工评分分别呈现，不等同于事实正确性。' }}</small></section>
@@ -82,7 +118,34 @@ function score(value?: number) { return value == null ? '未测评' : (value * 1
   </div>
 </template>
 <style scoped>
-.experiment-export-actions{display:flex;gap:8px;flex-wrap:wrap}
-.experiment-execution-status{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:14px 16px;background:#f7faf7;border:1px solid var(--border-default);border-radius:var(--radius-md)}.experiment-execution-status .eyebrow{margin:0 0 4px;color:var(--accent)}.experiment-execution-status strong{color:var(--text);font-size:13px}.experiment-execution-status small{width:100%;color:var(--text-muted);font-size:10px}.execution-status-meta{display:flex;flex-wrap:wrap;gap:10px;color:var(--text-muted);font-size:10px}.result-failed{border-color:#edcfc6;background:#fff8f5}.result-failed .compare-result-title small{color:var(--danger)}.compare-evidence summary{display:flex;align-items:center;gap:6px;color:var(--accent);cursor:pointer}.compare-evidence ol{margin:9px 0 0;padding-left:18px;color:var(--text-muted);font-size:10px;line-height:1.7}.compare-evidence li small{color:var(--text-subtle)}
-.experiment-run-form>input,.expected-entity-row input{padding:11px 13px;border:1px solid var(--border,#dce5df);border-radius:8px;background:white}.experiment-run-form>label{margin-top:9px}.experiment-run-form>small{line-height:1.7;color:#64756c}.expected-entity-list{display:grid;gap:8px}.expected-entity-row{display:flex;gap:8px}.expected-entity-row input{flex:1;min-width:0}.entity-icon-button,.entity-add-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--border,#dce5df);border-radius:6px;background:#fff;color:#40574b;cursor:pointer}.entity-icon-button{width:40px;aspect-ratio:1}.entity-icon-button:disabled,.entity-add-button:disabled{opacity:.45;cursor:not-allowed}.entity-add-button{justify-self:start;padding:8px 11px}.experiment-run-form>.experiment-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:9px}.ablation-control{display:flex;gap:8px;align-items:center}.experiment-scores{display:flex;gap:16px;flex-wrap:wrap}.experiment-scores dt{font-size:11px;color:#758079}.experiment-scores dd{margin:5px 0;font-weight:600}.compare-result-card pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:250px;overflow:auto;font-size:12px;background:#f6f8f5;padding:12px}.compare-result-card details{margin-top:12px;font-size:12px}.experiment-table{width:100%;text-align:left;border-collapse:collapse;font-size:13px}.experiment-table th,.experiment-table td{padding:12px 10px;border-bottom:1px solid #e8ede8}.table-scroll{overflow-x:auto}.experiment-table th{white-space:nowrap;color:#64756c}
+.experiment-page{font-variant-numeric:tabular-nums}
+.experiment-export-actions,.experiment-actions,.experiment-execution-status,.execution-status-meta{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px}
+.experiment-methods,.experiment-execution-status,.matrix-notice{padding:10px 14px;border-radius:var(--radius-sm);background:var(--surface-tint)}
+.experiment-methods summary{width:fit-content;color:var(--accent-strong);font-weight:600;cursor:pointer}
+.experiment-methods dl,.experiment-input-pair,.expected-entity-list{display:grid;gap:12px;grid-template-columns:repeat(3,minmax(0,1fr))}
+.experiment-methods dt{font-weight:650}
+.experiment-methods dd{margin:4px 0 0;color:var(--text-muted);font-size:13px}
+.experiment-run-form{display:grid;gap:10px;min-width:0}
+.experiment-input-pair{grid-template-columns:repeat(2,minmax(0,1fr))}
+.experiment-run-form label,.expected-entities legend{display:grid;gap:5px;color:var(--text);font-weight:600;font-size:13px}
+.experiment-run-form>select{justify-self:start}
+.experiment-run-form textarea,.expected-entity-row input{width:100%;font-size:14px;font-weight:400}
+.expected-entities{min-width:0;margin:4px 0 0;padding:0;border:0}
+.expected-entities legend{margin-bottom:8px;padding:0}
+.expected-entity-row{display:flex;align-items:center;gap:4px;min-width:0}
+.expected-entity-row .icon-button{flex:none}
+.expected-entities .text-button{margin-top:6px}
+.expected-entities p,.experiment-run-form>small,.matrix-notice{margin:0;color:var(--text-muted);font-size:12px;line-height:1.65}
+.matrix-notice{color:var(--warning);background:var(--warning-soft)}
+.experiment-actions{justify-content:space-between;padding-top:8px;border-top:1px solid var(--border-soft)}
+.experiment-actions .ablation-control{display:flex;align-items:center;gap:6px;cursor:pointer}
+.experiment-actions>span,.execution-status-meta,.experiment-execution-status small{color:var(--text-muted);font-size:12px}
+.experiment-execution-status{justify-content:space-between}
+.experiment-execution-status .eyebrow{margin:0}
+.experiment-execution-status small{flex-basis:100%}
+.experiment-history .section-title-row{flex-wrap:wrap}
+.table-scroll{margin-top:12px;overflow:auto}
+.experiment-table{min-width:520px;overflow:hidden}
+.experiment-table :is(th,td):not(:first-child){text-align:right}
+@media(max-width:700px){.experiment-methods dl,.experiment-input-pair,.expected-entity-list{grid-template-columns:1fr}.experiment-run-form{padding:16px}}
 </style>

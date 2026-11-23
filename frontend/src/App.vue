@@ -18,10 +18,12 @@ const isAdmin = computed(() => session.user.value?.role === 'ADMIN')
 const { overview, loading: metricsLoading, error: metricsError, reload } = useLearningMetrics(computed(() => session.user.value?.role))
 const { status: systemStatus, loading: statusLoading, error: statusError, reload: reloadStatus } = useSystemStatus()
 const healthOpen = ref(false)
+const primaryNav = ref<HTMLElement | null>(null)
 const navOpen = ref<Record<string, boolean>>({ learning: true, practice: true, research: true, admin: false })
 const userName = computed(() => session.user.value?.displayName || session.user.value?.username || (session.loading.value ? '正在确认账户' : '账户未确认'))
 const avatar = computed(() => Array.from(session.user.value?.displayName || session.user.value?.username || '')[0] || '·')
 const activePath = computed(() => route.path)
+const activeNavPath = computed(() => activePath.value === '/experiments' ? '/admin/experiments' : activePath.value)
 const homePath = computed(() => isAdmin.value ? '/teaching-dashboard' : '/dashboard')
 const roleNotice = computed(() => route.query.notice === 'admin' ? '当前为管理员视图，不包含学生个人学习记录。' : route.query.notice === 'student' ? '当前为学生视图，管理功能仅对管理员开放。' : '')
 const titles: Record<string, string> = { '/': '学习空间', '/dashboard': '学习概览', '/courses': '课程列表', '/knowledge': '知识图谱', '/mastery-map': '个性化掌握图谱', '/tutor': 'AI 学习助教', '/practice': '课程练习', '/adaptive-practice': '自适应专项练习', '/wrong-book': '错题复习', '/review': '间隔复习', '/study-plan': '每日计划', '/micro-lessons': '证据微课', '/evaluation': '学习评估', '/learning-report': '阶段性学习报告', '/recommendations': '个性化推荐', '/experiment-tasks': '实验任务', '/teaching-dashboard': '教学总览', '/admin/content': '内容与题库中心', '/admin/experiments': '实验与评价中心' }
@@ -37,7 +39,7 @@ const healthTone = computed(() => statusTone(systemStatus.value?.overallStatus |
 const healthLabel = computed(() => statusLabel(systemStatus.value?.overallStatus || 'NOT_CHECKED'))
 const healthIssues = computed(() => systemStatus.value?.dependencies.filter(item => item.status !== 'UP') || [])
 const healthCheckedAt = computed(() => systemStatus.value ? new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit' }).format(new Date(systemStatus.value.checkedAt)) : '尚未检查')
-function sectionIsActive(items: Array<{ path: string }>) { return items.some(item => activePath.value === item.path || (item.path !== '/' && activePath.value.startsWith(item.path + '/'))) }
+function sectionIsActive(items: Array<{ path: string }>) { return items.some(item => activeNavPath.value === item.path) }
 function sectionOpen(id: string) { return navOpen.value[id] ?? true }
 function toggleSection(id: string) { navOpen.value = { ...navOpen.value, [id]: !sectionOpen(id) } }
 function ensureActiveSection() {
@@ -75,6 +77,16 @@ async function logout() {
   }
 }
 watch(() => route.fullPath, () => { refreshShell(); ensureActiveSection() }, { immediate: true })
+watch([primaryNav, activeNavPath], ([nav]) => {
+  const item = nav?.querySelector('.nav-item.active')
+  if (!nav || !item) return
+  const visible = nav.getBoundingClientRect()
+  const current = item.getBoundingClientRect()
+  if (current.top < visible.top) nav.scrollTop += current.top - visible.top
+  else if (current.bottom > visible.bottom) nav.scrollTop += current.bottom - visible.bottom
+  if (current.left < visible.left) nav.scrollLeft += current.left - visible.left
+  else if (current.right > visible.right) nav.scrollLeft += current.right - visible.right
+}, { flush: 'post' })
 watch(() => route.query.entity, (entity) => {
   if (typeof entity === 'string' && route.path === '/knowledge') window.dispatchEvent(new CustomEvent('knowledge:select', { detail: entity }))
 })
@@ -89,18 +101,18 @@ const currentYear = new Date().getFullYear()
     <aside class="sidebar">
       <a class="brand" :href="homePath" @click.prevent="router.push(homePath)"><span class="brand-mark"><GraduationCap :size="21" /></span><span><strong>知序</strong><small>{{ isAdmin ? '管理工作台' : '学习平台' }}</small></span></a>
       <button v-if="!isAdmin" class="course-switch" @click="router.push('/courses')"><span class="course-badge"><BookOpenCheck :size="18" /></span><span class="course-switch-copy"><strong>课程空间</strong><small>查看与选择课程</small></span><ChevronDown :size="16" /></button>
-      <nav v-if="!isAdmin" class="primary-nav" aria-label="学生主导航">
+      <nav v-if="!isAdmin" ref="primaryNav" class="primary-nav" aria-label="学生主导航">
         <div v-for="group in navGroups" :key="group.id" class="nav-group">
           <button class="nav-group-toggle" :aria-expanded="sectionOpen(group.id)" @click="toggleSection(group.id)"><span class="nav-label">{{ group.title }}</span><ChevronDown :size="14" :class="{ rotated: sectionOpen(group.id) }" /></button>
           <div v-show="sectionOpen(group.id)" class="nav-group-items">
-            <button v-for="item in group.items" :key="item.path" class="nav-item" :class="{ active: activePath === item.path }" @click="router.push(item.path)"><component :is="item.icon" :size="18" :stroke-width="1.8" /><span>{{ item.label }}</span><i v-if="item.path === '/wrong-book'" class="nav-count" :title="metricsError || (metricsLoading ? '正在刷新待复习数量' : '待复习错题数量')">{{ wrongCount }}</i></button>
+            <button v-for="item in group.items" :key="item.path" class="nav-item" :class="{ active: activeNavPath === item.path }" :aria-current="activeNavPath === item.path ? 'page' : undefined" :aria-label="item.label" :title="item.label" @click="router.push(item.path)"><component :is="item.icon" :size="18" :stroke-width="1.8" /><span>{{ item.label }}</span><i v-if="item.path === '/wrong-book'" class="nav-count" :title="metricsError || (metricsLoading ? '正在刷新待复习数量' : '待复习错题数量')">{{ wrongCount }}</i></button>
           </div>
         </div>
       </nav>
-      <nav v-else class="primary-nav" aria-label="管理员主导航">
+      <nav v-else ref="primaryNav" class="primary-nav" aria-label="管理员主导航">
         <div class="nav-group">
           <button class="nav-group-toggle" :aria-expanded="sectionOpen('admin')" @click="toggleSection('admin')"><span class="nav-label">管理工作台</span><ChevronDown :size="14" :class="{ rotated: sectionOpen('admin') }" /></button>
-          <div v-show="sectionOpen('admin')" class="nav-group-items"><button v-for="item in adminItems" :key="item.path" class="nav-item" :class="{ active: activePath === item.path }" @click="router.push(item.path)"><component :is="item.icon" :size="18" :stroke-width="1.8" /><span>{{ item.label }}</span></button></div>
+          <div v-show="sectionOpen('admin')" class="nav-group-items"><button v-for="item in adminItems" :key="item.path" class="nav-item" :class="{ active: activeNavPath === item.path }" :aria-current="activeNavPath === item.path ? 'page' : undefined" :aria-label="item.label" :title="item.label" @click="router.push(item.path)"><component :is="item.icon" :size="18" :stroke-width="1.8" /><span>{{ item.label }}</span></button></div>
         </div>
       </nav>
       <div class="sidebar-bottom"><div v-if="!isAdmin" class="help-box"><span class="help-icon"><CircleHelp :size="17" /></span><strong>需要学习帮助？</strong><small>让 AI 助教为你讲解知识点</small><button @click="navigate('tutor')">开始提问 <ChevronDown :size="14" /></button></div><small class="sidebar-version">知序学习平台 · {{ currentYear }}</small></div>

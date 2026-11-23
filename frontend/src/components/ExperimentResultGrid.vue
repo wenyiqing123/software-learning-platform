@@ -6,5 +6,55 @@ const emit = defineEmits<{ rate: [key: string, value: number] }>()
 </script>
 
 <template>
-  <div class="compare-result-grid experiment-result-grid"><article v-for="result in results" :key="result.resultKey || result.mode" class="compare-result-card" :class="{ 'result-failed': result.error }"><div class="compare-result-title"><strong>{{ modeNames[result.resultKey || result.mode || ''] || result.resultKey || result.mode }}</strong><small>{{ result.error ? '失败' : '成功' }} · {{ result.latencyMs }} ms</small></div><p v-if="result.error" class="compare-error">{{ result.error }}</p><p v-else class="compare-answer">{{ result.answer }}</p><details v-if="result.triples?.length" class="compare-evidence"><summary>{{ result.triples.length }} 条知识证据 · 查看返回顺序</summary><ol><li v-for="triple in result.triples" :key="triple.subject + triple.predicate + triple.object">{{ triple.subject }} — {{ triple.predicate }} — {{ triple.object }}<small v-if="triple.score !== undefined">（{{ Number(triple.score).toFixed(3) }}）</small></li></ol></details><dl v-if="!result.error" class="experiment-scores"><div><dt>ROUGE-L</dt><dd>{{ score(metrics?.[result.resultKey || result.mode || '']?.rougeL) }}</dd></div><div><dt>BLEU ≤ 4</dt><dd>{{ score(metrics?.[result.resultKey || result.mode || '']?.bleu4) }}</dd></div><div><dt>有效阶数</dt><dd>{{ metrics?.[result.resultKey || result.mode || '']?.bleuOrder ?? '—' }}</dd></div><div><dt>实体召回率</dt><dd>{{ score(metrics?.[result.resultKey || result.mode || '']?.entityRecall) }}</dd></div></dl><label v-if="!result.error" class="rating-select">人工评分<select :value="ratings[result.resultKey || result.mode || ''] || ''" @change="emit('rate', result.resultKey || result.mode || '', Number(($event.target as HTMLSelectElement).value))"><option value="">选择 1–5 分</option><option v-for="n in 5" :key="n" :value="n">{{ n }} 分</option></select></label><details v-if="result.prompt && result.mode !== 'RANKED'" class="prompt-details"><summary>查看提示词（RANKED 不展示后台约束提示）</summary><pre>{{ result.prompt }}</pre></details><p v-if="result.grounding" class="compare-evidence">已选择 {{ result.grounding.selectedIds.length }} / {{ result.grounding.candidates.length }} 条证据；{{ result.grounding.modelCallCount }} 次模型调用</p><details v-if="result.grounding"><summary>查看证据筛选与校验记录</summary><pre>{{ JSON.stringify(result.grounding, null, 2) }}</pre></details><details v-if="result.provenance"><summary>查看运行配置与证据来源</summary><pre>{{ JSON.stringify({ model: result.provenance.model, temperature: result.provenance.temperature, maxTokens: result.provenance.maxTokens, topK: result.provenance.topK, systemPromptVersion: result.provenance.systemPromptVersion }, null, 2) }}</pre></details></article></div>
+  <div class="experiment-result-grid">
+    <article v-for="result in results" :key="result.resultKey || result.mode" class="compare-result-card" :class="{ 'result-failed': result.error }">
+      <header class="compare-result-title">
+        <strong>{{ modeNames[result.resultKey || result.mode || ''] || result.resultKey || result.mode }}</strong>
+        <div><span class="status-tag" :class="result.error ? 'failed' : 'completed'">{{ result.error ? '失败' : '成功' }}</span><small>{{ result.latencyMs }} ms</small></div>
+      </header>
+      <p v-if="result.error" class="compare-error">{{ result.error }}</p>
+      <p v-else class="compare-answer">{{ result.answer }}</p>
+      <dl v-if="!result.error" class="experiment-scores">
+        <div><dt>ROUGE-L</dt><dd>{{ score(metrics?.[result.resultKey || result.mode || '']?.rougeL) }}</dd></div>
+        <div><dt>BLEU ≤ 4</dt><dd>{{ score(metrics?.[result.resultKey || result.mode || '']?.bleu4) }}</dd></div>
+        <div><dt>有效阶数</dt><dd>{{ metrics?.[result.resultKey || result.mode || '']?.bleuOrder ?? '—' }}</dd></div>
+        <div><dt>实体召回率</dt><dd>{{ score(metrics?.[result.resultKey || result.mode || '']?.entityRecall) }}</dd></div>
+      </dl>
+      <div class="compare-result-details">
+        <label v-if="!result.error" class="rating-select">人工评分<select :value="ratings[result.resultKey || result.mode || ''] || ''" @change="emit('rate', result.resultKey || result.mode || '', Number(($event.target as HTMLSelectElement).value))"><option value="">选择 1–5 分</option><option v-for="n in 5" :key="n" :value="n">{{ n }} 分</option></select></label>
+        <details v-if="result.triples?.length"><summary>{{ result.triples.length }} 条知识证据 · 查看返回顺序</summary><ol><li v-for="triple in result.triples" :key="triple.subject + triple.predicate + triple.object">{{ triple.subject }} — {{ triple.predicate }} — {{ triple.object }}<small v-if="triple.score !== undefined">（{{ Number(triple.score).toFixed(3) }}）</small></li></ol></details>
+        <details v-if="result.prompt && result.mode !== 'RANKED'"><summary>查看提示词（RANKED 不展示后台约束提示）</summary><pre>{{ result.prompt }}</pre></details>
+        <details v-if="result.grounding">
+          <summary>查看证据筛选与校验记录</summary>
+          <p>已选择 {{ result.grounding.selectedIds.length }} / {{ result.grounding.candidates.length }} 条证据；{{ result.grounding.modelCallCount }} 次模型调用</p>
+          <pre>{{ JSON.stringify(result.grounding, null, 2) }}</pre>
+        </details>
+        <details v-if="result.provenance"><summary>查看运行配置与证据来源</summary><pre>{{ JSON.stringify({ model: result.provenance.model, temperature: result.provenance.temperature, maxTokens: result.provenance.maxTokens, topK: result.provenance.topK, systemPromptVersion: result.provenance.systemPromptVersion }, null, 2) }}</pre></details>
+      </div>
+    </article>
+  </div>
 </template>
+
+<style scoped>
+.experiment-result-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px;font-variant-numeric:tabular-nums}
+.compare-result-card{display:grid;grid-row:span 4;grid-template-rows:subgrid;min-width:0;padding:14px;background:var(--surface-soft);border-radius:var(--radius-sm)}
+.result-failed{background:var(--danger-soft)}
+.compare-result-title{display:grid;align-content:start;gap:5px;padding-bottom:8px;border-bottom:1px solid var(--border-default)}
+.compare-result-title strong{font-size:15px;overflow-wrap:anywhere}
+.compare-result-title>div,.rating-select{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.compare-result-title small,.rating-select,.experiment-scores dt,.compare-result-details{color:var(--text-muted);font-size:12px}
+.compare-answer,.compare-error{margin:0;font-size:14px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere}
+.compare-error{color:var(--danger)}
+.experiment-scores{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;gap:6px 10px;margin:0;padding-top:8px;border-top:1px solid var(--border-default)}
+.experiment-scores dd{margin:0;color:var(--text);font-size:14px;font-weight:650}
+.compare-result-details{grid-row:span 1;min-width:0}
+.result-failed .compare-result-details{grid-row:span 2}
+.rating-select{padding:6px 0}
+.rating-select select{min-height:var(--control-height-small)}
+.compare-result-details details{padding-block:6px;border-top:1px solid var(--border-soft)}
+.compare-result-details summary{color:var(--accent-strong);cursor:pointer}
+.compare-result-details ol{padding-left:18px}
+.compare-result-details pre{max-height:240px;margin:8px 0 0;padding:10px;background:var(--surface-tint);border-radius:var(--radius-sm);overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}
+@media(max-width:900px){.experiment-result-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.experiment-result-grid{grid-template-columns:1fr}}
+</style>

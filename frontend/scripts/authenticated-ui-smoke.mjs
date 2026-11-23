@@ -67,8 +67,22 @@ const planTasks = [
   { id: 2, type: 'READING', targetId: 32, title: '阅读数据流图', minutes: 12, path: '/courses?courseId=3&sectionId=32', state: 'PENDING', detail: '软件工程 · 软件需求', reason: '该小节尚未完成阅读。' },
   { id: 3, type: 'PRACTICE', targetId: 11, title: '练习写出验收条件', minutes: 10, path: '/practice?knowledgePointId=11', state: 'COMPLETED', detail: '课程练习 · 需求分析', reason: '结合近期答题记录安排。' },
 ]
+const ablationKeys = ['ABLATION_SORTED_SCORED', 'ABLATION_WITHOUT_SCORE', 'ABLATION_WITHOUT_SORT', 'ABLATION_WITHOUT_SORT_AND_SCORE']
+const experimentRun = {
+  id: 'layout-fixture-methods', question: quiz.stem, createdAt: '2026-11-21T09:30:00Z', ratings: { DIRECT: 3, TRIPLES: 4 },
+  results: [
+    { mode: 'DIRECT', latencyMs: 620, answer: '加工名称使用动宾短语。' },
+    { mode: 'TRIPLES', latencyMs: 1030, answer: '加工名称应说明数据如何转换。用动词加宾语描述操作，例如“校验借阅资格”，不要用保存的数据对象代替加工。', triples: evidence },
+    { mode: 'RANKED', latencyMs: 1620, answer: '先识别加工的输入与输出，再用动词与宾语命名，如“生成借阅记录”。这样的名称比“借阅数据”更容易与数据存储区分。', triples: evidence, provenance: { systemPromptVersion: 'ranked-grounded-v3' }, grounding: { selectedIds: ['1'], candidates: [1, 2], modelCallCount: 2 } },
+    ...ablationKeys.map((resultKey, index) => ({ mode: resultKey, resultKey, latencyMs: 1180 + index * 140, ...(index === 3 ? { error: '模型服务超时，未生成回答。' } : { answer: '用动宾短语描述数据变换。', triples: evidence }) })),
+  ],
+  evaluation: { source: 'SERVER_AI_SERVICE', experimentType: 'METHODS', note: '界面巡检夹具，不是实际实验或研究结果。', metricsByMode: { DIRECT: { rougeL: .54, bleu4: .28, bleuOrder: 4, entityRecall: .5 }, TRIPLES: { rougeL: .71, bleu4: .46, bleuOrder: 4, entityRecall: 1 }, RANKED: { rougeL: .68, bleu4: .43, bleuOrder: 4, entityRecall: 1 } } },
+}
+const experimentTask = { id: 9, title: '对照观察加工命名的解释', description: '阅读知情说明后，依次记录任务前后的测验结果。', question: quiz.stem, referenceAnswer: '以动宾短语命名。', experimentType: 'METHODS', expectedEntities: [], includeAblations: false, status: 'OPEN', groupCount: 2, assignmentCount: 3 }
+const evaluationSummary = { conditionKey: 'METHODS', sampleCount: 12, meanPreScore: 64.5, medianPreScore: 65, stddevPreScore: 8.2, iqrPreScore: 11, meanPostScore: 73.75, medianPostScore: 75, stddevPostScore: 9.1, iqrPostScore: 12, meanDelayedScore: 68.25, medianDelayedScore: 70, iqrDelayedScore: 10, meanEffort: 4.2, medianEffort: 4, stddevEffort: 1.2, iqrEffort: 2, meanElapsedSeconds: 126, medianElapsedSeconds: 120, stddevElapsedSeconds: 12, iqrElapsedSeconds: 18, feedbackCount: 10 }
+const adminDraft = { id: 14, courseId: 3, sectionId: 31, title: '从业务问题到需求描述', status: 'DRAFT', generatedText: '先整理业务目标，再确认系统边界。为每项需求补写可观察的验收结果。', objectives: [], prerequisites: [], triples: evidence, commonErrors: [], selfTests: [], evidence: { graphEntity: '需求分析', tripleCount: evidence.length } }
 
-function apiResponse(url, role, scenario) {
+function apiResponse(url, role, scenario, method) {
   const path = new URL(url).pathname
   if (path === '/api/auth/me') return json({ id: role === 'ADMIN' ? 1 : 2, username: role === 'ADMIN' ? 'smoke-admin' : 'smoke-student', displayName: role === 'ADMIN' ? '封版巡检管理员' : '封版巡检学生', role })
   if (path === '/api/dashboard/overview') return json({ mastery: 42, completed: 4, wrongCount: 2, accuracy: 75, activity: [] })
@@ -84,13 +98,17 @@ function apiResponse(url, role, scenario) {
       weakPoints: empty ? [] : ['需求规格说明书', '数据流图', '模块划分', '黑盒测试'].map((pointName, index) => ({ pointId: index + 11, pointName, averageMastery: 35 + index * 9, attempts: 8, learners: 5 })),
     })
   }
-  if (path === '/api/admin/question-bank/versions') return json([])
-  if (path === '/api/admin/micro-lessons') return json([])
-  if (path === '/api/admin/diagnostics') return json([])
+  if (path === '/api/admin/question-bank/versions') return json([
+    { id: 13, courseId: 3, courseName: course.name, versionName: '软件工程 · 需求章节修订', status: 'DRAFT', sourceFilename: 'requirements.json', questionCount: 12 },
+    { id: 10, courseId: 3, courseName: course.name, versionName: '软件工程 · 学期题库', status: 'PUBLISHED', sourceFilename: 'intro.json', questionCount: 48 },
+  ])
+  if (path === '/api/admin/micro-lessons') return json([adminDraft])
   if (path.includes('/admin/courses/') && path.endsWith('/prerequisite-quality')) return json({ courseId: 3, pointCount: 1, validEdgeCount: 0, errorCount: 0, warningCount: 0, valid: true, issues: [] })
-  if (path === '/api/admin/knowledge-points' || path === '/api/admin/questions') return json([])
-  if (path.startsWith('/api/admin/questions/')) return json([])
+  if (path === '/api/admin/knowledge-points') return json(coursePoints.map(point => ({ ...point, enabled: true })))
+  if (path === '/api/admin/questions') return json([{ ...quiz, courseId: 3, knowledgePointId: 12, answer: ['A'], explanation: '用动宾短语描述加工。', difficulty: 2, enabled: true, source: 'MANUAL' }])
+  if (path === '/api/admin/questions/101/diagnostics') return json([{ id: 1, optionKey: 'B', optionText: quiz.options[1].text, knowledgePointId: 12, knowledgePointName: quiz.knowledgePoint, rationale: '将描述数据存储的名词短语误用为加工名称。', enabled: true }])
   if (path.endsWith('/study')) {
+    if (role === 'ADMIN' && scenario === 'micro-author-forbidden') return json({ message: '当前账号没有课程阅读权限。' }, 403)
     const empty = scenario === 'course-empty'
     return json({ ...course, courseId: course.id, chapters: empty ? [] : [{ id: 1, name: '软件需求', description: '理解需求、建模与核验。', sections: courseSections }], totalSections: empty ? 0 : courseSections.length, completedSections: empty ? 0 : 1 })
   }
@@ -120,10 +138,16 @@ function apiResponse(url, role, scenario) {
   if (path === '/api/spaced-reviews/21/review') return json({ attemptId: 8, questionId: 101, correct: true, correctAnswer: ['A'], explanation: '加工名称应能说明数据变换。', recallRating: 2, intervalMinutes: 4320, nextDueAt: '2026-11-26T08:00:00', mastered: false, consecutiveSuccessfulReviews: 1 })
   if (path === '/api/study-plans/today') return json({ id: 1, date: '2026-11-21', budgetMinutes: 30, tasks: planTasks })
   if (path === '/api/reports/learning') return json({ from: '2026-11-15', to: '2026-11-21', days: 7, courseName: '软件工程', reading: { totalSections: 8, completedSections: 3, completedInPeriod: 2 }, practice: { attempts: 12, correct: 9, accuracy: 75 }, reviews: { reviews: 2, correct: 1, accuracy: 50 }, plans: { totalTasks: 3, completedTasks: 1, plannedMinutes: 30, completedMinutes: 10 }, dailyActivity: [3, 4, 5].map((attempts, index) => ({ date: `2026-11-${19 + index}`, attempts, correct: attempts - 1, readingCompleted: index === 0 ? 0 : 1 })), chapters: [{ chapterId: 1, chapterName: '软件需求', totalSections: 4, completedSections: 2, completedInPeriod: 1 }, { chapterId: 2, chapterName: '软件设计', totalSections: 4, completedSections: 1, completedInPeriod: 1 }], knowledge: coursePoints.map(point => ({ pointId: point.id, pointName: point.name, mastery: point.mastery, attempts: 4, correct: Math.round(point.mastery / 25), dueReviewCount: point.id === 12 ? 1 : 0 })) })
-  if (path === '/api/experiments') return json([])
-  if (path.startsWith('/api/experiment-tasks')) return json([])
-  if (path.startsWith('/api/evaluations/sessions')) return json([])
-  if (path === '/api/admin/evaluations/summary') return json([{ conditionKey: 'METHODS', sampleCount: 3, meanPreScore: 3, medianPreScore: 3, meanPostScore: 4, medianPostScore: 4, meanEffort: 4, medianEffort: 4, feedbackCount: 2 }])
+  if (path === '/api/experiments') return json([experimentRun])
+  if (path === '/api/admin/experiment-tasks') return json([experimentTask, { ...experimentTask, id: 10, title: '课程阅读后的延后测验', status: 'DRAFT', assignmentCount: 0 }])
+  if (path === '/api/experiment-tasks') return json([{ ...experimentTask, id: 41, taskId: 9, groupId: 1, userId: 2, groupName: 'A 组', conditionKey: 'METHODS', status: 'ASSIGNED', taskStatus: 'OPEN', referenceAnswer: '' }])
+  if (path === '/api/evaluations/sessions') {
+    const sample = { id: 12, conditionKey: 'METHODS', taskKey: '需求分析理解任务', taskOrder: 'A→B', consentVersion: 'evaluation-v2' }
+    return method === 'POST'
+      ? json({ ...sample, startedAt: new Date().toISOString() })
+      : json([{ ...sample, id: 11, startedAt: '2026-11-21T08:00:00Z', completedAt: '2026-11-21T08:02:00Z', psychologicalEffort: 4 }])
+  }
+  if (path === '/api/admin/evaluations/summary') return json([evaluationSummary, { ...evaluationSummary, conditionKey: 'LEARNING_TASK', sampleCount: 7, meanEffort: 5, medianEffort: 5, feedbackCount: 3 }])
   if (path === '/api/admin/evaluations/export') return { status: 200, contentType: 'text/csv', body: 'participant,condition\nanon-001,METHODS\n' }
   if (path === '/api/tutor/sessions') return json(scenario === 'tutor-history' ? [{ id: 7, title: '需求规格说明书练习' }, { id: 8, title: '数据流图复习' }] : [])
   if (path === '/api/tutor/sessions/7/messages') return json([
@@ -224,8 +248,62 @@ const visualScenarios = {
       if (await page.locator('.wrong-row').count() !== 1) throw new Error('Wrong-book filter did not narrow the list')
       if (await search.evaluate(element => getComputedStyle(element).borderTopWidth !== '0px')) throw new Error('Wrong-book search has two visible borders')
     } },
+    { route: '/evaluation', name: 'evaluation-effort', async check(page) {
+      await page.getByRole('checkbox', { name: '我已阅读说明并同意记录本次评估数据' }).check()
+      await page.getByRole('button', { name: '开始评估' }).click()
+      await page.locator('.effort-scale input[value="7"]').check()
+      if (await page.locator('.effort-scale input:checked').count() !== 1) throw new Error('Paas must keep exactly one selected rating')
+      const positions = await page.locator('.effort-scale label').evaluateAll(labels => labels.map(label => {
+        const { top, height } = label.getBoundingClientRect()
+        const { width } = label.getBoundingClientRect()
+        return { top, height, width }
+      }))
+      const widths = positions.map(position => position.width)
+      if (positions.length !== 9 || new Set(positions.map(p => Math.round(p.top))).size !== 1 || positions.some(p => p.height < 44 || p.width < 44) || Math.max(...widths) - Math.min(...widths) > 2) throw new Error('Paas ticks must fit one evenly spaced, comfortable desktop row')
+    } },
+    { route: '/learning-report', name: 'active-sidebar', async check(page) {
+      const active = page.locator('.primary-nav .nav-item.active')
+      await active.waitFor()
+      if (!await active.evaluate(element => {
+        const nav = element.closest('nav').getBoundingClientRect()
+        const item = element.getBoundingClientRect()
+        return item.top >= nav.top - 1 && item.bottom <= nav.bottom + 1
+      })) throw new Error('Current route is clipped in the sidebar')
+    } },
   ],
-  ADMIN: [{ route: '/teaching-dashboard', name: 'teaching-empty', check: page => page.getByText('当前范围内暂无学习活动数据。').waitFor() }],
+  ADMIN: [
+    { route: '/admin/content?tab=question-bank', name: 'question-bank-file-control', async check(page) {
+      const fileButton = page.locator('.question-bank-panel .file-button')
+      await fileButton.waitFor()
+      const style = await fileButton.evaluate(element => ({ display: getComputedStyle(element).display, color: getComputedStyle(element).color }))
+      if (!['flex', 'inline-flex'].includes(style.display) || style.color === 'rgb(255, 255, 255)') throw new Error('Question bank file picker lost alignment or readable text color')
+      await page.locator('.version-row').first().waitFor()
+    } },
+    { route: '/teaching-dashboard', name: 'teaching-empty', check: page => page.getByText('当前范围内暂无学习活动数据。').waitFor() },
+    { route: '/admin/experiments', name: 'experiment-results', async check(page) {
+      await page.locator('.saved-experiment-list button').first().click()
+      await page.getByText('模型服务超时，未生成回答。').waitFor()
+      if (await page.locator('.compare-result-card').count() !== 7) throw new Error('Not all experiment conditions rendered')
+      if (await page.locator('.result-failed .compare-answer, .result-failed .rating-select').count()) throw new Error('Failed condition rendered as a successful result')
+      const metricTops = await page.locator('.experiment-scores').evaluateAll(groups => groups.slice(0, 2).map(group => Math.round(group.getBoundingClientRect().top)))
+      if (metricTops.length !== 2 || metricTops[0] !== metricTops[1]) throw new Error('First-row experiment metrics are misaligned')
+    } },
+    { route: '/admin/evaluations', name: 'evaluation-table', async check(page) {
+      const table = page.locator('.evaluation-table')
+      await table.waitFor()
+      if (!await table.evaluate(element => element.scrollWidth <= element.clientWidth + 1)) throw new Error('Evaluation table hides columns at desktop width')
+      if (await page.locator('.page-content h1').count() !== 1) throw new Error('Embedded admin tab duplicates the page title level')
+    } },
+    { route: '/admin/micro-lessons', name: 'micro-author-forbidden', async check(page) {
+      await page.getByRole('alert').getByText('当前账号没有课程阅读权限。').waitFor()
+      if (!await page.getByRole('button', { name: '生成证据微课草稿' }).isDisabled()) throw new Error('Draft generation remains available after the section request was denied')
+    } },
+    { route: '/admin/micro-lessons', name: 'micro-author-layout', async check(page) {
+      await page.getByRole('combobox', { name: '微课课程' }).waitFor()
+      await page.getByText('从业务问题到需求描述').waitFor()
+      if (await page.getByRole('button', { name: '生成证据微课草稿' }).isDisabled()) throw new Error('Valid course data did not enable evidence draft authoring')
+    } },
+  ],
   GUEST: [],
 }
 let browser
@@ -242,10 +320,24 @@ try {
     const page = await context.newPage()
     const consoleErrors = []
     const pageErrors = []
-    page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()) })
-    page.on('pageerror', error => pageErrors.push(error.message))
+    const expectedHttpErrors = []
+    const httpErrors = []
+    const resourceConsoleErrors = []
     let scenario = ''
-    await page.route('**/api/**', route => route.fulfill(apiResponse(route.request().url(), role, scenario)))
+    page.on('response', response => {
+      if (response.status() < 400) return
+      const issue = { path: new URL(response.url()).pathname, status: response.status(), method: response.request().method() }
+      if (scenario === 'micro-author-forbidden' && issue.path === '/api/courses/3/study' && issue.status === 403) expectedHttpErrors.push(issue)
+      else httpErrors.push(issue)
+    })
+    page.on('console', message => {
+      if (message.type() !== 'error') return
+      const text = message.text()
+      if (/^Failed to load resource:.*status of \d+/.test(text)) resourceConsoleErrors.push(text)
+      else consoleErrors.push(text)
+    })
+    page.on('pageerror', error => pageErrors.push(error.message))
+    await page.route('**/api/**', route => route.fulfill(apiResponse(route.request().url(), role, scenario, route.request().method())))
     await page.addInitScript((role) => {
       if (role === 'GUEST') return
       localStorage.setItem('slp-access-token', 'ui-smoke-access-token')
@@ -346,15 +438,21 @@ try {
       const safeName = route.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'root'
       const screenshot = `${role}-${viewport.width}x${viewport.height}-${safeName}${name ? `-${name}` : ''}.png`
       await page.screenshot({ path: path.join(auditDir, screenshot), fullPage: true, animations: 'disabled' })
-      results.push({ ...metrics, role, viewport: `${viewport.width}x${viewport.height}`, requested: route, scenario, scenarioError, final: metrics.path, roleRedirectPass: metrics.path === expectedPath(role, route), overflow: metrics.scrollWidth > metrics.viewportWidth + 1, blankRoot: metrics.rootChildren === 0, topbarOverflow: metrics.topbarWidth > metrics.viewportWidth + 1, topbarOverlap: metrics.topbarBottom > metrics.contentTop + 1, screenshot, consoleErrors: [...consoleErrors], pageErrors: [...pageErrors] })
+      const expectedResourceErrors = scenario === 'micro-author-forbidden'
+        ? resourceConsoleErrors.filter(text => text.includes('status of 403')).length
+        : 0
+      results.push({ ...metrics, role, viewport: `${viewport.width}x${viewport.height}`, requested: route, scenario, scenarioError, final: metrics.path, roleRedirectPass: metrics.path === expectedPath(role, route), overflow: metrics.scrollWidth > metrics.viewportWidth + 1, blankRoot: metrics.rootChildren === 0, topbarOverflow: metrics.topbarWidth > metrics.viewportWidth + 1, topbarOverlap: metrics.topbarBottom > metrics.contentTop + 1, screenshot, consoleErrors: [...consoleErrors], pageErrors: [...pageErrors], httpErrors: [...httpErrors], resourceConsoleErrors: [...resourceConsoleErrors], expectedHttpErrors: [...expectedHttpErrors], expectedResourceErrors })
       consoleErrors.length = 0
       pageErrors.length = 0
+      expectedHttpErrors.length = 0
+      httpErrors.length = 0
+      resourceConsoleErrors.length = 0
     }
     await context.close()
     }
   }
   if (!results.length) throw new Error('No routes matched the visual review filters')
-  const failures = results.filter(item => item.scenarioError || !item.roleRedirectPass || item.overflow || item.blankRoot || item.topbarOverflow || item.topbarOverlap || item.squeezedButtons || item.defaultControls || item.unstyledTables || !item.pageHeader || !item.pageDescription || item.consoleErrors.length || item.pageErrors.length || (item.role === 'GUEST' && !(item.loginContrast >= 4.5)))
+  const failures = results.filter(item => item.scenarioError || !item.roleRedirectPass || item.overflow || item.blankRoot || item.topbarOverflow || item.topbarOverlap || item.squeezedButtons || item.defaultControls || item.unstyledTables || !item.pageHeader || !item.pageDescription || item.consoleErrors.length || item.pageErrors.length || item.httpErrors.length || item.resourceConsoleErrors.length !== item.expectedResourceErrors || (item.scenario === 'micro-author-forbidden' && !item.expectedHttpErrors.length) || (item.role === 'GUEST' && !(item.loginContrast >= 4.5)))
   const reportPath = path.join(auditDir, 'metrics.json')
   await writeFile(reportPath, JSON.stringify({ scope: 'Browser rendering with intercepted API fixtures, not live backend integration', total: results.length, failures, results }, null, 2), 'utf8')
   console.log(`UI smoke: ${results.length - failures.length}/${results.length} passed. ${reportPath}`)
