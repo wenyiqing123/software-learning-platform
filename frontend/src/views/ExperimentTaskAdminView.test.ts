@@ -15,6 +15,18 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks())
 
 describe('ExperimentTaskAdminView', () => {
+  it('renders H1 by default and H2 when embedded', async () => {
+    const standalone = mount(ExperimentTaskAdminView)
+    await flushPromises()
+    expect(standalone.find('h1').text()).toBe('实验任务管理')
+    standalone.unmount()
+
+    const embedded = mount(ExperimentTaskAdminView, { props: { embedded: true } })
+    await flushPromises()
+    expect(embedded.find('h2').text()).toBe('实验任务管理')
+    embedded.unmount()
+  })
+
   it('creates a task and opens it for participants', async () => {
     const wrapper = mount(ExperimentTaskAdminView)
     await flushPromises()

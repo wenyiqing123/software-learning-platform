@@ -21,6 +21,19 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks())
 
 describe('MicroLessonAdminView', () => {
+  it('renders H1 by default and H2 when embedded', async () => {
+    const standalone = mount(MicroLessonAdminView)
+    await flushPromises()
+    expect(standalone.find('h1').text()).toBe('证据微课草稿')
+    expect(standalone.find('h2').text()).not.toBe('证据微课草稿')
+    standalone.unmount()
+
+    const embedded = mount(MicroLessonAdminView, { props: { embedded: true } })
+    await flushPromises()
+    expect(embedded.find('h2').text()).toBe('证据微课草稿')
+    embedded.unmount()
+  })
+
   it('generates an evidence-bound draft and publishes it explicitly', async () => {
     const wrapper = mount(MicroLessonAdminView)
     await flushPromises()

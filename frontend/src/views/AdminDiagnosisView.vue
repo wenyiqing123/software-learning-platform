@@ -11,6 +11,8 @@ interface Option { key: string; text: string }
 interface Question { id: number; courseId: number; stem: string; options: Option[]; answer: string[]; enabled: boolean }
 interface Draft { optionKey: string; knowledgePointId: number | null; rationale: string }
 
+const props = withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false })
+
 const loading = ref(true)
 const saving = ref(false)
 const authorized = ref(false)
@@ -92,7 +94,7 @@ onMounted(initialize)
 
 <template>
   <div class="page-stack diagnosis-admin-page">
-    <SectionHeading eyebrow="教学管理" title="错因关联配置" description="为课程干扰项配置混淆知识点和补救依据；未配置项不会被系统确定性解释。">
+    <SectionHeading :embedded="props.embedded" eyebrow="教学管理" title="错因关联配置" description="为课程干扰项配置混淆知识点和补救依据；未配置项不会被系统确定性解释。">
       <span class="admin-badge">ADMIN</span>
     </SectionHeading>
     <FeedbackState v-if="loading" :loading="loading" loading-title="正在加载错因配置" loading-text="正在读取课程题目和已配置的混淆关系，请稍候。" />
@@ -124,8 +126,10 @@ onMounted(initialize)
 <style scoped>
 .admin-badge { padding: 6px 10px; color: var(--green); background: var(--green-pale); border-radius: var(--radius-sm); font-size: 11px; font-weight: 700; }
 .diagnosis-admin-panel { padding: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); }
-.diagnosis-filters { display: grid; grid-template-columns: minmax(220px, .8fr) minmax(320px, 1.2fr); gap: 14px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
-.diagnosis-filters label,.diagnosis-draft label { display: grid; gap: 7px; color: var(--text-muted); font-size: 12px; }
+.diagnosis-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 18px; padding-bottom: 18px; border-bottom: 1px solid var(--border-soft); }
+.diagnosis-filters label { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: 13px; }
+.diagnosis-filters select { min-width: 220px; }
+.diagnosis-draft label { display: grid; gap: 7px; color: var(--text-muted); font-size: 12px; }
 .diagnosis-filters select,.diagnosis-draft select,.diagnosis-draft textarea { width: 100%; padding: 10px 11px; color: var(--ink); background: var(--surface); border: 1px solid var(--border-default); border-radius: var(--radius-sm); font: inherit; line-height: 1.6; }
 .diagnosis-question { padding: 20px 0 10px; }
 .diagnosis-question .eyebrow { margin: 0 0 6px; color: var(--green); }

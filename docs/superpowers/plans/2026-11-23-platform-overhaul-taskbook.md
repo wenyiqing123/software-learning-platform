@@ -311,28 +311,28 @@ Element Plus CSS 只通过实际消费的变量覆盖；不得给不存在的变
 - **受影响既有测试与更新指引**：保留 `LearningReportView.test.ts` report export columns/scope；`MicroLessonView.test.ts` 当前确实存在，保留 published-only/真实依赖 empty/error tests。
 - **单任务验证命令**：`cd frontend; npx vitest run src/views/LearningReportView.test.ts src/views/MicroLessonView.test.ts`。
 
-### - [ ] M2-T16 课程与基础题库管理视图
+### - [x] M2-T16 课程与基础题库管理视图
 - **涉及文件**：`frontend/src/views/AdminView.vue`；`frontend/src/components/AdminCoursePanel.vue`；`frontend/src/components/AdminQuestionPanel.vue`；`frontend/src/views/AdminCourseViews.test.ts`
 - **前置依赖**：M2-T1、M1-T4。
 - **精确改造指令**：课程编辑/列表用两列 `minmax(0,1fr)`，内容贴顶，禁止固定高空容器；题编辑区与题列表分区。`AdminView` 新增 optional `embedded` prop，并传给 `SectionHeading :embedded`，使内容中心中它渲染 H2，standalone 仍 H1。保存/编辑/新建/停用事件不变。
 - **受影响既有测试与更新指引**：保留 `AdminCourseViews.test.ts` 创建/编辑题/课程/启停/质量报告；管理员题库显示答案属于预期，不能错误增加 ADMIN 不可见答案断言。center tab tests 作为相邻任务已覆盖。
 - **单任务验证命令**：`cd frontend; npx vitest run src/views/AdminCourseViews.test.ts`。
 
-### - [ ] M2-T17 错因诊断与版本题库视图
+### - [x] M2-T17 错因诊断与版本题库视图
 - **涉及文件**：`frontend/src/views/AdminDiagnosisView.vue`；`frontend/src/views/QuestionBankView.vue`；`frontend/src/views/AdminDiagnosisView.test.ts`；`frontend/src/views/QuestionBankView.test.ts`
 - **前置依赖**：M2-T16。
 - **精确改造指令**：Diagnosis toolbar 单行；draft mapping 用 divider row，未配置时明确提示。Diagnosis `SectionHeading` 传 embedded prop。QuestionBank toolbar 合并 course/version；编辑区限制 editor 可视高度且可内部滚动，版本 history 改紧凑分隔列表。QuestionBank standalone heading 改为 `embedded ? h2 : h1` 并响应 dynamic prop。文件 picker 保留可读键盘入口。不得改 diagnostics/import API。
 - **受影响既有测试与更新指引**：保留错因 map save/error/empty 和题库逐行导入/发布确认/JSON 大小限制 tests；更新 design-system contract 禁止全局强制覆盖。
 - **单任务验证命令**：`cd frontend; npx vitest run src/views/AdminDiagnosisView.test.ts src/views/QuestionBankView.test.ts tests/design-system-contract.test.ts`。
 
-### - [ ] M2-T18 微课与实验任务管理员
+### - [x] M2-T18 微课与实验任务管理员
 - **涉及文件**：`frontend/src/views/MicroLessonAdminView.vue`；`frontend/src/views/ExperimentTaskAdminView.vue`；`frontend/src/views/MicroLessonAdminView.test.ts`；`frontend/src/views/ExperimentTaskAdminView.test.ts`
 - **前置依赖**：M2-T16。
 - **精确改造指令**：MicroLesson toolbar/source/draft history 用 8/16/24 spacing；draft list 只一层 surface，记录以 divider 分隔；`MicroLessonAdminView` 与 `ExperimentTaskAdminView` 新增 optional `embedded` 并将页头 H1 降为嵌入态 H2；generate/publish/status 操作保留现有确认和 request。不要在 M2 前增加 group/assign controls（它们由 M3-T4 实现）。
 - **受影响既有测试与更新指引**：保留 MicroLesson generate/publish、task create/status confirmation；当前 `ExperimentTaskAdminView` 未调用 group/assign endpoints，不能虚构其已支持 UI；新 taskOrder 字段在 M3 加入后 UI test 对应更新。
 - **单任务验证命令**：`cd frontend; npx vitest run src/views/MicroLessonAdminView.test.ts src/views/ExperimentTaskAdminView.test.ts`。
 
-### - [ ] M2-T19 学生评估向导视觉与任务入口
+### - [x] M2-T19 学生评估向导视觉与任务入口
 - **涉及文件**：`frontend/src/views/EvaluationView.vue`；`frontend/src/views/ExperimentTasksView.vue`；`frontend/src/views/EvaluationView.test.ts`；`frontend/src/views/ExperimentTasksView.test.ts`
 - **前置依赖**：M2-T4、M1-T9。
 - **精确改造指令**：本任务只定义后续 M3 流程的视觉 slots，不变更后台顺序 contract：评估序列 stepper 固定知情说明→前测→任务/计时→后测→Paas→延后测验；不可达 step 灰态并有文字。Paas 1–9 保持等宽横排桌面、窄屏 3 列、可键盘选择、每格至少 44px；selected 有编号/文字辅助。`ExperimentTasksView` task question 仅来自 assigned DTO，不暴露管理员列表/身份。

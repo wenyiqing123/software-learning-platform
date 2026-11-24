@@ -13,6 +13,18 @@ beforeEach(() => {
 })
 
 describe('ExperimentTasksView', () => {
+  it('renders assigned task question without leaking admin lists or identities', async () => {
+    const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/experiment-tasks', component: ExperimentTasksView }] })
+    await router.push('/experiment-tasks'); await router.isReady()
+    const wrapper = mount(ExperimentTasksView, { global: { plugins: [router] } })
+    await flushPromises()
+
+    expect(wrapper.find('.task-question').text()).toBe('数据流图中加工如何命名？')
+    expect(wrapper.text()).not.toContain('管理员')
+    expect(wrapper.text()).not.toContain('admin')
+    wrapper.unmount()
+  })
+
   it('starts a server-managed assignment and navigates to the linked experiment', async () => {
     const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/experiment-tasks', component: ExperimentTasksView }, { path: '/evaluation', component: { template: '<div />' } }] })
     await router.push('/experiment-tasks'); await router.isReady()

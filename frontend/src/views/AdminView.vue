@@ -11,6 +11,7 @@ interface Point { id: number; courseId: number; name: string; graphEntity: strin
 interface Option { key: string; text: string }
 type QuestionType = 'SINGLE' | 'MULTIPLE' | 'TRUE_FALSE'
 interface Question { id: number; courseId: number; knowledgePointId: number; type: QuestionType; stem: string; options: Option[]; answer: string[]; explanation: string; difficulty: number; enabled: boolean; source: string }
+const props = withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false })
 const loading = ref(true)
 const courseLoading = ref(false)
 const saving = ref(false)
@@ -132,7 +133,7 @@ onMounted(initialize)
 
 <template>
   <div class="page-stack admin-page">
-    <SectionHeading eyebrow="教学管理" title="课程与题库管理" description="维护课程信息、知识点映射与客观题。所有更改均由管理员权限校验。"><span class="admin-badge">ADMIN</span></SectionHeading>
+    <SectionHeading :embedded="props.embedded" eyebrow="教学管理" title="课程与题库管理" description="维护课程信息、知识点映射与客观题。所有更改均由管理员权限校验。"><span class="admin-badge">ADMIN</span></SectionHeading>
     <FeedbackState v-if="loading" :loading="loading" loading-title="正在校验管理员权限" loading-text="正在读取课程、知识点和题库配置，请稍候。" />
     <div v-else-if="forbidden" class="admin-empty" role="alert"><strong>需要管理员权限</strong><p>请使用本地环境配置的管理员账号登录。</p><RouterLink to="/courses">返回课程学习</RouterLink></div>
     <div v-if="error" class="admin-message error" role="alert">{{ error }} <button v-if="!authorized" class="text-button" @click="initialize">重试</button></div>

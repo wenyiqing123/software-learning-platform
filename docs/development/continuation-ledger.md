@@ -215,5 +215,19 @@
   - 代码规范：`git diff --check` 通过；全仓 CSS/Vue 中 `!important` 扫描结果为 0；
   - 任务书勾选状态：`M2-T12` ~ `M2-T15` 全部勾选为 `[x]`。
 
+## 里程碑 M2 第五批推进记录（M2-T16 ~ M2-T19，2026-11-24）
+
+- 完成施工任务书【里程碑 M2】第五批共 4 项原子任务落地与定向验证：
+  - `M2-T16`：课程与基础题库管理视图。`AdminCoursePanel.vue` 编辑表单与课程列表网格设为 `repeat(2, minmax(0, 1fr))`，内容贴顶对齐，消除固定高容器；`AdminView.vue` 接收可选 `embedded` prop 并传给 `SectionHeading :embedded`，使其在内容中心中渲染为嵌入态 H2，而在 standalone 路由中保持 H1；
+  - `M2-T17`：错因诊断与版本题库视图。`AdminDiagnosisView.vue` 工具栏采用弹性流布局，`SectionHeading` 响应 `embedded` prop；`QuestionBankView.vue` 接收 `embedded` prop 并切换 H1/H2 标题，题库导入 JSON 编辑区设置内部滚动，文件上传选择器支持键盘聚焦导航；
+  - `M2-T18`：微课与实验任务管理员。`MicroLessonAdminView.vue` 工具栏、数据源及草稿记录垂直间距规范为 8/16/24 spacing，草稿列表采用单层 surface，各条草稿记录以 divider 分隔，移除白卡套白卡；`MicroLessonAdminView.vue` 与 `ExperimentTaskAdminView.vue` 接收 `embedded` prop 并将主标题降级为 H2；扩展两个组件的单元测试；
+  - `M2-T19`：学生评估向导视觉与任务入口。`EvaluationView.vue` 新增 6 阶段评估向导视觉 stepper（知情说明→前测→任务/计时→后测→Paas→延后测验），不可达步骤视觉置灰并标明“待开始评估”或“待解锁”；Paas 九点心理努力评分保持横排等宽/窄屏 3 列、每格 >= 48px，选中后展示编号与锚点文字辅助；`ExperimentTasksView.vue` 任务指定问题仅取自 assigned DTO，绝不暴露管理员列表或身份；文案严格剔除采集生理信号或先验降低认知负荷的学术偏颇措辞；扩展单元测试。
+- 门禁实测结果：
+  - 本批定向测试与合规守卫：9 个测试文件，29 项测试全部通过（29 passed）；
+  - 生产构建：`npm run build` 成功完成，0 错误，0 chunk warning；
+  - 代码规范：`git diff --check` 通过；全仓 CSS/Vue 中 `!important` 扫描结果为 0；四份全局 CSS 字节数完全保持稳定（总计 57,983 B）；
+  - 任务书勾选状态：`M2-T16` ~ `M2-T19` 全部勾选为 `[x]`。
+
+
 
 

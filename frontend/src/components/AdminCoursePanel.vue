@@ -14,6 +14,6 @@ const emit = defineEmits<{ newCourse: []; editCourse: [course: any]; toggleCours
 </template>
 
 <style scoped>
-.admin-course-panel{min-width:0;padding:0;background:transparent;border:0;box-shadow:none}.prerequisite-quality-panel{margin-bottom:16px}.admin-course-panel:deep(.admin-columns){display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,1fr);gap:28px;align-items:start}.admin-course-panel:deep(.course-list){min-height:100%;padding:20px;background:var(--surface);border:1px solid var(--border-default);border-radius:var(--radius-md);box-shadow:var(--shadow-xs)}
+.admin-course-panel{min-width:0;padding:0;background:transparent;border:0;box-shadow:none}.prerequisite-quality-panel{margin-bottom:16px}.admin-course-panel:deep(.admin-columns){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:start}.admin-course-panel:deep(.course-list){padding:20px;background:var(--surface);border:1px solid var(--border-default);border-radius:var(--radius-md);box-shadow:var(--shadow-xs)}
 @media(max-width:900px){.admin-course-panel:deep(.admin-columns){grid-template-columns:1fr}}
 </style>

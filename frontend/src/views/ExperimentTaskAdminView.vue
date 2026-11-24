@@ -2,12 +2,190 @@
 import { onMounted, ref } from 'vue'
 import { api, apiError, type ExperimentTask } from '../api/client'
 import FeedbackState from '../components/FeedbackState.vue'
-const tasks=ref<ExperimentTask[]>([]);const title=ref('');const description=ref('');const question=ref('');const referenceAnswer=ref('');const error=ref('');const notice=ref('');const working=ref(false);const loading=ref(true)
-async function load(){loading.value=true;try{tasks.value=(await api.get<ExperimentTask[]>('/admin/experiment-tasks')).data}catch(cause){error.value=apiError(cause,'实验任务暂时无法加载。')}finally{loading.value=false}}
-async function create(){if(!title.value.trim()||!question.value.trim()){error.value='请填写任务名称和指定问题。';return}working.value=true;error.value='';try{await api.post('/admin/experiment-tasks',{title:title.value.trim(),description:description.value.trim(),experimentType:'METHODS',question:question.value.trim(),referenceAnswer:referenceAnswer.value.trim(),expectedEntities:[],includeAblations:false});notice.value='实验任务草稿已创建。';title.value='';question.value='';await load()}catch(cause){error.value=apiError(cause,'实验任务创建失败。')}finally{working.value=false}}
-async function setStatus(task:ExperimentTask,status:'OPEN'|'CLOSED'){if(!window.confirm(status==='OPEN'?'开放该实验任务并允许参与者开始？':'关闭该实验任务并停止新的参与？'))return;try{await api.put('/admin/experiment-tasks/'+task.id+'/status',{status});notice.value=status==='OPEN'?'实验任务已开放。':'实验任务已关闭。';await load()}catch(cause){error.value=apiError(cause,'任务状态更新失败。')}}
+
+const props = withDefaults(defineProps<{
+  embedded?: boolean
+}>(), {
+  embedded: false
+})
+
+const tasks = ref<ExperimentTask[]>([])
+const title = ref('')
+const description = ref('')
+const question = ref('')
+const referenceAnswer = ref('')
+const error = ref('')
+const notice = ref('')
+const working = ref(false)
+const loading = ref(true)
+
+async function load() {
+  loading.value = true
+  try {
+    tasks.value = (await api.get<ExperimentTask[]>('/admin/experiment-tasks')).data
+  } catch (cause) {
+    error.value = apiError(cause, '实验任务暂时无法加载。')
+  } finally {
+    loading.value = false
+  }
+}
+
+async function create() {
+  if (!title.value.trim() || !question.value.trim()) {
+    error.value = '请填写任务名称和指定问题。'
+    return
+  }
+  working.value = true
+  error.value = ''
+  try {
+    await api.post('/admin/experiment-tasks', {
+      title: title.value.trim(),
+      description: description.value.trim(),
+      experimentType: 'METHODS',
+      question: question.value.trim(),
+      referenceAnswer: referenceAnswer.value.trim(),
+      expectedEntities: [],
+      includeAblations: false
+    })
+    notice.value = '实验任务草稿已创建。'
+    title.value = ''
+    question.value = ''
+    await load()
+  } catch (cause) {
+    error.value = apiError(cause, '实验任务创建失败。')
+  } finally {
+    working.value = false
+  }
+}
+
+async function setStatus(task: ExperimentTask, status: 'OPEN' | 'CLOSED') {
+  if (!window.confirm(status === 'OPEN' ? '开放该实验任务并允许参与者开始？' : '关闭该实验任务并停止新的参与？')) return
+  try {
+    await api.put('/admin/experiment-tasks/' + task.id + '/status', { status })
+    notice.value = status === 'OPEN' ? '实验任务已开放。' : '实验任务已关闭。'
+    await load()
+  } catch (cause) {
+    error.value = apiError(cause, '任务状态更新失败。')
+  }
+}
+
 onMounted(load)
 </script>
-<template><div class="page-stack experiment-task-admin-page"><header class="page-heading"><div><p class="eyebrow">EXPERIMENT TASK CONTROL</p><h1>实验任务管理</h1><p>集中维护指定问题、实验条件和开放状态，参与者完成情况来自真实服务器运行。</p></div></header><div v-if="error" class="inline-notice" role="alert">{{ error }}</div><div v-if="notice" class="inline-notice success" role="status">{{ notice }}</div><FeedbackState v-if="loading" :loading="loading" loading-title="正在加载实验任务" loading-text="正在读取任务、实验组和参与者状态。" />
-    <template v-else><section class="task-create"><label>任务名称<input data-testid="task-title" v-model="title" maxlength="160" /></label><label>指定问题<textarea data-testid="task-question" v-model="question" rows="2" maxlength="2000"></textarea></label><label>任务说明<textarea v-model="description" rows="2" maxlength="1000"></textarea></label><label>参考答案<textarea v-model="referenceAnswer" rows="2" maxlength="4000"></textarea></label><button class="primary-button" aria-label="创建实验任务" :disabled="working" @click="create">创建任务草稿</button></section><section class="task-admin-list"><article v-for="task in tasks" :key="task.id" class="task-admin-row"><div><strong>{{ task.title }}</strong><small>{{ task.question }} · {{ task.groupCount }} 个实验组 · {{ task.assignmentCount }} 名参与者</small></div><span>{{ task.status }}</span><button v-if="task.status !== 'OPEN'" class="text-button" :aria-label="'开放实验任务 ' + task.id" @click="setStatus(task,'OPEN')">开放</button><button v-else class="text-button" :aria-label="'关闭实验任务 ' + task.id" @click="setStatus(task,'CLOSED')">关闭</button></article><div v-if="!tasks.length" class="empty-state">还没有实验任务。</div></section></template></div></template>
-<style scoped>.task-create,.task-admin-list{display:grid;gap:14px;padding:20px;background:var(--surface);border:1px solid var(--border-default);border-radius:var(--radius-md);box-shadow:var(--shadow-sm)}.task-create label{display:grid;gap:6px;color:var(--muted);font-size:11px}.task-create input,.task-create textarea{padding:10px;border:1px solid var(--line);border-radius:6px;color:var(--ink);font:inherit}.primary-button{justify-self:start;min-height:36px;border:0;border-radius:6px;padding:0 15px;background:var(--accent);color:#fff;cursor:pointer}.primary-button:disabled{opacity:.5}.task-admin-list{margin-top:16px}.task-admin-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:14px;padding:12px 0;border-top:1px solid var(--border-soft)}.task-admin-row strong,.task-admin-row small{display:block}.task-admin-row small{margin-top:4px;color:var(--muted);font-size:10px}.text-button{border:0;background:transparent;color:var(--accent);cursor:pointer;font:inherit;font-size:11px}.success{border-color:var(--accent-soft);color:var(--accent)}</style>
+
+<template>
+  <div class="page-stack experiment-task-admin-page">
+    <header class="page-heading">
+      <div>
+        <p class="eyebrow">EXPERIMENT TASK CONTROL</p>
+        <component :is="props.embedded ? 'h2' : 'h1'">实验任务管理</component>
+        <p>集中维护指定问题、实验条件和开放状态，参与者完成情况来自真实服务器运行。</p>
+      </div>
+    </header>
+    <div v-if="error" class="inline-notice" role="alert">{{ error }}</div>
+    <div v-if="notice" class="inline-notice success" role="status">{{ notice }}</div>
+    <FeedbackState v-if="loading" :loading="loading" loading-title="正在加载实验任务" loading-text="正在读取任务、实验组和参与者状态。" />
+    <template v-else>
+      <section class="task-create">
+        <label>任务名称<input data-testid="task-title" v-model="title" maxlength="160" /></label>
+        <label>指定问题<textarea data-testid="task-question" v-model="question" rows="2" maxlength="2000"></textarea></label>
+        <label>任务说明<textarea v-model="description" rows="2" maxlength="1000"></textarea></label>
+        <label>参考答案<textarea v-model="referenceAnswer" rows="2" maxlength="4000"></textarea></label>
+        <button class="primary-button" aria-label="创建实验任务" :disabled="working" @click="create">创建任务草稿</button>
+      </section>
+      <section class="task-admin-list">
+        <article v-for="task in tasks" :key="task.id" class="task-admin-row">
+          <div>
+            <strong>{{ task.title }}</strong>
+            <small>{{ task.question }} · {{ task.groupCount }} 个实验组 · {{ task.assignmentCount }} 名参与者</small>
+          </div>
+          <span>{{ task.status }}</span>
+          <button v-if="task.status !== 'OPEN'" class="text-button" :aria-label="'开放实验任务 ' + task.id" @click="setStatus(task, 'OPEN')">开放</button>
+          <button v-else class="text-button" :aria-label="'关闭实验任务 ' + task.id" @click="setStatus(task, 'CLOSED')">关闭</button>
+        </article>
+        <div v-if="!tasks.length" class="empty-state">还没有实验任务。</div>
+      </section>
+    </template>
+  </div>
+</template>
+
+<style scoped>
+.task-create,
+.task-admin-list {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.task-create label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.task-create input,
+.task-create textarea {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  font: inherit;
+}
+
+.primary-button {
+  justify-self: start;
+  min-height: 36px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 15px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+.primary-button:disabled {
+  opacity: 0.5;
+}
+
+.task-admin-list {
+  margin-top: 16px;
+}
+
+.task-admin-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border-soft);
+}
+
+.task-admin-row strong,
+.task-admin-row small {
+  display: block;
+}
+
+.task-admin-row small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.text-button {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+}
+
+.success {
+  border-color: var(--accent-soft);
+  color: var(--accent);
+}
+</style>
