@@ -4,3 +4,5 @@ export const register = (payload: { username: string; password: string; displayN
 export const login = (payload: { username: string; password: string }) => api.post('/auth/login', payload).then((r) => r.data)
 export const logout = (refreshToken: string) => api.post('/auth/logout', { refreshToken }).then((r) => r.data)
 export const currentUser = () => api.get('/auth/me').then((r) => r.data)
+export const changePassword = (payload: { currentPassword: string; newPassword: string }) =>
+  api.patch('/auth/password', payload).then((r) => r.data)

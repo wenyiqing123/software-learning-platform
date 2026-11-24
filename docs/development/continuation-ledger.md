@@ -313,4 +313,20 @@
   - 样式与代码规范：`git diff --check` 通过，0 处空白错误；全仓 CSS/Vue 中 `!important` 严格为 0；
   - 任务书勾选状态：`M3-T15` ~ `M3-T18` 全部勾选为 `[x]`。
 
+## 里程碑 M3 第六批推进记录（M3-T19 ~ M3-T21，2026-11-24）
+
+- 完成施工任务书【里程碑 M3】第六批共 3 项原子任务落地与双端定向验证：
+  - `M3-T19`：当前账户修改密码与刷新令牌撤销。`AuthController.java` 暴露 authenticated `PATCH /api/auth/password`，固定请求体 `{currentPassword, newPassword}`，严格由安全主体解析当前用户；`AuthService.java` 实现新密码校验（至少 8 个 Unicode code points、UTF-8 编码 bytes `<=72`、空白拒绝），校验旧密码 BCrypt 匹配（不匹配返回 401）；事务内 BCrypt 更新并调用 `RefreshTokenMapper.revokeAllActiveByUserId` 撤销该用户所有尚有效的 refresh token（仅更新 `revoked_at`，不返回任何 token/hash），成功返回 204；扩展 `AuthApiIntegrationTest.java` 覆盖未认证 401、错当前密码 401、新密码规则 400、本人所有有效 refresh token 被撤销、其他用户 refresh token 保持有效、新旧密码登录状态机闭环（10 项集成测试全绿）；
+  - `M3-T20`：前端修改密码安全对话框。`frontend/src/api/auth.ts` 导出 `changePassword`；新建 `ChangePasswordDialog.vue` 对话框，包含当前密码、新密码、确认密码，校验空白、密码一致性与客户端 Unicode 长度 `>=8`，提交失败不回显密码、清空当前旧密码且保留新密码；成功后彻底清理 4 个 localStorage 本地凭据（`slp-access-token`, `slp-refresh-token`, `slp-user-name`, `slp-user-role`），调用 `resetSession` 与 `resetLearningMetrics` 并路由重定向至 `/login`；`App.vue` 用户菜单集成“修改密码”弹窗入口与下拉面板；新建 `ChangePasswordDialog.test.ts`（6 项测试全绿）；
+  - `M3-T21`：Refresh 请求 Single-flight 回归。`frontend/src/api/http.ts` 完善 `clearSession` 同步清除 `slp-user-role` 并安全处理测试环境跳转；扩展 `frontend/src/api/client.test.ts` 增加并发 deferred adapter 回归测试，断言 5 个并发请求同时收到 401 时仅发出唯一次 `/api/auth/refresh` 请求，成功后每个原请求均使用新 token 恰好重放 1 次；refresh 失败时一次性清理本地会话并拒绝所有等待中的请求；重试后依然 401 停止重试，杜绝死循环（8 项测试全绿）。
+- 门禁实测结果：
+  - 后端全量测试：`mvn -f backend/pom.xml -pl learning-service test` 175 项测试全绿通过（175 passed，0 failures，0 errors）；
+  - 前端全量测试：`npx vitest run` 55 个测试文件、177 项测试全绿通过（177 passed，0 failures）；
+  - 前端设计系统契约与安全合规守卫：`design-system-contract.test.ts` 与 `compliance-guard.test.ts` 全部通过（11 passed）；
+  - 前端 AST 类名检查：`node scripts/scan-vue-classes.mjs --check` 扫描 49 个 SFC 模板（1155 处类名使用），0 missing classes（100% 匹配）；
+  - 前端生产构建：`npm run build` 成功完成，0 error，0 chunk warning，类型检查通过；
+  - 样式与代码规范：`git diff --check` 通过，0 处空白错误；全仓 CSS/Vue 中 `!important` 严格为 0；
+  - 任务书勾选状态：`M3-T19` ~ `M3-T21` 全部标记为 `[x]`。
+
+
 

@@ -78,6 +78,31 @@ public class AuthService {
         }
     }
 
+    @Transactional
+    public void changePassword(Long userId, String currentPassword, String newPassword) {
+        if (newPassword == null || newPassword.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "新密码不能为空或纯空白");
+        }
+        int codePoints = newPassword.codePointCount(0, newPassword.length());
+        if (codePoints < 8) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "新密码长度不能少于 8 个字符");
+        }
+        byte[] utf8Bytes = newPassword.getBytes(StandardCharsets.UTF_8);
+        if (utf8Bytes.length > 72) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "新密码 UTF-8 字节长度不能超过 72");
+        }
+        SysUserEntity user = userMapper.selectById(userId);
+        if (user == null || !Boolean.TRUE.equals(user.getEnabled())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "用户不存在或已停用");
+        }
+        if (currentPassword == null || !passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "当前密码不正确");
+        }
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userMapper.updateById(user);
+        refreshTokenMapper.revokeAllActiveByUserId(userId, LocalDateTime.now());
+    }
+
     public UserView currentUser(Long userId) {
         SysUserEntity user = userMapper.selectById(userId);
         if (user == null || !Boolean.TRUE.equals(user.getEnabled())) {

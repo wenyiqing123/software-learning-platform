@@ -3,18 +3,21 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter, RouterView } from 'vue-router'
 import ElConfigProvider from 'element-plus/es/components/config-provider/index.mjs'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
-import { Activity, BarChart3, BrainCircuit, CalendarCheck, ChevronDown, CircleHelp, Compass, GraduationCap, LayoutDashboard, Network, RefreshCw, Settings2, Target, TriangleAlert, BookOpenCheck, RotateCcw, FlaskConical } from '@lucide/vue'
+import { Activity, BarChart3, BrainCircuit, CalendarCheck, ChevronDown, CircleHelp, Compass, GraduationCap, LayoutDashboard, Network, RefreshCw, Settings2, Target, TriangleAlert, BookOpenCheck, RotateCcw, FlaskConical, KeyRound, LogOut } from '@lucide/vue'
 import { learningApi } from './api/client'
 import { resetLearningMetrics, useLearningMetrics } from './composables/useLearningMetrics'
 import { useSystemStatus } from './composables/useSystemStatus'
 import { statusLabel, statusTone } from './domain/systemStatus'
 import { resetSession, useSession } from './state/session'
 import StudentLearningSections, { findGroupByPath } from './components/StudentLearningSections.vue'
+import ChangePasswordDialog from './components/ChangePasswordDialog.vue'
 
 const router = useRouter()
 const route = useRoute()
 const session = useSession()
 const loggingOut = ref(false)
+const userMenuOpen = ref(false)
+const showChangePassword = ref(false)
 const isAdmin = computed(() => session.user.value?.role === 'ADMIN')
 const isStudent = computed(() => session.user.value?.role === 'STUDENT')
 const currentStudentGroupId = computed(() => {
@@ -94,7 +97,11 @@ async function logout() {
     void router.replace('/login')
   }
 }
-watch(() => route.fullPath, () => { refreshShell(); ensureActiveSection() }, { immediate: true })
+watch(() => route.fullPath, () => {
+  userMenuOpen.value = false
+  refreshShell()
+  ensureActiveSection()
+}, { immediate: true })
 watch([primaryNav, activeNavPath], ([nav]) => {
   const item = nav?.querySelector('.nav-item.active')
   if (!nav || !item) return
@@ -146,14 +153,14 @@ const currentYear = new Date().getFullYear()
       </nav>
       <div class="sidebar-bottom"><div v-if="!isAdmin" class="help-box"><span class="help-icon"><CircleHelp :size="17" /></span><strong>需要学习帮助？</strong><small>让 AI 助教为你讲解知识点</small><button @click="navigate('tutor')">开始提问 <ChevronDown :size="14" /></button></div><small class="sidebar-version">知序学习平台 · {{ currentYear }}</small></div>
     </aside>
-    <main class="main-area"><header class="topbar"><div class="breadcrumb"><span>{{ isAdmin ? '管理空间' : '学习空间' }}</span><i>/</i><strong>{{ pageTitle }}</strong></div><div class="topbar-actions"><span class="course-status"><i></i>{{ session.user.value ? '已登录' : '账户待确认' }}</span><div class="system-status-wrap"><button class="system-status-button" :class="'tone-' + healthTone" :aria-expanded="healthOpen" aria-haspopup="dialog" title="查看系统依赖状态" @click="healthOpen = !healthOpen"><Activity :size="15" /><span>依赖 {{ healthLabel }}</span><ChevronDown :size="13" /></button><div v-if="healthOpen" class="system-status-panel" role="dialog" aria-label="系统依赖状态"><div class="system-status-heading"><strong>系统依赖状态</strong><button class="icon-button" title="重新检查依赖" :disabled="statusLoading" @click="reloadStatus"><RefreshCw :size="15" :class="{ spinning: statusLoading }" /></button></div><p v-if="statusError" class="system-status-error">{{ statusError }}</p><ul v-if="systemStatus" class="system-status-list"><li v-for="item in systemStatus.dependencies" :key="item.key"><span class="system-status-item-name"><i :class="'status-dot tone-' + statusTone(item.status)"></i>{{ item.label }}</span><strong :class="'tone-text-' + statusTone(item.status)">{{ statusLabel(item.status) }}</strong><small v-if="item.status !== 'UP'">{{ item.impact }}</small></li></ul><p v-if="systemStatus && !healthIssues.length" class="system-status-ok">课程、题库、错题和推荐依赖均可访问。</p><p class="system-status-foot">最近检查 {{ healthCheckedAt }} · 状态异常时不会影响已加载的本地学习内容。</p></div></div><button v-if="!isAdmin" class="help-quick" title="学习帮助" @click="navigate('tutor')"><CircleHelp :size="18" /></button><button class="user-menu" :title="loggingOut ? '正在退出' : '退出登录'" :disabled="loggingOut" @click="logout"><span class="avatar">{{ avatar }}</span><span>{{ userName }}</span><ChevronDown :size="14" /></button></div></header>
+    <main class="main-area"><header class="topbar"><div class="breadcrumb"><span>{{ isAdmin ? '管理空间' : '学习空间' }}</span><i>/</i><strong>{{ pageTitle }}</strong></div><div class="topbar-actions"><span class="course-status"><i></i>{{ session.user.value ? '已登录' : '账户待确认' }}</span><div class="system-status-wrap"><button class="system-status-button" :class="'tone-' + healthTone" :aria-expanded="healthOpen" aria-haspopup="dialog" title="查看系统依赖状态" @click="healthOpen = !healthOpen"><Activity :size="15" /><span>依赖 {{ healthLabel }}</span><ChevronDown :size="13" /></button><div v-if="healthOpen" class="system-status-panel" role="dialog" aria-label="系统依赖状态"><div class="system-status-heading"><strong>系统依赖状态</strong><button class="icon-button" title="重新检查依赖" :disabled="statusLoading" @click="reloadStatus"><RefreshCw :size="15" :class="{ spinning: statusLoading }" /></button></div><p v-if="statusError" class="system-status-error">{{ statusError }}</p><ul v-if="systemStatus" class="system-status-list"><li v-for="item in systemStatus.dependencies" :key="item.key"><span class="system-status-item-name"><i :class="'status-dot tone-' + statusTone(item.status)"></i>{{ item.label }}</span><strong :class="'tone-text-' + statusTone(item.status)">{{ statusLabel(item.status) }}</strong><small v-if="item.status !== 'UP'">{{ item.impact }}</small></li></ul><p v-if="systemStatus && !healthIssues.length" class="system-status-ok">课程、题库、错题和推荐依赖均可访问。</p><p class="system-status-foot">最近检查 {{ healthCheckedAt }} · 状态异常时不会影响已加载的本地学习内容。</p></div></div><button v-if="!isAdmin" class="help-quick" title="学习帮助" @click="navigate('tutor')"><CircleHelp :size="18" /></button><div class="user-menu-wrap"><button class="user-menu" :aria-expanded="userMenuOpen" aria-haspopup="menu" :title="loggingOut ? '正在退出' : '用户菜单'" :disabled="loggingOut" @click="userMenuOpen = !userMenuOpen"><span class="avatar">{{ avatar }}</span><span>{{ userName }}</span><ChevronDown :size="14" :class="{ rotated: userMenuOpen }" /></button><div v-if="userMenuOpen" class="user-menu-dropdown" role="menu"><button class="user-menu-item" role="menuitem" @click="userMenuOpen = false; showChangePassword = true"><KeyRound :size="15" /><span>修改密码</span></button><button class="user-menu-item" role="menuitem" :disabled="loggingOut" @click="userMenuOpen = false; logout()"><LogOut :size="15" /><span>{{ loggingOut ? '正在退出' : '退出登录' }}</span></button></div></div></div></header>
 <StudentLearningSections
   v-if="isStudent && currentStudentGroupId"
   :group-id="currentStudentGroupId"
   :path="activePath"
   :query="route.query"
 />
-<div class="page-content"><div v-if="roleNotice" class="inline-notice role-notice" role="status">{{ roleNotice }}</div><div v-if="session.error.value" class="inline-notice" role="alert">{{ session.error.value }}<button class="text-button" @click="session.refresh()">重试</button></div><RouterView v-slot="{ Component }"><component :is="Component" @navigate="navigate" /></RouterView></div></main>
+<div class="page-content"><div v-if="roleNotice" class="inline-notice role-notice" role="status">{{ roleNotice }}</div><div v-if="session.error.value" class="inline-notice" role="alert">{{ session.error.value }}<button class="text-button" @click="session.refresh()">重试</button></div><RouterView v-slot="{ Component }"><component :is="Component" @navigate="navigate" /></RouterView></div><ChangePasswordDialog v-model="showChangePassword" /></main>
   </div>
   <RouterView v-else />
   </ElConfigProvider>

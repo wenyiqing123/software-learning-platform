@@ -5,9 +5,15 @@ export const api = axios.create({ baseURL: '/api', timeout: 20_000, headers: { '
 let refreshInFlight: Promise<string> | null = null
 
 function clearSession() {
-  for (const key of ['slp-access-token', 'slp-refresh-token', 'slp-user-name']) localStorage.removeItem(key)
+  for (const key of ['slp-access-token', 'slp-refresh-token', 'slp-user-name', 'slp-user-role']) localStorage.removeItem(key)
   window.dispatchEvent(new Event('session:changed'))
-  if (window.location.pathname !== '/login') window.location.assign('/login')
+  if (window.location.pathname !== '/login') {
+    try {
+      window.location.assign('/login')
+    } catch {
+      // Ignore navigation unsupported in test jsdom environment
+    }
+  }
 }
 
 export function refreshAccessToken(): Promise<string> {

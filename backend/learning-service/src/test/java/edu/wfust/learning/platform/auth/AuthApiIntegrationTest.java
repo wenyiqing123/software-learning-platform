@@ -100,6 +100,76 @@ class AuthApiIntegrationTest {
         assertThat(get("/api/quizzes?knowledgePointId=abc", session.path("accessToken").asText()).statusCode()).isEqualTo(400);
     }
 
+    @Test void passwordChangeRequiresAuthenticationAndRejectsWrongCurrentPassword() throws Exception {
+        String username = username();
+        var reg = post("/api/auth/register", Map.of("username", username, "password", "original-pass"), null);
+        assertThat(reg.statusCode()).isEqualTo(201);
+        String token = json.readTree(reg.body()).path("accessToken").asText();
+
+        // 1. 无 token 拒绝 401
+        assertThat(patch("/api/auth/password", Map.of("currentPassword", "original-pass", "newPassword", "new-pass-1234"), null).statusCode()).isEqualTo(401);
+
+        // 2. 错误旧密码拒绝 401
+        var wrongOld = patch("/api/auth/password", Map.of("currentPassword", "wrong-password", "newPassword", "new-pass-1234"), token);
+        assertThat(wrongOld.statusCode()).isEqualTo(401);
+    }
+
+    @Test void passwordChangeValidatesNewPasswordRules() throws Exception {
+        String username = username();
+        var reg = post("/api/auth/register", Map.of("username", username, "password", "original-pass"), null);
+        String token = json.readTree(reg.body()).path("accessToken").asText();
+
+        // 1. 空白拒绝 400
+        assertThat(patch("/api/auth/password", Map.of("currentPassword", "original-pass", "newPassword", "        "), token).statusCode()).isEqualTo(400);
+
+        // 2. 少于 8 个 code points 拒绝 400
+        assertThat(patch("/api/auth/password", Map.of("currentPassword", "original-pass", "newPassword", "1234567"), token).statusCode()).isEqualTo(400);
+
+        // 3. UTF-8 字节数超过 72 拒绝 400
+        String oversized = "密码".repeat(25);
+        assertThat(oversized.getBytes(java.nio.charset.StandardCharsets.UTF_8).length).isGreaterThan(72);
+        assertThat(patch("/api/auth/password", Map.of("currentPassword", "original-pass", "newPassword", oversized), token).statusCode()).isEqualTo(400);
+    }
+
+    @Test void passwordChangeRevokesAllUserRefreshTokensKeepsOtherUsersAndEnablesNewLogin() throws Exception {
+        String userA = username();
+        var regA = post("/api/auth/register", Map.of("username", userA, "password", "old-pass-userA"), null);
+        assertThat(regA.statusCode()).isEqualTo(201);
+        JsonNode sessionA1 = json.readTree(regA.body());
+        String tokenA = sessionA1.path("accessToken").asText();
+        String refreshA1 = sessionA1.path("refreshToken").asText();
+
+        // 用户 A 第二次登录，生成第二个有效 refresh token A2
+        var loginA = post("/api/auth/login", Map.of("username", userA, "password", "old-pass-userA"), null);
+        assertThat(loginA.statusCode()).isEqualTo(200);
+        String refreshA2 = json.readTree(loginA.body()).path("refreshToken").asText();
+
+        // 另一用户 B
+        String userB = username();
+        var regB = post("/api/auth/register", Map.of("username", userB, "password", "pass-userB-123"), null);
+        assertThat(regB.statusCode()).isEqualTo(201);
+        String refreshB = json.readTree(regB.body()).path("refreshToken").asText();
+
+        // 用户 A 成功修改密码
+        var changeResp = patch("/api/auth/password", Map.of("currentPassword", "old-pass-userA", "newPassword", "new-pass-userA-888"), tokenA);
+        assertThat(changeResp.statusCode()).isEqualTo(204);
+
+        // 本人所有尚有效 refresh token 被 revoke
+        assertThat(post("/api/auth/refresh", Map.of("refreshToken", refreshA1), null).statusCode()).isEqualTo(401);
+        assertThat(post("/api/auth/refresh", Map.of("refreshToken", refreshA2), null).statusCode()).isEqualTo(401);
+
+        // 另一用户 B 的 refresh token 保持有效不受影响
+        assertThat(post("/api/auth/refresh", Map.of("refreshToken", refreshB), null).statusCode()).isEqualTo(200);
+
+        // 旧密码无法登录
+        assertThat(post("/api/auth/login", Map.of("username", userA, "password", "old-pass-userA"), null).statusCode()).isEqualTo(401);
+
+        // 新密码能成功登录
+        var newLoginResp = post("/api/auth/login", Map.of("username", userA, "password", "new-pass-userA-888"), null);
+        assertThat(newLoginResp.statusCode()).isEqualTo(200);
+        assertThat(json.readTree(newLoginResp.body()).path("accessToken").asText()).isNotBlank();
+    }
+
     JsonNode register() throws Exception {
         var response = post("/api/auth/register", Map.of("username", username(), "password", "study-password"), null);
         assertThat(response.statusCode()).isEqualTo(201);
@@ -110,6 +180,11 @@ class AuthApiIntegrationTest {
         var builder = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + uri)).header("Content-Type", "application/json");
         if (token != null) builder.header("Authorization", "Bearer " + token);
         return http.send(builder.POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body))).build(), HttpResponse.BodyHandlers.ofString());
+    }
+    HttpResponse<String> patch(String uri, Object body, String token) throws Exception {
+        var builder = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + uri)).header("Content-Type", "application/json");
+        if (token != null) builder.header("Authorization", "Bearer " + token);
+        return http.send(builder.method("PATCH", HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body))).build(), HttpResponse.BodyHandlers.ofString());
     }
     HttpResponse<String> get(String uri, String token) throws Exception {
         var builder = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + uri));

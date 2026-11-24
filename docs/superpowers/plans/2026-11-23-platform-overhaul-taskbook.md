@@ -519,21 +519,21 @@ M2 提交信息：`style: unify visual system across student and admin views`
 - **受影响既有测试与更新指引**：保留 entity prefill/no auto-submit；新增 point ID exact match/unknown/API failure/editable prompt tests。
 - **单任务验证命令**：`cd frontend; npx vitest run src/views/TutorView.test.ts src/domain/learningContext.test.ts`。
 
-### - [ ] M3-T19 当前账户修改密码与刷新令牌撤销
+### - [x] M3-T19 当前账户修改密码与刷新令牌撤销
 - **涉及文件**：`backend/learning-service/src/main/java/edu/wfust/learning/platform/auth/AuthController.java`；`backend/learning-service/src/main/java/edu/wfust/learning/platform/auth/AuthService.java`；`backend/learning-service/src/main/java/edu/wfust/learning/platform/auth/RefreshTokenMapper.java`；`backend/learning-service/src/test/java/edu/wfust/learning/platform/auth/AuthApiIntegrationTest.java`
 - **前置依赖**：M1-T9。
 - **精确改造指令**：新 authenticated `PATCH /api/auth/password` body 固定 `{currentPassword,newPassword}`，user ID 从 JWT subject 得到。旧密码 BCrypt verify 不通过 401；新密码先验证至少 8 个 code points、UTF-8 bytes `<=72`，空白拒绝。事务内 BCrypt 更新并撤销该 user 所有尚有效 refresh token，仅更新 `revoked_at`，不返回 hash/token；成功 `204`。Access JWT 是 stateless；不得称 refresh 撤销会立即让已有 access token 失效。
 - **受影响既有测试与更新指引**：AuthApiIntegrationTest 增错 current、长度、本人所有 refresh 被 revoke、另一用户 refresh 不变、新密码能 login/旧密码不能；保留 refresh rotation/logout。
 - **单任务验证命令**：`mvn -f backend/pom.xml -pl learning-service -am -Dtest=AuthApiIntegrationTest -Dsurefire.failIfNoSpecifiedTests=false test`。
 
-### - [ ] M3-T20 前端修改密码安全对话框
+### - [x] M3-T20 前端修改密码安全对话框
 - **涉及文件**：`frontend/src/api/auth.ts`；`frontend/src/App.vue`；`frontend/src/components/ChangePasswordDialog.vue`（Create）；`frontend/src/components/ChangePasswordDialog.test.ts`（Create）
 - **前置依赖**：M3-T19。
 - **精确改造指令**：user menu 增“修改密码”弹窗 current/new/confirm，密码 input type=password、new confirm equality、客户端 Unicode code point 长度>=8，再由后端检查 UTF8<=72；成功后清四 localStorage auth keys、resetSession/resetLearningMetrics、router replace login；error 不回显密码、不清已输入新密码，current password 可清。对话框有 label/alert/focus management，取消不发请求。
 - **受影响既有测试与更新指引**：新建 ChangePasswordDialog tests 覆盖 mismatch/empty/success/logout/401 不显示 password；保留 `AppRoleNavigation.test.ts`。
 - **单任务验证命令**：`cd frontend; npx vitest run src/components/ChangePasswordDialog.test.ts`。
 
-### - [ ] M3-T21 Refresh 请求 Single-flight 回归
+### - [x] M3-T21 Refresh 请求 Single-flight 回归
 - **涉及文件**：`frontend/src/api/http.ts`；`frontend/src/api/client.test.ts`
 - **前置依赖**：无；只给现有 `refreshInFlight` 加并发回归测试。
 - **精确改造指令**：当前已有 `refreshInFlight` promise。先写 concurrent deferred adapter test：5 API request同时401→仅一次 `/api/auth/refresh`；成功后每个原 request 恰好 replay 一次并使用新 token；refresh 401 清会话一次、所有原 request reject；request 自身 401 或重试 401 不循环。若现逻辑全通过，只保留回归测试，不为“增强”重写正确行为。
