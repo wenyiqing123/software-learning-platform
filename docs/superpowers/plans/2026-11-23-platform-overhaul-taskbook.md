@@ -206,21 +206,21 @@ M1 提交信息：`feat: tighten role boundaries and student navigation`
 
 Element Plus CSS 只通过实际消费的变量覆盖；不得给不存在的变量如 `--el-select-input-focus-font-size` 或 radio checked color token 赋值并声称已生效。native baseline scope 为 `.app-shell`、`.login-page` 及 teleported `.el-overlay`：普通按钮默认 neutral；项目已有 `.button-dark/.primary-button` 继续作为显式 primary，icon/text utility 按原尺寸；focus-visible 清晰，disabled 不可 hover。input/select/textarea 40px、`min-width:0;max-width:100%`、水平 padding 10px、单一 focus ring；checkbox/radio/range/file 排除尺寸和 appearance reset，只设 accent-color；文件 picker 不可隐藏唯一可访问触发器。table 100% width、border-collapse、tabular-nums、caption/thead、10–12px cell padding、行分隔/hover。Playwright 检查 computed style 且不得重边框覆盖 Element Plus wrapper。
 
-### - [ ] M2-T1 全局壳 CSS 重复归并
+### - [x] M2-T1 全局壳 CSS 重复归并
 - **涉及文件**：`frontend/src/styles-design-system.css`；`frontend/src/styles.css`；`frontend/tests/design-system-contract.test.ts`
 - **前置依赖**：M1 全部门禁通过。
 - **精确改造指令**：`styles.css` 是壳层唯一基础布局 owner；将 design-system 当前 responsive shell selectors `.app-shell,.sidebar,.brand,.course-switch,.course-switch-copy,.primary-nav,.nav-label,.nav-item,.nav-count,.sidebar-bottom,.sidebar-version,.main-area,.topbar-actions,.course-status,.help-quick,.user-menu,.page-content,.metric-grid,.dashboard-columns,.recommend-strip,.recommend-check,.help-box` 的 900px/620px 响应式声明合并到 `styles.css` 对应 base/媒体段；保留 mobile bottom nav、collapsed icon sidebar、active item visible 和 44px touch area。design-system 删除这些壳层 selector 副本和重复 `.course-switch:hover`，保留 token、Element Plus 与非壳共享原语。更新 contract 读取四文件并对 selector/property ownership 作断言，不把仅 media 的不同声明误报为冲突。
 - **受影响既有测试与更新指引**：更新 `design-system-contract.test.ts`，仍要求单一 root、Element map、主标题 24px/设计系统移动字级、数字 token、motion 和零强制覆盖。
 - **单任务验证命令**：`cd frontend; npx vitest run tests/design-system-contract.test.ts src/AppRoleNavigation.test.ts`；通过标准：测试全绿，移动/900px 规则仍存在且唯一归属 styles.css。
 
-### - [ ] M2-T2 原生控件与 Element Plus 双向主题桥
+### - [x] M2-T2 原生控件与 Element Plus 双向主题桥
 - **涉及文件**：`frontend/src/main.ts`；`frontend/src/styles-design-system.css`；`frontend/tests/design-system-contract.test.ts`；`frontend/tests/compliance-guard.test.ts`
 - **前置依赖**：M2-T1。
 - **精确改造指令**：按本节逐字变量表补齐 Element Plus base 与组件变量。把 `el-input.css`、`el-select.css`、`el-table.css`、`el-dialog.css`、`el-checkbox.css`、`el-radio.css`、`el-tabs.css` 加入 `main.ts` vendor CSS import 区，顺序 ConfigProvider/Icon → vendor component CSS → 四项目 CSS；不得改 vendor 文件。原生规则 scope `.app-shell`，primary/neutral button utility 区分；input/select/textarea 高 40px、最大宽度不超过容器、水平 padding 10px、focus-visible 环只保留一套。原生 table 带 caption/header/scope、浅表头、cell padding、行分隔与 hover。checkbox/radio/range/file 排除 appearance/尺寸重置，仅指定 accent-color。保留 `.el-button` 组件规则，不在 `.el-input__wrapper` 叠加边框；语义色限 badge/图表状态，不做第二品牌色；尊重 reduced-motion。合规扫描覆盖管理页与新 suite copy，不加入渐变/Emoji/假图数据/越界认知负荷结论。
 - **受影响既有测试与更新指引**：`design-system-contract.test.ts` 针对本表实际变量、native selector 和零强制优先级建断言；`compliance-guard.test.ts` 扩展新增 view/template copy 范围，保留原有禁词守卫。
 - **单任务验证命令**：`cd frontend; npx vitest run tests/design-system-contract.test.ts tests/compliance-guard.test.ts`；预期所有 Element/native contracts 与合规扫描通过。
 
-### - [ ] M2-T3 图谱 CSS 规则归属整理
+### - [x] M2-T3 图谱 CSS 规则归属整理
 - **涉及文件**：`frontend/src/styles-graph.css`；`frontend/src/styles-design-system.css`；`frontend/src/views/GraphView.vue`；`frontend/src/components/GraphEvidenceDrawer.vue`；`frontend/src/components/GraphEvidenceDrawer.test.ts`（Create）
 - **前置依赖**：M2-T1、M2-T2。
 - **精确改造指令**：`styles-graph.css` 只保留 graph canvas/toolbar/browser/viewport utility；将 Tutor/Practice/Mastery/Review 共用 `.spin/.spinner/@keyframes spin` 整体迁到 design-system，保留 class、尺寸和时长。GraphView 目前无 style block，`.graph-page{min-width:0}` 写在 `styles-graph.css`（本任务已有该文件）。`.legend-mastered` 复用 `.legend-dot` + `.mastery-mastered` 已有颜色，不重复定义；`.path-node-main` 是结构 marker，无须假造视觉规则，后续由 scanner allowlist 说明。离线仍保证 nodes/edges/evidence 空、真实 error/retry，不改 G6/Three data contract。

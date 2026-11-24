@@ -27,6 +27,12 @@ describe('thesis compliance guards', () => {
       'src/views/RecommendationsView.vue',
       'src/views/EvaluationView.vue',
       'src/views/LoginView.vue',
+      'src/views/AdminContentCenterView.vue',
+      'src/views/AdminExperimentCenterView.vue',
+      'src/views/TeachingDashboardView.vue',
+      'src/views/EvaluationAdminView.vue',
+      'src/views/MicroLessonAdminView.vue',
+      'src/views/ExperimentTaskAdminView.vue',
     ].map(source).join('\n')
     for (const phrase of ['机器学习知识追踪', '采集生理信号', '已证明降低认知负荷', '系统已降低认知负荷']) {
       expect(copy).not.toContain(phrase)
