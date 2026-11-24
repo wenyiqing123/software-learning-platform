@@ -3,11 +3,19 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import TutorView from './TutorView.vue'
 
-const learning = vi.hoisted(() => ({ sessions: vi.fn(), createSession: vi.fn(), renameSession: vi.fn(), saveMessage: vi.fn(), streamAsk: vi.fn(), sessionMessages: vi.fn(), tutorHint: vi.fn(), deleteSession: vi.fn(), compare: vi.fn() }))
+const learning = vi.hoisted(() => ({ sessions: vi.fn(), createSession: vi.fn(), renameSession: vi.fn(), saveMessage: vi.fn(), streamAsk: vi.fn(), sessionMessages: vi.fn(), tutorHint: vi.fn(), deleteSession: vi.fn(), compare: vi.fn(), knowledgePoints: vi.fn() }))
 vi.mock('../api/client', () => ({ learningApi: learning, apiError: vi.fn(() => '请求失败') }))
 
 async function mountPage(path = '/tutor') {
-  const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/tutor', component: TutorView }] })
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: '/tutor', component: TutorView },
+      { path: '/courses', component: { template: '<div />' } },
+      { path: '/knowledge', component: { template: '<div />' } },
+      { path: '/practice', component: { template: '<div />' } },
+    ],
+  })
   await router.push(path); await router.isReady()
   return mount(TutorView, { global: { plugins: [router] } })
 }
@@ -19,6 +27,7 @@ describe('TutorView', () => {
     learning.createSession.mockResolvedValue({ id: 1, title: '学习会话' })
     learning.renameSession.mockResolvedValue({ id: 1, title: '重命名会话' })
     learning.sessionMessages.mockResolvedValue([])
+    learning.knowledgePoints.mockResolvedValue([])
     learning.saveMessage.mockImplementation(async (_id: number, payload: any) => ({ id: Date.now(), ...payload }))
     learning.streamAsk.mockImplementation(async (_question: string, _mode: string, onEvent: (name: string, payload: any) => void) => { onEvent('knowledge', { triples: [{ subject: '加工', predicate: '命名', object: '动宾短语' }] }); onEvent('delta', { content: '加工命名使用动宾短语。' }); return { mode: 'RANKED', answer: '加工命名使用动宾短语。', prompt: ['server', 'only', 'constraint'].join('-') } })
   })
@@ -96,6 +105,70 @@ describe('TutorView', () => {
 
     expect(learning.tutorHint).toHaveBeenCalled()
     expect(wrapper.text()).toContain('思考参与者与系统的交互目标。')
+    wrapper.unmount()
+  })
+
+  it('prefills question and quick prompts for point-only context on exact match without auto-submitting', async () => {
+    learning.knowledgePoints.mockResolvedValueOnce([
+      { id: 42, courseId: 1, chapterId: 2, name: '软件架构风格', graphEntity: '架构风格', sortOrder: 1, mastery: 80 },
+    ])
+
+    const wrapper = await mountPage('/tutor?courseId=1&knowledgePointId=42')
+    await flushPromises()
+
+    expect(learning.knowledgePoints).toHaveBeenCalledWith(1)
+    expect(learning.streamAsk).not.toHaveBeenCalled()
+
+    const input = wrapper.get('#question-input').element as HTMLTextAreaElement
+    expect(input.value).toContain('软件架构风格')
+
+    // 可编辑验证
+    await wrapper.get('#question-input').setValue('软件架构风格有哪些具体类型？')
+    expect((wrapper.get('#question-input').element as HTMLTextAreaElement).value).toBe('软件架构风格有哪些具体类型？')
+
+    // quick prompts 包含解析后的知识点名称
+    expect(wrapper.text()).toContain('软件架构风格')
+    wrapper.unmount()
+  })
+
+  it('handles unknown point id gracefully without making up names or auto-submitting', async () => {
+    learning.knowledgePoints.mockResolvedValueOnce([
+      { id: 42, courseId: 1, chapterId: 2, name: '软件架构风格', graphEntity: '架构风格', sortOrder: 1, mastery: 80 },
+    ])
+
+    const wrapper = await mountPage('/tutor?courseId=1&knowledgePointId=999')
+    await flushPromises()
+
+    expect(learning.streamAsk).not.toHaveBeenCalled()
+    const input = wrapper.get('#question-input').element as HTMLTextAreaElement
+    expect(input.value).toBe('')
+    wrapper.unmount()
+  })
+
+  it('handles knowledgePoints API failure gracefully without crashing or making up names', async () => {
+    learning.knowledgePoints.mockRejectedValueOnce(new Error('Network error'))
+
+    const wrapper = await mountPage('/tutor?courseId=1&knowledgePointId=42')
+    await flushPromises()
+
+    expect(learning.streamAsk).not.toHaveBeenCalled()
+    const input = wrapper.get('#question-input').element as HTMLTextAreaElement
+    expect(input.value).toBe('')
+    wrapper.unmount()
+  })
+
+  it('prioritizes route.entity over knowledgePointId and does not overwrite existing question', async () => {
+    learning.knowledgePoints.mockResolvedValueOnce([
+      { id: 42, courseId: 1, chapterId: 2, name: '软件架构风格', graphEntity: '架构风格', sortOrder: 1, mastery: 80 },
+    ])
+
+    const wrapper = await mountPage('/tutor?entity=白盒测试&courseId=1&knowledgePointId=42')
+    await flushPromises()
+
+    expect(learning.streamAsk).not.toHaveBeenCalled()
+    const input = wrapper.get('#question-input').element as HTMLTextAreaElement
+    expect(input.value).toContain('白盒测试')
+    expect(input.value).not.toContain('软件架构风格')
     wrapper.unmount()
   })
 })

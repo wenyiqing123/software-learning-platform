@@ -11,7 +11,10 @@ const api = vi.hoisted(() => ({
   completeEvaluation: vi.fn(),
   currentUser: vi.fn(),
 }))
-vi.mock('../api/client', () => ({ learningApi: api }))
+vi.mock('../api/client', () => ({
+  apiError: vi.fn((e: unknown, fallback = '请求失败') => (e instanceof Error ? e.message : fallback)),
+  learningApi: api
+}))
 
 describe('EvaluationView', () => {
   beforeEach(() => {
@@ -19,9 +22,9 @@ describe('EvaluationView', () => {
     clearRoleCache()
     localStorage.clear()
     api.evaluationSessions.mockResolvedValue([])
-    api.startEvaluation.mockResolvedValue({ id: 12, conditionKey: 'METHODS', taskKey: 'TASK-1', taskOrder: 'A→B', consentVersion: 'evaluation-v2', startedAt: '2026-11-20T00:00:00Z' })
+    api.startEvaluation.mockResolvedValue({ id: 12, conditionKey: 'METHODS', taskKey: 'TASK-1', taskOrder: 'A→B', consentVersion: 'evaluation-v2', startedAt: '2026-11-20T00:00:00Z', completedPhases: [] })
     api.recordEvaluationMeasurement.mockResolvedValue(undefined)
-    api.completeEvaluation.mockResolvedValue({ id: 12, conditionKey: 'METHODS', taskKey: 'TASK-1', taskOrder: 'A→B', consentVersion: 'evaluation-v2', startedAt: '2026-11-20T00:00:00Z', completedAt: '2026-11-20T00:10:00Z' })
+    api.completeEvaluation.mockResolvedValue({ id: 12, conditionKey: 'METHODS', taskKey: 'TASK-1', taskOrder: 'A→B', consentVersion: 'evaluation-v2', startedAt: '2026-11-20T00:00:00Z', completedAt: '2026-11-20T00:10:00Z', completedPhases: ['PRE', 'POST'] })
     api.currentUser.mockResolvedValue({ id: 1, role: 'STUDENT' })
   })
 
@@ -71,7 +74,7 @@ describe('EvaluationView', () => {
     wrapper.unmount()
   })
 
-  it('renders student-only /experiment-run task link with taskId and assignmentId query when active session has taskId', async () => {
+  it('enforces step blocking: blocks task link and post test until pre-test is saved, then unlocks them', async () => {
     const memoryRouter = createRouter({
       history: createMemoryHistory(),
       routes: [
@@ -89,10 +92,97 @@ describe('EvaluationView', () => {
     await wrapper.get('button.button-dark').trigger('click')
     await flushPromises()
 
-    // 此时 activeSession 存在，且 route.query.taskId 存在
+    // 前测未保存前，任务入口展示阻塞提示，链接未渲染
+    expect(wrapper.text()).toContain('请先完成并保存前测，再解锁此任务。')
+    expect(wrapper.findAll('a').find(a => a.text().includes('进入问答任务'))).toBeUndefined()
+
+    // 提交前测
+    await wrapper.get('.evaluation-card input[type="number"]').setValue(85)
+    await wrapper.findAll('button').find(b => b.text().includes('保存前测'))!.trigger('click')
+    await flushPromises()
+    expect(api.recordEvaluationMeasurement).toHaveBeenCalledWith(12, { phase: 'PRE', score: 85 })
+
+    // 前测完成后，任务链接解锁
     const runLink = wrapper.findAll('a').find(a => a.text().includes('进入问答任务'))
     expect(runLink).toBeDefined()
     expect(runLink!.attributes('href')).toBe('/experiment-run?taskId=101&assignmentId=55')
+    wrapper.unmount()
+  })
+
+  it('resumes saved steps from server completedPhases and server-authoritative timer', async () => {
+    api.evaluationSessions.mockResolvedValueOnce([
+      {
+        id: 77,
+        conditionKey: 'METHODS',
+        taskKey: 'TASK-RESUME',
+        taskOrder: 'A→B',
+        assignmentId: 55,
+        consentVersion: 'evaluation-v2',
+        startedAt: '2026-11-20T10:00:00Z',
+        completedPhases: ['PRE']
+      }
+    ])
+
+    const memoryRouter = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/evaluation', component: EvaluationView }]
+    })
+    await memoryRouter.push('/evaluation?taskId=101&assignmentId=55')
+    await memoryRouter.isReady()
+    const wrapper = mount(EvaluationView, { global: { plugins: [memoryRouter] } })
+    await flushPromises()
+
+    // 自动恢复会话，直接跳过知情同意并显示前测已保存
+    expect(wrapper.text()).toContain('已从服务器恢复进行中的评估会话。')
+    expect(wrapper.text()).toContain('前测已保存')
+    const stepItems = wrapper.findAll('.evaluation-stepper .step-item')
+    expect(stepItems[0].classes()).toContain('status-done') // 知情说明 done
+    expect(stepItems[1].classes()).toContain('status-done') // 前测 done
+    expect(stepItems[2].classes()).toContain('status-current') // 任务与计时 current
+    wrapper.unmount()
+  })
+
+  it('enforces complete gating: requires both PRE, POST and effort before final submission', async () => {
+    const memoryRouter = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/evaluation', component: EvaluationView }]
+    })
+    await memoryRouter.push('/evaluation')
+    await memoryRouter.isReady()
+    const wrapper = mount(EvaluationView, { global: { plugins: [memoryRouter] } })
+    await flushPromises()
+
+    await wrapper.get('input[type="checkbox"]').setValue(true)
+    await wrapper.get('button.button-dark').trigger('click')
+    await flushPromises()
+
+    // 尚未完成后测时，完成按钮应禁用或受阻
+    const completeBtn = wrapper.findAll('button').find(b => b.text().includes('完成并保存'))!
+    expect(completeBtn.attributes('disabled')).toBeDefined()
+
+    // 依次完成 PRE 和 POST
+    await wrapper.get('.evaluation-card input[type="number"]').setValue(80)
+    await wrapper.findAll('button').find(b => b.text().includes('保存前测'))!.trigger('click')
+    await flushPromises()
+
+    const postInput = wrapper.findAll('.evaluation-card input[type="number"]')[1]
+    await postInput.setValue(90)
+    await wrapper.findAll('button').find(b => b.text().includes('保存后测'))!.trigger('click')
+    await flushPromises()
+
+    // 选定努力评分
+    await wrapper.get('input[type="radio"][value="6"]').setValue(true)
+    await flushPromises()
+
+    // 此时允许提交完成
+    expect(completeBtn.attributes('disabled')).toBeUndefined()
+    await completeBtn.trigger('click')
+    await flushPromises()
+
+    expect(api.completeEvaluation).toHaveBeenCalledWith(12, expect.objectContaining({
+      psychologicalEffort: 6
+    }))
+    expect(wrapper.text()).toContain('评估已完成，数据仅用于匿名聚合分析。')
     wrapper.unmount()
   })
 

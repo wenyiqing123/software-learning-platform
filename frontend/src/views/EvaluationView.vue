@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Check, CircleAlert, Clock3, FileCheck2, ShieldCheck } from '@lucide/vue'
 import { RouterLink, useRoute } from 'vue-router'
-import { learningApi, type EvaluationSession } from '../api/client'
+import { apiError, learningApi, type EvaluationSession } from '../api/client'
 import SectionHeading from '../components/SectionHeading.vue'
 
 const route = useRoute()
@@ -26,7 +26,12 @@ const elapsed = ref(0)
 const assignmentId = computed(() => Number(route.query.assignmentId) || undefined)
 let timer: ReturnType<typeof setInterval> | undefined
 
-const active = computed(() => session.value && !session.value.completedAt)
+const serverCompletedPhases = computed<string[]>(() => session.value?.completedPhases || [])
+const isPreDone = computed(() => serverCompletedPhases.value.includes('PRE'))
+const isPostDone = computed(() => serverCompletedPhases.value.includes('POST'))
+const isDelayedDone = computed(() => serverCompletedPhases.value.includes('DELAYED'))
+const isSessionCompleted = computed(() => Boolean(session.value?.completedAt))
+
 const elapsedText = computed(() => Math.floor(elapsed.value / 60) + '分 ' + String(elapsed.value % 60).padStart(2, '0') + '秒')
 
 function getEffortAnchor(val: number | null): string {
@@ -54,32 +59,32 @@ const wizardSteps = computed(() => [
   {
     id: 2,
     title: '前测',
-    status: !session.value ? 'pending' : preScore.value !== null ? 'done' : 'current',
-    statusText: !session.value ? '待开始评估' : preScore.value !== null ? '已完成' : '待填写'
+    status: !session.value ? 'pending' : isPreDone.value ? 'done' : 'current',
+    statusText: !session.value ? '待开始评估' : isPreDone.value ? '已完成' : '待填写'
   },
   {
     id: 3,
     title: '任务与计时',
-    status: !session.value ? 'pending' : session.value.completedAt ? 'done' : 'current',
-    statusText: !session.value ? '待解锁' : session.value.completedAt ? '已完成' : '计时中'
+    status: !session.value || !isPreDone.value ? 'pending' : (isPostDone.value || isSessionCompleted.value ? 'done' : 'current'),
+    statusText: !session.value || !isPreDone.value ? '待前测完成' : (isPostDone.value || isSessionCompleted.value ? '已完成' : '计时中')
   },
   {
     id: 4,
     title: '后测',
-    status: !session.value ? 'pending' : postScore.value !== null ? 'done' : 'current',
-    statusText: !session.value ? '待解锁' : postScore.value !== null ? '已完成' : '待填写'
+    status: !session.value || !isPreDone.value ? 'pending' : isPostDone.value ? 'done' : 'current',
+    statusText: !session.value || !isPreDone.value ? '待任务完成' : isPostDone.value ? '已完成' : '待填写'
   },
   {
     id: 5,
     title: 'Paas 心理努力',
-    status: !session.value ? 'pending' : effort.value !== null ? 'done' : 'current',
-    statusText: !session.value ? '待解锁' : effort.value !== null ? `${effort.value} 级已选` : '待评分'
+    status: !session.value || !isPostDone.value ? 'pending' : isSessionCompleted.value ? 'done' : 'current',
+    statusText: !session.value || !isPostDone.value ? '待后测完成' : isSessionCompleted.value ? `${session.value?.psychologicalEffort || effort.value} 级已完成` : '待自评'
   },
   {
     id: 6,
     title: '延后测验',
-    status: !session.value ? 'pending' : delayedScore.value !== null ? 'done' : 'current',
-    statusText: !session.value ? '待解锁' : delayedScore.value !== null ? '已补录' : '约定时间补录'
+    status: !session.value ? 'pending' : isDelayedDone.value ? 'done' : 'current',
+    statusText: !session.value ? '待解锁' : isDelayedDone.value ? '已补录' : '约定时间补录'
   }
 ])
 
@@ -90,10 +95,21 @@ function updateTimer() {
 
 async function load() {
   loading.value = true
+  error.value = ''
   try {
     history.value = await learningApi.evaluationSessions()
-  } catch {
-    error.value = '评估记录暂时无法读取。'
+    const targetAssId = assignmentId.value
+    const match = history.value.find(s =>
+      (targetAssId && s.assignmentId === targetAssId && !s.completedAt) ||
+      (!targetAssId && !s.completedAt && s.taskKey === taskKey.value)
+    )
+    if (match) {
+      session.value = match
+      notice.value = '已从服务器恢复进行中的评估会话。'
+      updateTimer()
+    }
+  } catch (cause) {
+    error.value = apiError(cause, '评估记录暂时无法读取。')
   } finally {
     loading.value = false
   }
@@ -114,8 +130,8 @@ async function start() {
     })
     timer = setInterval(updateTimer, 1000)
     notice.value = '评估会话已开始，请按当前顺序完成前测、学习任务、后测和主观反馈。'
-  } catch {
-    error.value = '无法开始评估，请检查输入和服务连接。'
+  } catch (cause) {
+    error.value = apiError(cause, '无法开始评估，请检查输入和服务连接。')
   } finally {
     saving.value = false
   }
@@ -129,22 +145,37 @@ async function measure(phase: 'PRE' | 'POST' | 'DELAYED') {
     return
   }
   saving.value = true
+  error.value = ''
   try {
     await learningApi.recordEvaluationMeasurement(session.value.id, { phase, score })
+    if (!session.value.completedPhases) session.value.completedPhases = []
+    if (!session.value.completedPhases.includes(phase)) {
+      session.value.completedPhases.push(phase)
+    }
     notice.value = (phase === 'PRE' ? '前测' : phase === 'POST' ? '后测' : '延后测验') + '已保存。'
-  } catch {
-    error.value = '测验结果保存失败，请重试。'
+  } catch (cause) {
+    error.value = apiError(cause, '测验结果保存失败，请重试。')
   } finally {
     saving.value = false
   }
 }
 
 async function complete() {
-  if (!session.value || saving.value || effort.value === null || postScore.value === null) {
-    error.value = '请先填写后测和心理努力评分。'
+  if (!session.value || saving.value) return
+  if (!isPreDone.value) {
+    error.value = '必须先完成前测 (PRE)'
+    return
+  }
+  if (!isPostDone.value) {
+    error.value = '必须先完成后测 (POST)'
+    return
+  }
+  if (effort.value === null) {
+    error.value = '请选择 1–9 级心理努力自评'
     return
   }
   saving.value = true
+  error.value = ''
   updateTimer()
   try {
     const finished = await learningApi.completeEvaluation(session.value.id, {
@@ -156,8 +187,8 @@ async function complete() {
     history.value = [finished, ...history.value.filter(item => item.id !== finished.id)]
     notice.value = '评估已完成，数据仅用于匿名聚合分析。'
     if (timer) clearInterval(timer)
-  } catch {
-    error.value = '评估完成信息保存失败，请重试。'
+  } catch (cause) {
+    error.value = apiError(cause, '评估完成信息保存失败，请重试。')
   } finally {
     saving.value = false
   }
@@ -245,27 +276,31 @@ onBeforeUnmount(() => {
       <div class="evaluation-grid">
         <article class="evaluation-card">
           <p class="eyebrow">1 · 前测</p><h3>开始学习前完成</h3>
-          <label>得分（0–100）<input v-model.number="preScore" type="number" min="0" max="100" /></label>
-          <button class="button button-outline button-small" :disabled="saving || preScore === null" @click="measure('PRE')">保存前测</button>
+          <label>得分（0–100）<input v-model.number="preScore" type="number" min="0" max="100" :disabled="isPreDone || saving" /></label>
+          <button class="button button-outline button-small" :disabled="saving || preScore === null || isPreDone" @click="measure('PRE')">{{ isPreDone ? '前测已保存' : '保存前测' }}</button>
         </article>
-        <article class="evaluation-card">
+        <article class="evaluation-card" :class="{ 'step-blocked': !isPreDone }">
           <p class="eyebrow">2 · 当前任务</p><h3>完成课程学习或问答任务</h3>
           <p>可返回课程、知识图谱、练习或 AI 助教完成任务；用时由系统计时。</p>
-          <RouterLink v-if="route.query.taskId" class="button button-outline button-small" :to="{ path: '/experiment-run', query: { taskId: String(route.query.taskId), assignmentId: assignmentId ? String(assignmentId) : (route.query.assignmentId ? String(route.query.assignmentId) : undefined) } }">进入问答任务</RouterLink>
+          <span v-if="!isPreDone" class="step-blocked-hint">请先完成并保存前测，再解锁此任务。</span>
+          <RouterLink v-else-if="route.query.taskId" class="button button-outline button-small" :to="{ path: '/experiment-run', query: { taskId: String(route.query.taskId), assignmentId: assignmentId ? String(assignmentId) : (route.query.assignmentId ? String(route.query.assignmentId) : undefined) } }">进入问答任务</RouterLink>
         </article>
-        <article class="evaluation-card">
+        <article class="evaluation-card" :class="{ 'step-blocked': !isPreDone }">
           <p class="eyebrow">3 · 后测</p><h3>完成任务后填写</h3>
-          <label>得分（0–100）<input v-model.number="postScore" type="number" min="0" max="100" /></label>
-          <button class="button button-outline button-small" :disabled="saving || postScore === null" @click="measure('POST')">保存后测</button>
+          <span v-if="!isPreDone" class="step-blocked-hint">请先完成前测与任务。</span>
+          <template v-else>
+            <label>得分（0–100）<input v-model.number="postScore" type="number" min="0" max="100" :disabled="isPostDone || saving" /></label>
+            <button class="button button-outline button-small" :disabled="saving || postScore === null || isPostDone" @click="measure('POST')">{{ isPostDone ? '后测已保存' : '保存后测' }}</button>
+          </template>
         </article>
       </div>
-      <section class="content-section evaluation-complete">
+      <section class="content-section evaluation-complete" :class="{ 'step-blocked': !isPostDone }">
         <div>
           <p class="eyebrow">4 · Paas 心理努力评分</p>
           <h3 id="effort-title">请评价完成本任务时的心理努力</h3>
           <p id="effort-description">1 = 非常低，3 = 较低，5 = 中等，7 = 较高，9 = 非常高。</p>
         </div>
-        <fieldset class="effort-scale" aria-labelledby="effort-title" aria-describedby="effort-description">
+        <fieldset class="effort-scale" :disabled="!isPostDone || isSessionCompleted || saving" aria-labelledby="effort-title" aria-describedby="effort-description">
           <label v-for="value in 9" :key="value" :class="{ selected: effort === value }">
             <span class="effort-num">{{ value }}</span>
             <input v-model="effort" type="radio" name="effort" :value="value" :aria-label="value + ' 级 · ' + getEffortAnchor(value)" />
@@ -276,8 +311,8 @@ onBeforeUnmount(() => {
         </div>
         <label>可选反馈<textarea v-model="feedback" maxlength="2000" rows="2" placeholder="可以描述任务难度、证据是否有帮助或页面体验。"></textarea></label>
         <div class="evaluation-actions">
-          <button class="button button-outline" @click="reset">放弃本次</button>
-          <button class="button button-dark" :disabled="saving || effort === null || postScore === null" @click="complete"><Check :size="16" />完成并保存</button>
+          <button class="button button-outline" :disabled="saving || isSessionCompleted" @click="reset">放弃本次</button>
+          <button class="button button-dark" :disabled="saving || effort === null || !isPostDone || isSessionCompleted" @click="complete"><Check :size="16" />完成并保存</button>
         </div>
       </section>
       <section class="content-section delayed-card">
@@ -397,6 +432,17 @@ onBeforeUnmount(() => {
 
 .step-item.status-pending {
   opacity: 0.55;
+}
+
+.step-blocked {
+  opacity: 0.7;
+}
+
+.step-blocked-hint {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 6px;
 }
 
 .step-item.status-pending .step-title,

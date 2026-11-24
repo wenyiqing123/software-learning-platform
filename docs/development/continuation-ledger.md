@@ -298,3 +298,19 @@
   - 样式与代码规范：`git diff --check` 通过，0 处空白错误；全仓 CSS/Vue 中 `!important` 严格为 0；
   - 任务书勾选状态：`M3-T11` ~ `M3-T14` 全部勾选为 `[x]`。
 
+## 里程碑 M3 第五批推进记录（M3-T15 ~ M3-T18，2026-11-24）
+
+- 完成施工任务书【里程碑 M3】第五批共 4 项原子任务落地与定向验证：
+  - `M3-T15`：学生领取任务读取真实分组顺序。`frontend/src/views/ExperimentTasksView.vue` 严格以服务端返回的 `taskOrder` 为唯一权威呈现实验顺序；若为 legacy NULL 则提示“顺序未记录”并禁用评估入口，不默认假设 A→B；移除开始前提前触发的 `POST /start`，点击直接携带 `taskId` 与 `assignmentId` 导航至 `/evaluation`；扩展 `ExperimentTasksView.test.ts`（3 项测试全绿）；
+  - `M3-T16`：评估分步向导状态机。`frontend/src/views/EvaluationView.vue` 完整实现 6 步严格状态机：`consent` → `PRE` → `assigned run` → `POST` → `Paas 1–9` → `optional DELAYED`；知情同意前绝不预先创建评估会话；前测未保存前严格阻塞任务入口（`step-blocked`）和后测填写；未完成后测与 1–9 心理努力自评前严格阻断 final complete 提交；页面挂载自动根据服务端 `completedPhases` 恢复步骤，断言本地未提交数据不虚标 complete；接口异常保留当前步骤与输入并支持原位重试；扩展 `EvaluationView.test.ts`（6 项测试全绿）；
+  - `M3-T17`：跨页学习上下文回链。`frontend/src/domain/learningContext.ts` 扩展 `updatedAt` 时间戳并保持对无 `updatedAt` 的旧本地缓存兼容；提供 `returnHref` 在缺失上下文时安全回退至 `/courses`，绝不调用无保护的 `history.back()`；增强 `frontend/src/components/LearningContextActions.vue` 呈现“课程→小节→知识点”面包屑路径与“返回此学习内容”链接，支持基于 `currentView` 进行当前目标智能去重；新建 `LearningContextActions.test.ts` 与更新 `learningContext.test.ts`（8 项测试全绿）；
+  - `M3-T18`：Tutor 知识点上下文预填。`frontend/src/views/TutorView.vue` 对 point-only context 调用 `knowledgePoints(courseId)` 精准匹配知识点名称并预填入输入框，绝不自动触发 submit 发送；`route.query.entity` 优先且不覆盖用户已有输入；未知 point ID、接口失败或加载中不编造虚假名称；quick prompts 自动联动解析名称；`SectionHeading` 集成 `LearningContextActions`；扩展 `TutorView.test.ts` 覆盖 exact match、unknown ID、API failure、editable prompt 等场景（8 项测试全绿）。
+- 门禁实测结果：
+  - 本批关联测试：`ExperimentTasksView.test.ts`（3/3）、`EvaluationView.test.ts`（6/6）、`learningContext.test.ts`（4/4）、`LearningContextActions.test.ts`（4/4）、`TutorView.test.ts`（8/8）共 25 项测试全部通过；
+  - 前端全量测试：`npx vitest run` 54 个测试文件、168 项测试全部通过（168 passed，0 failures）；
+  - 前端 AST 类名检查：`node scripts/scan-vue-classes.mjs --check` 扫描 48 个 SFC 模板（1134 处类名使用），0 missing classes（100% 匹配）；
+  - 前端生产构建：`npm run build` 成功完成，0 error，0 chunk warning，类型检查通过；
+  - 样式与代码规范：`git diff --check` 通过，0 处空白错误；全仓 CSS/Vue 中 `!important` 严格为 0；
+  - 任务书勾选状态：`M3-T15` ~ `M3-T18` 全部勾选为 `[x]`。
+
+

@@ -6,6 +6,8 @@ import { apiError, learningApi } from '../api/client'
 import type { TutorSession } from '../api/tutor'
 import type { TutorAnswerResult, TutorChatMessage, TutorContextChip } from '../domain/tutorChat'
 import SectionHeading from '../components/SectionHeading.vue'
+import LearningContextActions from '../components/LearningContextActions.vue'
+import { contextFromQuery, type LearningContext } from '../domain/learningContext'
 import MarkdownContent from '../components/MarkdownContent.vue'
 import TutorConversationList from '../components/TutorConversationList.vue'
 import TutorMessageList from '../components/TutorMessageList.vue'
@@ -19,6 +21,7 @@ const mode = ref<Mode>('RANKED')
 const queryValue = (value: unknown) => typeof value === 'string' ? value : Array.isArray(value) ? String(value[0] || '') : ''
 const initialEntity = queryValue(route.query.entity)
 const question = ref(initialEntity ? '请解释「' + initialEntity + '」的核心概念及相关知识。' : '')
+const resolvedPointName = ref('')
 const loading = ref(false)
 const streamingAnswer = ref('')
 const streamingEvidence = ref<{ triples?: unknown[] } | null>(null)
@@ -49,12 +52,57 @@ const context = computed<TutorContextChip[]>(() => ([
   const text = queryValue(value)
   return text ? [{ label, value: text }] : []
 }))
+
 const quickPrompts = computed(() => {
-  const target = context.value.find(item => item.label === '实体')?.value || context.value.find(item => item.label === '知识点')?.value || '这个知识点'
+  const target = context.value.find(item => item.label === '实体')?.value ||
+    resolvedPointName.value ||
+    context.value.find(item => item.label === '知识点')?.value ||
+    '这个知识点'
   return [`解释「${target}」`, `举一个「${target}」的例子`, '给我一道练习题']
 })
+
+const learningContext = computed<LearningContext>(() => {
+  const base = contextFromQuery(route.query as Record<string, string | string[]>)
+  if (resolvedPointName.value && !base.knowledgePointTitle) {
+    base.knowledgePointTitle = resolvedPointName.value
+  }
+  return base
+})
+
+async function resolvePointContext() {
+  const entity = queryValue(route.query.entity)
+  if (entity) return
+
+  const rawPointId = queryValue(route.query.knowledgePointId)
+  if (!rawPointId || !/^[1-9]\d*$/.test(rawPointId)) return
+  const pointId = Number(rawPointId)
+
+  const rawCourseId = queryValue(route.query.courseId)
+  const courseId = rawCourseId && /^[1-9]\d*$/.test(rawCourseId) ? Number(rawCourseId) : undefined
+
+  try {
+    const list = await learningApi.knowledgePoints(courseId)
+    if (!Array.isArray(list)) return
+    const matched = list.find((item) => item && item.id === pointId)
+    if (matched) {
+      const name = (matched.name || matched.graphEntity || '').trim()
+      if (name) {
+        resolvedPointName.value = name
+        if (!question.value.trim() && !queryValue(route.query.entity)) {
+          question.value = `请解释「${name}」的核心概念及相关知识。`
+        }
+      }
+    }
+  } catch {
+    // unknown/loading/error 不造名，静默失败，保持已有逻辑
+  }
+}
+
 let abortController: AbortController | null = null
-onMounted(async () => { try { sessions.value = await learningApi.sessions() } catch (e) { historyError.value = apiError(e, '会话历史暂不可用') } })
+onMounted(async () => {
+  void resolvePointContext()
+  try { sessions.value = await learningApi.sessions() } catch (e) { historyError.value = apiError(e, '会话历史暂不可用') }
+})
 function selectMode(selected: string) {
   if (selected === 'DIRECT' || selected === 'TRIPLES' || selected === 'RANKED') mode.value = selected
   compareAll.value = false
@@ -169,7 +217,9 @@ function selectQuickPrompt(prompt: string) {
 
 <template>
   <div class="page-stack tutor-page">
-    <SectionHeading eyebrow="基于课程知识图谱" title="AI 学习助教" description="在连续学习会话中提问，查看回答过程和真实图谱证据。"></SectionHeading>
+    <SectionHeading eyebrow="基于课程知识图谱" title="AI 学习助教" description="在连续学习会话中提问，查看回答过程和真实图谱证据。">
+      <LearningContextActions :context="learningContext" current-view="tutor" compact />
+    </SectionHeading>
     <section class="tutor-chat-workspace">
       <aside class="tutor-rail">
         <TutorConversationList :sessions="sessions" :active-id="sessionId" :disabled="loading" :error="historyError" @select="selectSessionById" @create="newSession" @rename="renameSession" @remove="removeSessionById"></TutorConversationList>

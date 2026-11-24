@@ -7,7 +7,6 @@ const router = useRouter()
 const assignments = ref<ExperimentAssignment[]>([])
 const loading = ref(true)
 const error = ref('')
-const working = ref(false)
 
 async function load() {
   try {
@@ -19,26 +18,18 @@ async function load() {
   }
 }
 
-async function start(assignment: ExperimentAssignment) {
-  working.value = true
-  error.value = ''
-  try {
-    const current = (await api.post<ExperimentAssignment>('/experiment-tasks/' + assignment.id + '/start')).data
-    await router.push({
-      path: '/evaluation',
-      query: {
-        taskKey: current.title,
-        conditionKey: current.conditionKey,
-        taskOrder: 'A→B',
-        assignmentId: String(current.id),
-        taskId: String(current.taskId)
-      }
-    })
-  } catch (cause) {
-    error.value = apiError(cause, '实验任务启动失败。')
-  } finally {
-    working.value = false
-  }
+function startAssessment(task: ExperimentAssignment) {
+  if (!task.taskOrder || task.status === 'COMPLETED' || task.taskStatus !== 'OPEN') return
+  void router.push({
+    path: '/evaluation',
+    query: {
+      taskKey: task.title,
+      conditionKey: task.conditionKey,
+      taskOrder: task.taskOrder,
+      assignmentId: String(task.id),
+      taskId: String(task.taskId)
+    }
+  })
 }
 
 function openQuestionnaire(task: ExperimentAssignment) {
@@ -47,7 +38,7 @@ function openQuestionnaire(task: ExperimentAssignment) {
     query: {
       taskKey: task.title,
       conditionKey: task.conditionKey,
-      taskOrder: 'A→B',
+      taskOrder: task.taskOrder || undefined,
       assignmentId: String(task.id),
       taskId: String(task.taskId)
     }
@@ -81,7 +72,7 @@ onMounted(load)
         </div>
         <p>{{ task.description || '完成指定问答实验并提交真实服务器结果。' }}</p>
         <div class="task-protocol">
-          <span>顺序 A→B</span>
+          <span class="protocol-order">{{ task.taskOrder ? `顺序 ${task.taskOrder}` : '顺序未记录' }}</span>
           <span>前测 → 任务 → 后测</span>
           <span>可补录延后测验</span>
         </div>
@@ -90,14 +81,14 @@ onMounted(load)
           <button
             class="primary-button"
             :aria-label="'开始实验任务 ' + task.id"
-            :disabled="working || task.status === 'COMPLETED' || task.taskStatus !== 'OPEN'"
-            @click="start(task)"
+            :disabled="task.status === 'COMPLETED' || task.taskStatus !== 'OPEN' || !task.taskOrder"
+            @click="startAssessment(task)"
           >
-            {{ task.status === 'COMPLETED' ? '已完成' : task.taskStatus !== 'OPEN' ? '等待开放' : '开始评估与任务' }}
+            {{ task.status === 'COMPLETED' ? '已完成' : task.taskStatus !== 'OPEN' ? '等待开放' : !task.taskOrder ? '顺序未记录（已禁用）' : '开始评估与任务' }}
           </button>
           <button
             class="secondary-button"
-            :disabled="working || task.status === 'COMPLETED'"
+            :disabled="task.status === 'COMPLETED'"
             @click="openQuestionnaire(task)"
           >
             仅查看评估说明
@@ -161,6 +152,10 @@ onMounted(load)
   background: var(--accent-soft);
   border-radius: var(--radius-sm);
   font-size: 11px;
+}
+
+.protocol-order {
+  font-weight: 600;
 }
 
 .task-question {

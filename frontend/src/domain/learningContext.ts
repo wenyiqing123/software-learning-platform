@@ -3,6 +3,10 @@ export interface LearningContext {
   sectionId?: number
   knowledgePointId?: number
   entity?: string
+  courseTitle?: string
+  sectionTitle?: string
+  knowledgePointTitle?: string
+  updatedAt?: string
 }
 
 type QueryValue = string | string[] | null | undefined
@@ -14,10 +18,10 @@ function positiveId(value: QueryValue): number | undefined {
   return Number.isSafeInteger(parsed) ? parsed : undefined
 }
 
-function cleanEntity(value: QueryValue): string | undefined {
+function cleanString(value: QueryValue): string | undefined {
   const raw = Array.isArray(value) ? value[0] : value
-  const entity = raw?.trim()
-  return entity || undefined
+  const trimmed = raw?.trim()
+  return trimmed || undefined
 }
 
 export function contextFromQuery(query: Record<string, QueryValue>): LearningContext {
@@ -25,7 +29,11 @@ export function contextFromQuery(query: Record<string, QueryValue>): LearningCon
     ...(positiveId(query.courseId) ? { courseId: positiveId(query.courseId) } : {}),
     ...(positiveId(query.sectionId) ? { sectionId: positiveId(query.sectionId) } : {}),
     ...(positiveId(query.knowledgePointId) ? { knowledgePointId: positiveId(query.knowledgePointId) } : {}),
-    ...(cleanEntity(query.entity) ? { entity: cleanEntity(query.entity) } : {}),
+    ...(cleanString(query.entity) ? { entity: cleanString(query.entity) } : {}),
+    ...(cleanString(query.courseTitle) ? { courseTitle: cleanString(query.courseTitle) } : {}),
+    ...(cleanString(query.sectionTitle) ? { sectionTitle: cleanString(query.sectionTitle) } : {}),
+    ...(cleanString(query.knowledgePointTitle) ? { knowledgePointTitle: cleanString(query.knowledgePointTitle) } : {}),
+    ...(cleanString(query.updatedAt) ? { updatedAt: cleanString(query.updatedAt) } : {}),
   }
 }
 
@@ -54,8 +62,21 @@ export function courseHref(context: LearningContext) {
   return { path: '/courses', query: query(context, { section: true, point: true }) }
 }
 
+export function returnHref(context?: LearningContext | null) {
+  if (!context || !context.courseId) {
+    return { path: '/courses' }
+  }
+  return courseHref(context)
+}
+
 export function rememberLearningContext(context: LearningContext) {
-  try { localStorage.setItem('slp-last-learning-context', JSON.stringify(context)) } catch { /* Storage may be unavailable in private browsing. */ }
+  try {
+    const payload: LearningContext = {
+      ...context,
+      updatedAt: context.updatedAt || new Date().toISOString(),
+    }
+    localStorage.setItem('slp-last-learning-context', JSON.stringify(payload))
+  } catch { /* Storage may be unavailable in private browsing. */ }
 }
 
 export function readLastLearningContext(): LearningContext | null {

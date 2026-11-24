@@ -491,28 +491,28 @@ M2 提交信息：`style: unify visual system across student and admin views`
 - **受影响既有测试与更新指引**：保留 BOM/header/escaping/schema/prompt omission tests；新增 partial failure/Unicode/旧格式兼容/no rubric/no PII/no reference score tests。
 - **单任务验证命令**：`cd frontend; npx vitest run src/domain/experimentExport.test.ts src/views/ExperimentsView.test.ts`。
 
-### - [ ] M3-T15 学生领取任务读取真实分组顺序
+### - [x] M3-T15 学生领取任务读取真实分组顺序
 - **涉及文件**：`frontend/src/api/types.ts`；`frontend/src/views/ExperimentTasksView.vue`；`frontend/src/views/ExperimentTasksView.test.ts`
 - **前置依赖**：M3-T2、M3-T4、M3-T7。
 - **精确改造指令**：`ExperimentAssignment.taskOrder?: 'A→B'|'B→A'`；DTO 的 userId/referenceAnswer 已在 M3-T2 移除。ExperimentTasksView order label 取 server 值；legacy NULL 显“顺序未记录”并禁用开始 assessment，不默认 A→B。当前 click 仅跳到 Evaluation consent page，不在 consent 前 POST `/start`；assignment.startedAt 应在真正 run 发生时开始。保留 taskId/assignmentId query。
 - **受影响既有测试与更新指引**：更新 ExperimentTasksView.test 固定 B→A 响应并 assert navigation；增加缺值错误。
 - **单任务验证命令**：`cd frontend; npx vitest run src/views/ExperimentTasksView.test.ts src/views/EvaluationView.test.ts`。
 
-### - [ ] M3-T16 评估分步向导状态机
+### - [x] M3-T16 评估分步向导状态机
 - **涉及文件**：`frontend/src/views/EvaluationView.vue`；`frontend/src/views/EvaluationView.test.ts`；`frontend/src/views/ExperimentTasksView.vue`；`frontend/src/views/ExperimentTasksView.test.ts`
 - **前置依赖**：M3-T8、M3-T10、M3-T12。
 - **精确改造指令**：流程 consent→PRE→assigned run→POST→Paas 1–9→optional DELAYED。consent 前不创建 evaluation session；PRE/POST 使用当前 measurement endpoint。Assignment timer 在首个 run 被 server bind 时开始，elapsed 用 M3-T8 server calculation。完成要求 PRE/POST/successful run/effort；DELAYED 独立保存。使用 M3-T10 `completedPhases` 从 server 恢复已保存步骤；本地未提交输入不得标 complete。API error 保持当前 step 并可 retry。
 - **受影响既有测试与更新指引**：保留 no physiology wording/consent/order/DELAYED tests；新增 step blocking、resume、server time、complete gating。
 - **单任务验证命令**：`cd frontend; npx vitest run src/views/EvaluationView.test.ts src/views/ExperimentTasksView.test.ts`。
 
-### - [ ] M3-T17 跨页学习上下文回链
+### - [x] M3-T17 跨页学习上下文回链
 - **涉及文件**：`frontend/src/domain/learningContext.ts`；`frontend/src/domain/learningContext.test.ts`；`frontend/src/components/LearningContextActions.vue`；`frontend/src/components/LearningContextActions.test.ts`（Create）
 - **前置依赖**：M2-T7、M2-T8。
 - **精确改造指令**：沿用目前由 CourseView `chooseSection` 写入的 `slp-last-learning-context` 和既有 route query API；为 context 增可选 `updatedAt`，读取旧对象仍可用；只接受正数 ID/非空 entity。将共享 `LearningContextActions` 中的“课程→小节→知识点”路径与“返回此学习内容” link 在 courses/graph/practice/review/tutor 页面复用；缺 context 到 `/courses`，不调用无保护 `history.back()`。不能删除现有 query href。
 - **受影响既有测试与更新指引**：保留 `learningContext.test.ts` sanitizer/legacy read；新增 `LearningContextActions.test.ts` 覆盖 breadcrumbs、href query preservation、missing context fallback、当前目标去重。
 - **单任务验证命令**：`cd frontend; npx vitest run src/domain/learningContext.test.ts src/components/LearningContextActions.test.ts`。
 
-### - [ ] M3-T18 Tutor 知识点上下文预填
+### - [x] M3-T18 Tutor 知识点上下文预填
 - **涉及文件**：`frontend/src/views/TutorView.vue`；`frontend/src/views/TutorView.test.ts`；`frontend/src/api/knowledge.ts`
 - **前置依赖**：M3-T17。
 - **精确改造指令**：当前 entity query 有预填；`knowledgePoints(courseId)` 是现有 API。对 point-only context 取精确 ID 的 `name/graphEntity` 填入可编辑 question 建议；unknown/loading/error 不造名，不触发 submit。route.entity 优先，不覆盖；chips/quick prompts 继续显示。
