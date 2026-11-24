@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { api, apiError, type ExperimentGroup, type ExperimentTask } from '../api/client'
 import FeedbackState from '../components/FeedbackState.vue'
+import { useFormBaseline, useUnsavedChanges } from '../composables/useUnsavedChanges'
 
 const props = withDefaults(defineProps<{
   embedded?: boolean
@@ -19,6 +20,15 @@ const error = ref('')
 const notice = ref('')
 const working = ref(false)
 const loading = ref(true)
+
+const taskDraft = computed(() => ({
+  title: title.value,
+  question: question.value,
+  description: description.value,
+  referenceAnswer: referenceAnswer.value,
+}))
+const { isDirty, resetBaseline } = useFormBaseline(taskDraft)
+useUnsavedChanges(isDirty)
 
 // 每个任务独立的配组与派发输入状态
 interface TaskActionState {
@@ -96,6 +106,7 @@ async function create() {
     question.value = ''
     description.value = ''
     referenceAnswer.value = ''
+    resetBaseline()
     await load()
   } catch (cause) {
     error.value = apiError(cause, '实验任务创建失败。')

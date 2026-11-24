@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { CircleAlert, Plus, Save, Trash2 } from '@lucide/vue'
 import { api, apiError, type ConfiguredQuizDiagnosis } from '../api/client'
 import SectionHeading from '../components/SectionHeading.vue'
 import FeedbackState from '../components/FeedbackState.vue'
+import { useUnsavedChanges } from '../composables/useUnsavedChanges'
 
 interface Course { id: number; name: string; term: string }
 interface Point { id: number; name: string; enabled: boolean }
@@ -26,13 +27,17 @@ const configurations = ref<ConfiguredQuizDiagnosis[]>([])
 const courseId = ref<number | null>(null)
 const questionId = ref<number | null>(null)
 const drafts = ref<Draft[]>([])
+const baselineDrafts = ref('')
+
+const isDirty = computed(() => baselineDrafts.value !== '' && JSON.stringify(drafts.value) !== baselineDrafts.value)
+const { confirmIfDirty } = useUnsavedChanges(isDirty)
 
 const selectedQuestion = computed(() => questions.value.find(question => question.id === questionId.value))
 const distractors = computed(() => selectedQuestion.value?.options.filter(option => !selectedQuestion.value?.answer.includes(option.key)) ?? [])
 const availablePoints = computed(() => points.value.filter(point => point.enabled))
 
 function failure(cause: unknown) { return apiError(cause, '错因关联配置暂时不可用，请稍后重试。') }
-function clearEditor() { configurations.value = []; drafts.value = []; questionId.value = null }
+function clearEditor() { configurations.value = []; drafts.value = []; baselineDrafts.value = ''; questionId.value = null }
 
 async function loadQuestionData() {
   if (!courseId.value) { points.value = []; questions.value = []; clearEditor(); return }
@@ -49,10 +54,11 @@ async function loadQuestionData() {
 }
 
 async function loadConfiguration() {
-  if (!questionId.value) { configurations.value = []; drafts.value = []; return }
+  if (!questionId.value) { configurations.value = []; drafts.value = []; baselineDrafts.value = '[]'; return }
   try {
     configurations.value = (await api.get<ConfiguredQuizDiagnosis[]>('/admin/questions/' + questionId.value + '/diagnostics')).data
     drafts.value = configurations.value.map(item => ({ optionKey: item.optionKey, knowledgePointId: item.knowledgePointId, rationale: item.rationale }))
+    baselineDrafts.value = JSON.stringify(drafts.value)
   } catch (cause) { error.value = failure(cause) }
 }
 
@@ -68,9 +74,41 @@ async function save() {
   try {
     const response = await api.put<ConfiguredQuizDiagnosis[]>('/admin/questions/' + questionId.value + '/diagnostics', { entries: drafts.value.map(draft => ({ optionKey: draft.optionKey, knowledgePointId: draft.knowledgePointId, rationale: draft.rationale.trim() })) })
     configurations.value = response.data
+    baselineDrafts.value = JSON.stringify(drafts.value)
     notice.value = '错因关联已保存；学生端只会看到这些课程配置的匹配。'
   } catch (cause) { error.value = failure(cause) }
   finally { saving.value = false }
+}
+
+async function onCourseSelect(event: Event) {
+  const target = event.target as HTMLSelectElement
+  const newId = Number(target.value) || null
+  if (newId === courseId.value) return
+  if (isDirty.value) {
+    const ok = await confirmIfDirty()
+    if (!ok) {
+      target.value = String(courseId.value ?? '')
+      return
+    }
+  }
+  courseId.value = newId
+  await loadQuestionData()
+  await loadConfiguration()
+}
+
+async function onQuestionSelect(event: Event) {
+  const target = event.target as HTMLSelectElement
+  const newId = Number(target.value) || null
+  if (newId === questionId.value) return
+  if (isDirty.value) {
+    const ok = await confirmIfDirty()
+    if (!ok) {
+      target.value = String(questionId.value ?? '')
+      return
+    }
+  }
+  questionId.value = newId
+  await loadConfiguration()
 }
 
 async function initialize() {
@@ -87,8 +125,6 @@ async function initialize() {
   finally { loading.value = false }
 }
 
-watch(courseId, () => { if (authorized.value && !loading.value) void loadQuestionData() })
-watch(questionId, () => { if (authorized.value && !loading.value) void loadConfiguration() })
 onMounted(initialize)
 </script>
 
@@ -103,7 +139,7 @@ onMounted(initialize)
       <div v-if="error" class="admin-message error" role="alert"><CircleAlert :size="16" />{{ error }}</div>
       <div v-if="notice" class="admin-message success" role="status">{{ notice }}</div>
       <section class="diagnosis-admin-panel">
-        <div class="diagnosis-filters"><label>课程<select v-model="courseId" aria-label="错因课程"><option v-for="course in courses" :key="course.id" :value="course.id">{{ course.name }} · {{ course.term }}</option></select></label><label>题目<select v-model="questionId" aria-label="错因题目"><option v-for="question in questions" :key="question.id" :value="question.id">#{{ question.id }} · {{ question.stem }}</option></select></label></div>
+        <div class="diagnosis-filters"><label>课程<select :value="courseId" aria-label="错因课程" @change="onCourseSelect"><option v-for="course in courses" :key="course.id" :value="course.id">{{ course.name }} · {{ course.term }}</option></select></label><label>题目<select :value="questionId" aria-label="错因题目" @change="onQuestionSelect"><option v-for="question in questions" :key="question.id" :value="question.id">#{{ question.id }} · {{ question.stem }}</option></select></label></div>
         <div v-if="!selectedQuestion" class="admin-empty">当前课程没有可配置的启用题目。</div>
         <template v-else>
           <div class="diagnosis-question"><p class="eyebrow">{{ selectedQuestion.options.length - selectedQuestion.answer.length }} 个可配置干扰项</p><h2>{{ selectedQuestion.stem }}</h2><p>正确答案：{{ selectedQuestion.answer.join('、') }}。不要把正确答案配置为错因。</p></div>

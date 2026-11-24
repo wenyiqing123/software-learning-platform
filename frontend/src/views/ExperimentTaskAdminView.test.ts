@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { createMemoryHistory, createRouter } from 'vue-router'
 import ExperimentTaskAdminView from './ExperimentTaskAdminView.vue'
 
 const http = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), put: vi.fn() }))
@@ -7,6 +8,23 @@ vi.mock('../api/client', () => ({
   api: http,
   apiError: vi.fn((err: any, fallback: string) => err?.response?.data?.message || fallback)
 }))
+
+async function renderWithRouter(path = '/admin/experiment-tasks') {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: '/admin/experiment-tasks', component: ExperimentTaskAdminView },
+      { path: '/other', component: { template: '<div>Other</div>' } },
+    ],
+  })
+  await router.push(path)
+  await router.isReady()
+  const wrapper = mount(ExperimentTaskAdminView, {
+    global: { plugins: [router] },
+  })
+  await flushPromises()
+  return { wrapper, router }
+}
 
 beforeEach(() => {
   vi.resetAllMocks()
@@ -194,6 +212,83 @@ describe('ExperimentTaskAdminView', () => {
 
     expect(wrapper.text()).toContain('只能分配给学生账号')
     expect((wrapper.get('[data-testid="assign-student-ids"]').element as HTMLTextAreaElement).value).toBe('101, 102')
+    wrapper.unmount()
+  })
+
+  it('protects unsaved task draft on route leave and preserves inputs when user cancels', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm')
+    const { wrapper, router } = await renderWithRouter()
+
+    await wrapper.get('[data-testid="task-title"]').setValue('未保存任务')
+    await wrapper.get('[data-testid="task-question"]').setValue('未保存问题描述')
+
+    // 1. 用户取消离开：留在原路由，输入字段保留
+    confirmSpy.mockReturnValueOnce(false)
+    await router.push('/other')
+    expect(confirmSpy).toHaveBeenCalled()
+    expect(router.currentRoute.value.path).toBe('/admin/experiment-tasks')
+    expect((wrapper.get('[data-testid="task-title"]').element as HTMLInputElement).value).toBe('未保存任务')
+    expect((wrapper.get('[data-testid="task-question"]').element as HTMLTextAreaElement).value).toBe('未保存问题描述')
+
+    // 2. 用户确认离开：正常跳转
+    confirmSpy.mockReturnValueOnce(true)
+    await router.push('/other')
+    expect(router.currentRoute.value.path).toBe('/other')
+    wrapper.unmount()
+  })
+
+  it('preserves dirty state and fields on failed create, and resets baseline to clean on success', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm')
+    const { wrapper, router } = await renderWithRouter()
+
+    // 1. 模拟创建失败
+    http.post.mockImplementationOnce((url: string) => {
+      if (url === '/admin/experiment-tasks') {
+        return Promise.reject(new Error('创建失败模拟异常'))
+      }
+      return Promise.resolve({ data: {} })
+    })
+
+    await wrapper.get('[data-testid="task-title"]').setValue('异常任务')
+    await wrapper.get('[data-testid="task-question"]').setValue('异常问题')
+    await wrapper.get('button[aria-label="创建实验任务"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('实验任务创建失败')
+    expect((wrapper.get('[data-testid="task-title"]').element as HTMLInputElement).value).toBe('异常任务')
+    expect((wrapper.get('[data-testid="task-question"]').element as HTMLTextAreaElement).value).toBe('异常问题')
+
+    // 失败后依然保持 dirty，路由离开会提示确认
+    confirmSpy.mockReturnValueOnce(false)
+    await router.push('/other')
+    expect(confirmSpy).toHaveBeenCalled()
+    expect(router.currentRoute.value.path).toBe('/admin/experiment-tasks')
+
+    // 2. 模拟创建成功
+    http.post.mockResolvedValueOnce({
+      data: {
+        id: 10,
+        title: '新任务',
+        description: '',
+        experimentType: 'METHODS',
+        question: '新问题',
+        status: 'DRAFT',
+        groupCount: 0,
+        assignmentCount: 0,
+      },
+    })
+    await wrapper.get('button[aria-label="创建实验任务"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('实验任务草稿已创建')
+    expect((wrapper.get('[data-testid="task-title"]').element as HTMLInputElement).value).toBe('')
+    expect((wrapper.get('[data-testid="task-question"]').element as HTMLTextAreaElement).value).toBe('')
+
+    // 成功后 baseline 重置为 clean，路由离开无需确认
+    confirmSpy.mockClear()
+    await router.push('/other')
+    expect(confirmSpy).not.toHaveBeenCalled()
+    expect(router.currentRoute.value.path).toBe('/other')
     wrapper.unmount()
   })
 })

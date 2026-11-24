@@ -139,10 +139,16 @@ function apiResponse(url, role, scenario, method) {
   if (path === '/api/study-plans/today') return json({ id: 1, date: '2026-11-21', budgetMinutes: 30, tasks: planTasks })
   if (path === '/api/reports/learning') return json({ from: '2026-11-15', to: '2026-11-21', days: 7, courseName: '软件工程', reading: { totalSections: 8, completedSections: 3, completedInPeriod: 2 }, practice: { attempts: 12, correct: 9, accuracy: 75 }, reviews: { reviews: 2, correct: 1, accuracy: 50 }, plans: { totalTasks: 3, completedTasks: 1, plannedMinutes: 30, completedMinutes: 10 }, dailyActivity: [3, 4, 5].map((attempts, index) => ({ date: `2026-11-${19 + index}`, attempts, correct: attempts - 1, readingCompleted: index === 0 ? 0 : 1 })), chapters: [{ chapterId: 1, chapterName: '软件需求', totalSections: 4, completedSections: 2, completedInPeriod: 1 }, { chapterId: 2, chapterName: '软件设计', totalSections: 4, completedSections: 1, completedInPeriod: 1 }], knowledge: coursePoints.map(point => ({ pointId: point.id, pointName: point.name, mastery: point.mastery, attempts: 4, correct: Math.round(point.mastery / 25), dueReviewCount: point.id === 12 ? 1 : 0 })) })
   if (path === '/api/experiments') return json([experimentRun])
+  if (path === '/api/admin/experiments/fixed-suite') return json({
+    suiteVersion: '2026.1',
+    cases: [
+      { caseId: 'CASE-001', question: quiz.stem, sourceSection: '数据流图', knowledgePoint: '数据流图' }
+    ]
+  })
   if (path === '/api/admin/experiment-tasks') return json([experimentTask, { ...experimentTask, id: 10, title: '课程阅读后的延后测验', status: 'DRAFT', assignmentCount: 0 }])
   if (path === '/api/experiment-tasks') return json([{ ...experimentTask, id: 41, taskId: 9, groupId: 1, userId: 2, groupName: 'A 组', conditionKey: 'METHODS', status: 'ASSIGNED', taskStatus: 'OPEN', referenceAnswer: '' }])
   if (path === '/api/evaluations/sessions') {
-    const sample = { id: 12, conditionKey: 'METHODS', taskKey: '需求分析理解任务', taskOrder: 'A→B', consentVersion: 'evaluation-v2' }
+    const sample = { id: 12, conditionKey: 'METHODS', taskKey: '需求分析理解任务', taskOrder: 'A→B', consentVersion: 'evaluation-v2', completedPhases: ['PRE', 'INTERVENTION', 'POST'] }
     return method === 'POST'
       ? json({ ...sample, startedAt: new Date().toISOString() })
       : json([{ ...sample, id: 11, startedAt: '2026-11-21T08:00:00Z', completedAt: '2026-11-21T08:02:00Z', psychologicalEffort: 4 }])

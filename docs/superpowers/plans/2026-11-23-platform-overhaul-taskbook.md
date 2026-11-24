@@ -540,28 +540,28 @@ M2 提交信息：`style: unify visual system across student and admin views`
 - **受影响既有测试与更新指引**：保留 shouldRefreshAfterUnauthorized 排除 login/register/refresh/logout tests。
 - **单任务验证命令**：`cd frontend; npx vitest run src/api/client.test.ts`。
 
-### - [ ] M3-T22 未保存表单离开确认原语
+### - [x] M3-T22 未保存表单离开确认原语
 - **涉及文件**：`frontend/src/composables/useUnsavedChanges.ts`（Create）；`frontend/src/composables/useUnsavedChanges.test.ts`（Create）
 - **前置依赖**：M2-T22。
 - **精确改造指令**：hook 暴露 `useUnsavedChanges(isDirty,confirmLeave,baselineActions)`；dirty route leave 调 async confirm，允许 cancel；dirty beforeunload 仅用同步 `preventDefault/returnValue` 浏览器确认；clean 不提示；卸载时注销 listener；成功保存调用 `resetBaseline()`。Vue Router `onBeforeRouteLeave` resolve boolean。不能在 asynchronous beforeunload 弹 Vue modal，不得对已提交 publish/status action 当作 dirty draft。
 - **受影响既有测试与更新指引**：测试 accept/reject、route pending、beforeunload install/remove、reset baseline 后 clean。
 - **单任务验证命令**：`cd frontend; npx vitest run src/composables/useUnsavedChanges.test.ts`。
 
-### - [ ] M3-T23 Admin 课程与错因诊断表单 dirty guard
+### - [x] M3-T23 Admin 课程与错因诊断表单 dirty guard
 - **涉及文件**：`frontend/src/views/AdminView.vue`；`frontend/src/views/AdminCourseViews.test.ts`；`frontend/src/views/AdminDiagnosisView.vue`；`frontend/src/views/AdminDiagnosisView.test.ts`；`frontend/src/composables/useUnsavedChanges.ts`
 - **前置依赖**：M3-T22。
 - **精确改造指令**：AdminView deep compare courseDraft/questionDraft baseline；new/edit 先 set baseline，字段变化 dirty，save success/new/reset 更新 baseline。AdminDiagnosis drafts compare saved config；改变 course/question 先确认，取消则恢复 select 原值且 preserve drafts。Readonly list/filter 不计 dirty。
 - **受影响既有测试与更新指引**：保留 AdminCourseViews CRUD 与 AdminDiagnosis save/error；新增 leave cancel/preserve、save success/allow。
 - **单任务验证命令**：`cd frontend; npx vitest run src/views/AdminCourseViews.test.ts src/views/AdminDiagnosisView.test.ts src/composables/useUnsavedChanges.test.ts`。
 
-### - [ ] M3-T24 题库导入 dirty guard
+### - [x] M3-T24 题库导入 dirty guard
 - **涉及文件**：`frontend/src/views/QuestionBankView.vue`；`frontend/src/views/QuestionBankView.test.ts`；`frontend/src/composables/useUnsavedChanges.ts`
 - **前置依赖**：M3-T22。
 - **精确改造指令**：QuestionBank `versionName/sourceFilename/questionsJson` 对 baseline deep compare；成功 create/import 更新 baseline，失败保留 dirty；dirty tab/query route leave 可确认取消。MicroLesson 目前没有可编辑 draft field，generate/publish 是已提交 action，不加确认。扩展现有 View test 覆盖 import/save success/failure、route leave accept/reject 和 payload。
 - **受影响既有测试与更新指引**：扩展 M2-T17 已用的 `QuestionBankView.test.ts`，保留现有 draft/import row errors/publish confirmation tests，并新增成功清洁 baseline、失败保留 dirty、离开确认 accept/reject 和 payload 不变断言。MicroLesson 既有 generate/publish tests 只执行不修改。
 - **单任务验证命令**：`cd frontend; npx vitest run src/views/QuestionBankView.test.ts src/composables/useUnsavedChanges.test.ts`。
 
-### - [ ] M3-T25 ExperimentTask draft dirty guard
+### - [x] M3-T25 ExperimentTask draft dirty guard
 - **涉及文件**：`frontend/src/views/ExperimentTaskAdminView.vue`；`frontend/src/views/ExperimentTaskAdminView.test.ts`
 - **前置依赖**：M3-T4、M3-T22。
 - **精确改造指令**：title/question/description/referenceAnswer 相比空 baseline；任一字段改动 dirty；create success 清空并 reset baseline，失败保留字段和 dirty。OPEN/CLOSED 是已提交立即状态动作，沿用二次确认且不触发 draft guard。

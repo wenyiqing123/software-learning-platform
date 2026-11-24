@@ -328,5 +328,27 @@
   - 样式与代码规范：`git diff --check` 通过，0 处空白错误；全仓 CSS/Vue 中 `!important` 严格为 0；
   - 任务书勾选状态：`M3-T19` ~ `M3-T21` 全部标记为 `[x]`。
 
+## 里程碑 M3 终局推进与收口门禁记录（M3-T22 ~ M3-T25 与 M3 收口，2026-11-24）
+
+- 完成施工任务书【里程碑 M3】最后 4 项原子任务与 M3 完整收口门禁：
+  - `M3-T22`：未保存表单离开确认原语。`frontend/src/composables/useUnsavedChanges.ts` 实现 `useUnsavedChanges` 和 `useFormBaseline`，支持浏览器同步 `beforeunload`（纯同步 preventDefault/returnValue 阻断）、Vue Router 路由切换拦截（兼顾顶级路由页面与嵌入式 Tab 组件）、以及手动 `confirmIfDirty`，离开时异步确认，取消即终止路由跳转；保存成功更新 baseline；新建 `useUnsavedChanges.test.ts`（6 守护测试全绿）；
+  - `M3-T23`：Admin 课程与错因诊断表单 dirty guard。`AdminView.vue` 对课程与题目草稿做深度基线比较，new/edit/save/reset 均更新 baseline；`AdminDiagnosisView.vue` 对错因配置草稿做基线对比，改变课程/题目若 dirty 弹出确认，取消则恢复 select 原值并保留草稿；扩展 `AdminCourseViews.test.ts` 与 `AdminDiagnosisView.test.ts`；
+  - `M3-T24`：题库导入 dirty guard。`QuestionBankView.vue` 引入 `useFormBaseline` 与 `useUnsavedChanges`，对 `versionName/sourceFilename/questionsJson` 深度比较，创建/导入成功更新 baseline，失败保留 dirty 与 payload；扩展 `QuestionBankView.test.ts`（4 项测试全绿）；
+  - `M3-T25`：ExperimentTask draft dirty guard。`ExperimentTaskAdminView.vue` 引入防丢守卫，对 `title/question/description/referenceAnswer` 相比空 baseline 进行 dirty 判定，创建成功清空并重置 baseline，失败保留输入与 dirty；`OPEN/CLOSED` 沿用状态二次确认且不触发草稿守卫；扩展 `ExperimentTaskAdminView.test.ts`（9 项测试全绿）。
+- 【里程碑 M3 完整收口门禁实测结果】：
+  - 前端专项相关测试：`npx vitest run src/views/ExperimentsView.test.ts ...` 共 12 个测试文件、78 项测试 100% 通过（78 passed）；
+  - 前端全量测试：`npm test` 56 个测试文件、189 项测试全部通过（189 passed，0 failure）；
+  - AST 幽灵类名扫描：`node scripts/scan-vue-classes.mjs --check` 扫描 49 个 SFC、1155 处类名使用，0 missing classes（100% 匹配）；
+  - 前端生产构建：`npm run build` 成功完成，0 error，0 chunk warning；
+  - 后端 M3 专项集成测试：`mvn -f backend/pom.xml -pl learning-service -am ...` 44 项测试全部通过（44 passed，0 failure，0 error）；
+  - 后端三模块全量回归测试：`mvn -f backend/pom.xml test` 全部通过（BUILD SUCCESS，总计 201 个测试）：
+    - `learning-service`: 94 tests, 0 failures, 0 errors, 0 skipped
+    - `ai-service`: 102 tests, 0 failures, 0 errors, 0 skipped
+    - `learning-gateway`: 5 tests, 0 failures, 0 errors, 0 skipped
+  - 运行态视觉巡检：`node scripts/authenticated-ui-smoke.mjs` 覆盖全部角色场景，158/158 零失败，巡检临时目录 `.ui-visual-review` 已彻底清理；
+  - 代码规范与合规：`git diff --check` 通过（0 处空白错误）；全仓 CSS/Vue 中 `!important` 严格为 0；
+  - 任务书勾选状态：【里程碑 M3】全量 25 项原子任务（`M3-T1` ~ `M3-T25`）已全部标记为 `[x]`！
+
+
 
 

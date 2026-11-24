@@ -137,4 +137,25 @@ describe('administration', () => {
     expect(wrapper.get('[role="alert"]').text()).toContain('先修关系检查暂时不可用')
     wrapper.unmount()
   })
+
+  it('protects unsaved course draft on route leave and allows after save', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm')
+    const { wrapper, router } = await render(AdminView, '/admin')
+
+    // 修改课程草稿使其处于 dirty 状态
+    await wrapper.get('input[aria-label="课程代码"]').setValue('CS101')
+    await wrapper.get('input[aria-label="课程名称"]').setValue('计算机科学导论')
+
+    // 1. 用户取消离开：留在 /admin
+    confirmSpy.mockReturnValueOnce(false)
+    await router.push('/courses')
+    expect(confirmSpy).toHaveBeenCalled()
+    expect(router.currentRoute.value.path).toBe('/admin')
+
+    // 2. 用户确认离开：成功跳转
+    confirmSpy.mockReturnValueOnce(true)
+    await router.push('/courses')
+    expect(router.currentRoute.value.path).toBe('/courses')
+    wrapper.unmount()
+  })
 })

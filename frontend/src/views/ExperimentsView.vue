@@ -212,7 +212,7 @@ async function loadFixedSuite() {
   try {
     const suite = await learningApi.getFixedExperimentSuite()
     fixedSuite.value = suite
-    selectedCaseIds.value = suite.cases.map(c => c.caseId)
+    selectedCaseIds.value = suite?.cases ? suite.cases.map(c => c.caseId) : []
   } catch (e) {
     fixedSuiteError.value = apiError(e, '加载固定实验案例目录失败')
   } finally {

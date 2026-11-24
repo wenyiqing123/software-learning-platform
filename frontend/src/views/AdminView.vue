@@ -5,6 +5,7 @@ import SectionHeading from '../components/SectionHeading.vue'
 import FeedbackState from '../components/FeedbackState.vue'
 import AdminCoursePanel from '../components/AdminCoursePanel.vue'
 import AdminQuestionPanel from '../components/AdminQuestionPanel.vue'
+import { useFormBaseline, useUnsavedChanges } from '../composables/useUnsavedChanges'
 
 interface Course { id: number; code: string; name: string; term: string; description: string; graphSpaceId: number; enabled: boolean }
 interface Point { id: number; courseId: number; name: string; graphEntity: string; enabled: boolean }
@@ -31,19 +32,48 @@ const editQuestionId = ref<number | null>(null)
 const search = ref('')
 const courseDraft = reactive({ code: '', name: '', term: '', description: '', graphSpaceId: 1 })
 const questionDraft = reactive({ knowledgePointId: null as number | null, type: 'SINGLE' as QuestionType, stem: '', options: [{ key: 'A', text: '' }, { key: 'B', text: '' }, { key: 'C', text: '' }, { key: 'D', text: '' }] as Option[], answer: [] as string[], explanation: '', difficulty: 2 })
+
+const { isDirty: isCourseDirty, resetBaseline: resetCourseBaseline } = useFormBaseline(() => ({
+  code: courseDraft.code,
+  name: courseDraft.name,
+  term: courseDraft.term,
+  description: courseDraft.description,
+  graphSpaceId: courseDraft.graphSpaceId,
+}))
+
+const { isDirty: isQuestionDirty, resetBaseline: resetQuestionBaseline } = useFormBaseline(() => ({
+  knowledgePointId: questionDraft.knowledgePointId,
+  type: questionDraft.type,
+  stem: questionDraft.stem,
+  options: questionDraft.options,
+  answer: questionDraft.answer,
+  explanation: questionDraft.explanation,
+  difficulty: questionDraft.difficulty,
+}))
+
+const isDirty = computed(() => isCourseDirty() || isQuestionDirty())
+const { confirmIfDirty } = useUnsavedChanges(isDirty)
+
 const selectedCourse = computed(() => courses.value.find(c => c.id === courseId.value))
 const filteredQuestions = computed(() => questions.value.filter(q => q.stem.toLowerCase().includes(search.value.trim().toLowerCase())))
 const pointNames = computed(() => new Map(points.value.map(p => [p.id, p.name])))
 const types: Record<QuestionType, string> = { SINGLE: '单选题', MULTIPLE: '多选题', TRUE_FALSE: '判断题' }
 function failure(cause: unknown) { const e = cause as { response?: { status?: number; data?: { message?: string; detail?: string } } }; return e.response?.data?.message || e.response?.data?.detail || (e.response?.status === 403 ? '当前账号没有管理权限。' : '操作未完成，请检查输入并重试。') }
-function newCourse() { editCourseId.value = null; Object.assign(courseDraft, { code: '', name: '', term: '', description: '', graphSpaceId: 1 }) }
-function editCourse(course: Course) { editCourseId.value = course.id; Object.assign(courseDraft, { code: course.code, name: course.name, term: course.term, description: course.description, graphSpaceId: 1 }); notice.value = '' }
-function resetQuestion() { editQuestionId.value = null; Object.assign(questionDraft, { knowledgePointId: null, type: 'SINGLE', stem: '', options: ['A', 'B', 'C', 'D'].map(key => ({ key, text: '' })), answer: [], explanation: '', difficulty: 2 }) }
+function newCourse() { editCourseId.value = null; Object.assign(courseDraft, { code: '', name: '', term: '', description: '', graphSpaceId: 1 }); resetCourseBaseline() }
+function editCourse(course: Course) { editCourseId.value = course.id; Object.assign(courseDraft, { code: course.code, name: course.name, term: course.term, description: course.description, graphSpaceId: 1 }); resetCourseBaseline(); notice.value = '' }
+function resetQuestion() { editQuestionId.value = null; Object.assign(questionDraft, { knowledgePointId: null, type: 'SINGLE', stem: '', options: ['A', 'B', 'C', 'D'].map(key => ({ key, text: '' })), answer: [], explanation: '', difficulty: 2 }); resetQuestionBaseline() }
 function changeType() { questionDraft.answer = []; questionDraft.options = questionDraft.type === 'TRUE_FALSE' ? [{ key: 'TRUE', text: '正确' }, { key: 'FALSE', text: '错误' }] : ['A', 'B', 'C', 'D'].map(key => ({ key, text: '' })) }
-function editQuestion(question: Question) { editQuestionId.value = question.id; Object.assign(questionDraft, { knowledgePointId: question.knowledgePointId, type: question.type, stem: question.stem, options: question.options.map(o => ({ ...o })), answer: [...question.answer], explanation: question.explanation, difficulty: question.difficulty }); notice.value = '' }
+function editQuestion(question: Question) { editQuestionId.value = question.id; Object.assign(questionDraft, { knowledgePointId: question.knowledgePointId, type: question.type, stem: question.stem, options: question.options.map(o => ({ ...o })), answer: [...question.answer], explanation: question.explanation, difficulty: question.difficulty }); resetQuestionBaseline(); notice.value = '' }
 function toggleAnswer(key: string) { questionDraft.answer = questionDraft.type === 'MULTIPLE' ? questionDraft.answer.includes(key) ? questionDraft.answer.filter(k => k !== key) : [...questionDraft.answer, key] : [key] }
 function removeOption(key: string) { questionDraft.options = questionDraft.options.filter(o => o.key !== key); questionDraft.answer = questionDraft.answer.filter(k => k !== key) }
-function selectCourse(value: number) { courseId.value = value; void loadCourse() }
+async function selectCourse(value: number) {
+  if (value === courseId.value) return
+  if (isDirty.value) {
+    const ok = await confirmIfDirty()
+    if (!ok) return
+  }
+  courseId.value = value; void loadCourse()
+}
 function updateSearch(value: string) { search.value = value }
 function addOption() { const key = 'ABCDEFGH'.split('').find(k => !questionDraft.options.some(o => o.key === k)); if (key) questionDraft.options.push({ key, text: '' }) }
 let listVersion = 0
@@ -117,6 +147,7 @@ async function saveQuestion() {
     const payload = { ...questionDraft, courseId: courseId.value }
     if (editQuestionId.value) await api.put('/admin/questions/' + editQuestionId.value, payload)
     else await api.post('/admin/questions', payload)
+    resetQuestionBaseline()
     await loadCourse(); notice.value = '题目已保存。正确答案与解析仅在管理和答题反馈中提供。'
   } catch (cause) { error.value = failure(cause) }
   finally { saving.value = false }

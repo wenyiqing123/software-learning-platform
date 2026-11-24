@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { api, apiError, type Course, type QuestionBankImportResult, type QuestionBankVersion } from '../api/client'
 import FeedbackState from '../components/FeedbackState.vue'
+import { useFormBaseline, useUnsavedChanges } from '../composables/useUnsavedChanges'
 
 const courses = ref<Course[]>([])
 const selectedCourseId = ref<number>()
@@ -16,6 +17,14 @@ const error = ref('')
 const loading = ref(true)
 const working = ref(false)
 const props = withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false })
+
+const formDraft = computed(() => ({
+  versionName: versionName.value,
+  sourceFilename: sourceFilename.value,
+  questionsJson: questionsJson.value,
+}))
+const { isDirty, resetBaseline } = useFormBaseline(formDraft)
+useUnsavedChanges(isDirty)
 
 async function loadCourses() {
   try {
@@ -41,6 +50,7 @@ async function createVersion() {
     selectedVersionId.value = version.id
     versionName.value = ''
     notice.value = '题库草稿已创建。'
+    resetBaseline()
     await loadVersions()
   } catch (cause) { error.value = apiError(cause, '题库草稿创建失败。') }
   finally { working.value = false }
@@ -56,6 +66,7 @@ async function importQuestions() {
   try {
     importResult.value = (await api.post<QuestionBankImportResult>('/admin/question-bank/versions/' + selectedVersionId.value + '/import', { questions })).data
     notice.value = '题目批次已导入，合法题目仍需发布后才对学生可见。'
+    resetBaseline()
     await loadVersions()
   } catch (cause) { error.value = apiError(cause, '题库导入失败。') }
   finally { working.value = false }
