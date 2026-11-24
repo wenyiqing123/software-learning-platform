@@ -269,4 +269,19 @@
   - 样式与代码规范：`git diff --check` 通过；全仓 CSS/Vue 中 `!important` 扫描严格为 0；
   - 任务书勾选状态：`M3-T4` ~ `M3-T6` 全部勾选为 `[x]`。
 
+## 里程碑 M3 第三批推进记录（M3-T7 ~ M3-T10，2026-11-24）
+
+- 完成施工任务书【里程碑 M3】第三批共 4 项原子任务落地与定向验证：
+  - `M3-T7`：评估顺序以 assignment group 为权威。`ExperimentAssignmentMapper.java` 新增 `findDetailForUser(assignmentId, userId)`，按 assignmentId+userId 联查 group/task 返回 order/status；`EvaluationService.start` 对 assignment-linked session 确立 server order 为唯一权威，客户端篡改拒绝 400，非 OPEN 任务、已完成 assignment 或 legacy NULL 顺序拒绝 409，未分配 session 保持客户端指定顺序；扩展 `EvaluationServiceTest.java`；
+  - `M3-T8`：服务端权威用时。不改 schema/controller，客户端 `elapsedSeconds` 保持必传契约但 service 完成时忽略其值；assignment-linked 会话以 `experiment_assignment.started_at` 为起点，未关联会话以 `learning_evaluation_session.started_at` 为起点，通过 `Duration.between` 严格计算 1–86400 秒权威用时，缺起点或越界拒绝 400；扩展 `EvaluationServiceTest.java`；
+  - `M3-T9`：问答运行不得提前完成实验分配。`AiExperimentController.java` 彻底移除实验运行成功后调用 `completeRun` 的提前结单副作用；`bindRun` 仅将任务从 ASSIGNED 推进至 IN_PROGRESS；任意实验 run success/failure 都不触发 assignment 完成；更新 `ExperimentTaskServiceTest.java` 并扩展 `AiExperimentControllerTest.java`；
+  - `M3-T10`：提交评估后才完成 assignment。`EvaluationMapper.java` 新增 owner-scoped `hasMeasurement(userId, sessionId, phase)` 与 `listOwnedPhaseStatuses(userId)`；`EvaluationService.mine` 以两次查询组装 `SessionView.completedPhases`，杜绝跨用户数据污染；assignment-linked 评估完成必须严格满足 PRE + POST + 1–9 心理努力评分 + 同一 owner assignment 持久化成功 run，缺条件拒绝 409，全部通过在同一事务内完成会话并调用 `taskService.completeRun(userId, assignmentId, true)`；新建 `EvaluationMapperProgressIntegrationTest.java`（H2 MySQL mode，2/2 passed）并扩展 `EvaluationServiceTest.java`。
+- 门禁实测结果：
+  - 本批组合定向测试：`EvaluationServiceTest`（15/15）、`EvaluationMapperProgressIntegrationTest`（2/2）、`EvaluationMapperRoleTest`（4/4）、`ExperimentTaskServiceTest`（10/10）、`AiExperimentControllerTest`（5/5）、`ComplianceGuardTest`（3/3）、`RoleBoundaryMvcTest`（6/6）共 45 项全部通过（45 passed，0 failed）；
+  - 后端全量测试：`mvn -f backend/pom.xml -pl learning-service test` 168 项测试全绿通过（168 passed，0 failed，0 error）；
+  - 前端契约与 AST 类名检查：`design-system-contract.test.ts` 与 `compliance-guard.test.ts` 全部通过（11 passed）；`scan-vue-classes.mjs --check` 0 missing classes；本批未改动前端代码；
+  - 样式与代码规范：`git diff --check` 通过；全仓 CSS/Vue 中 `!important` 扫描严格为 0；
+  - 任务书勾选状态：`M3-T7` ~ `M3-T10` 全部勾选为 `[x]`。
+
+
 

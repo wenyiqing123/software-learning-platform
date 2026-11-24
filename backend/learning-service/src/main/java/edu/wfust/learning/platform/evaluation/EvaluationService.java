@@ -4,10 +4,14 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import edu.wfust.learning.platform.mapper.EvaluationMapper;
 import edu.wfust.learning.platform.entity.ExperimentAssignmentEntity;
 import edu.wfust.learning.platform.mapper.ExperimentAssignmentMapper;
+import edu.wfust.learning.platform.entity.AiExperimentEntity;
+import edu.wfust.learning.platform.mapper.AiExperimentMapper;
+import edu.wfust.learning.platform.experimenttask.ExperimentTaskService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -21,23 +25,63 @@ public class EvaluationService {
     private final ObjectMapper json;
     private final Clock clock;
     private final ExperimentAssignmentMapper assignments;
+    private final AiExperimentMapper experimentMapper;
+    private final ExperimentTaskService taskService;
 
-    public EvaluationService(EvaluationMapper mapper,ObjectMapper json,Clock clock){this(mapper,json,clock,null);}
+    public EvaluationService(EvaluationMapper mapper,ObjectMapper json,Clock clock){this(mapper,json,clock,null,null,null);}
+    public EvaluationService(EvaluationMapper mapper,ObjectMapper json,Clock clock,ExperimentAssignmentMapper assignments){this(mapper,json,clock,assignments,null,null);}
     @org.springframework.beans.factory.annotation.Autowired
-    public EvaluationService(EvaluationMapper mapper,ObjectMapper json,Clock clock,ExperimentAssignmentMapper assignments){this.mapper=mapper;this.json=json;this.clock=clock;this.assignments=assignments;}
+    public EvaluationService(EvaluationMapper mapper,ObjectMapper json,Clock clock,ExperimentAssignmentMapper assignments,AiExperimentMapper experimentMapper,ExperimentTaskService taskService){
+        this.mapper=mapper;
+        this.json=json;
+        this.clock=clock;
+        this.assignments=assignments;
+        this.experimentMapper=experimentMapper;
+        this.taskService=taskService;
+    }
 
     @Transactional
     public SessionView start(long userId,StartRequest request){
         if(!request.consentAccepted()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"必须先阅读并同意评估说明");
         if(request.conditionKey()==null||request.conditionKey().isBlank()||request.taskKey()==null||request.taskKey().isBlank()||request.consentVersion()==null||request.consentVersion().isBlank())
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"评估条件、任务和同意版本不能为空");
-        if(request.assignmentId()!=null && (assignments==null || !ownsAssignment(userId,request.assignmentId())))
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,"实验分配不存在或不属于当前用户");
-        var row=new EvaluationMapper.SessionRow(null,userId,request.conditionKey().strip(),request.taskKey().strip(),request.taskOrder()==null?null:request.taskOrder().strip(),request.assignmentId(),request.consentVersion().strip(),LocalDateTime.now(clock),null,null,null,null,null);
-        mapper.insertSession(row); return view(row);
+        String finalTaskOrder = request.taskOrder() == null ? null : request.taskOrder().strip();
+        if(request.assignmentId()!=null){
+            if(assignments==null)
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND,"实验分配不存在或不属于当前用户");
+            var assignment=assignments.selectById(request.assignmentId());
+            if(assignment==null||!Long.valueOf(userId).equals(assignment.getUserId()))
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND,"实验分配不存在或不属于当前用户");
+            var detail=assignments.findDetailForUser(request.assignmentId(),userId);
+            if(detail==null)
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND,"实验分配不存在或不属于当前用户");
+            if(!"OPEN".equalsIgnoreCase(detail.taskStatus()))
+                throw new ResponseStatusException(HttpStatus.CONFLICT,"实验任务当前未开放");
+            if("COMPLETED".equalsIgnoreCase(detail.assignmentStatus()))
+                throw new ResponseStatusException(HttpStatus.CONFLICT,"实验任务分配已完成");
+            String serverOrder=detail.taskOrder();
+            if(serverOrder==null||(!"A→B".equals(serverOrder)&&!"B→A".equals(serverOrder)))
+                throw new ResponseStatusException(HttpStatus.CONFLICT,"实验组未配置有效评估顺序");
+            if(finalTaskOrder!=null&&!finalTaskOrder.isEmpty()&&!serverOrder.equals(finalTaskOrder))
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"客户端指定的评估顺序与服务端权威顺序不匹配");
+            finalTaskOrder=serverOrder;
+        }
+        var row=new EvaluationMapper.SessionRow(null,userId,request.conditionKey().strip(),request.taskKey().strip(),finalTaskOrder,request.assignmentId(),request.consentVersion().strip(),LocalDateTime.now(clock),null,null,null,null,null);
+        mapper.insertSession(row);
+        var saved=row.getId()!=null?mapper.findSession(userId,row.getId()):null;
+        return view(saved!=null?saved:row);
     }
 
-    public List<SessionView> mine(long userId){return mapper.listOwned(userId).stream().map(this::view).toList();}
+    public List<SessionView> mine(long userId){
+        var sessions=mapper.listOwned(userId);
+        var phases=mapper.listOwnedPhaseStatuses(userId);
+        var phaseMap=phases==null?Map.<Long,List<String>>of():phases.stream()
+                .collect(Collectors.groupingBy(EvaluationMapper.PhaseRow::sessionId,Collectors.mapping(EvaluationMapper.PhaseRow::phase,Collectors.toList())));
+        return sessions.stream().map(s->{
+            var cp=phaseMap.getOrDefault(s.getId(),List.of());
+            return new SessionView(s.getId(),s.getConditionKey(),s.getTaskKey(),s.getTaskOrder(),s.getAssignmentId(),s.getConsentVersion(),s.getStartedAt(),s.getCompletedAt(),s.getElapsedSeconds(),s.getPsychologicalEffort(),s.getFeedback(),cp);
+        }).toList();
+    }
 
     @Transactional
     public void measure(long userId,long sessionId,MeasureRequest request){
@@ -50,11 +94,44 @@ public class EvaluationService {
     @Transactional
     public SessionView complete(long userId,long sessionId,CompleteRequest request){
         var row=owned(userId,sessionId);
-        if(request.elapsedSeconds()<1||request.elapsedSeconds()>86400) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"任务用时必须在1秒到24小时之间");
+        if(row.getAssignmentId()!=null){
+            if(!mapper.hasMeasurement(userId,sessionId,"PRE")){
+                throw new ResponseStatusException(HttpStatus.CONFLICT,"完成实验任务评估前必须先完成前测 (PRE)");
+            }
+            if(!mapper.hasMeasurement(userId,sessionId,"POST")){
+                throw new ResponseStatusException(HttpStatus.CONFLICT,"完成实验任务评估前必须先完成后测 (POST)");
+            }
+            if(!hasSuccessfulRun(userId,row.getAssignmentId())){
+                throw new ResponseStatusException(HttpStatus.CONFLICT,"未找到该任务的已持久化成功实验运行记录");
+            }
+        }
+        LocalDateTime serverStart;
+        if(row.getAssignmentId()!=null){
+            if(assignments==null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"未配置实验分配依赖");
+            var detail=assignments.findDetailForUser(row.getAssignmentId(),userId);
+            if(detail!=null&&detail.startedAt()!=null){
+                serverStart=detail.startedAt();
+            } else {
+                var entity=assignments.selectById(row.getAssignmentId());
+                if(entity==null||!Long.valueOf(userId).equals(entity.getUserId())||entity.getStartedAt()==null){
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"实验分配缺少有效开始时间");
+                }
+                serverStart=entity.getStartedAt();
+            }
+        } else {
+            serverStart=row.getStartedAt();
+        }
+        if(serverStart==null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"评估会话缺少有效开始时间");
+        LocalDateTime now=LocalDateTime.now(clock);
+        long elapsed=java.time.Duration.between(serverStart,now).getSeconds();
+        if(elapsed<1||elapsed>86400) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"任务用时必须在1秒到24小时之间");
         if(request.psychologicalEffort()<1||request.psychologicalEffort()>9) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"心理努力评分必须在1到9之间");
         String feedback=request.feedback()==null?"":request.feedback().strip();
         if(feedback.length()>2000) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"反馈不能超过2000字");
-        mapper.complete(userId,sessionId,request.elapsedSeconds(),request.psychologicalEffort(),feedback,LocalDateTime.now(clock));
+        mapper.complete(userId,sessionId,(int)elapsed,request.psychologicalEffort(),feedback,now);
+        if(row.getAssignmentId()!=null&&taskService!=null){
+            taskService.completeRun(userId,row.getAssignmentId(),true);
+        }
         return view(mapper.findSession(userId,sessionId));
     }
 
@@ -86,9 +163,36 @@ public class EvaluationService {
     private static String csv(Object value){if(value==null)return "";String text=String.valueOf(value).replace("\"","\"\"");return text.contains(",")||text.contains("\n")?"\""+text+"\"":text;}
     private static String value(Object value){return value==null?"":String.valueOf(value);}
 
+    private boolean hasSuccessfulRun(long userId, long assignmentId) {
+        if (experimentMapper == null) return false;
+        var runs = experimentMapper.selectList(new QueryWrapper<AiExperimentEntity>()
+                .eq("user_id", userId)
+                .eq("assignment_id", assignmentId));
+        if (runs == null || runs.isEmpty()) return false;
+        for (var run : runs) {
+            String jsonStr = run.getResultsJson();
+            if (jsonStr == null || jsonStr.isBlank()) continue;
+            try {
+                List<Map<String, Object>> results = json.readValue(jsonStr, new TypeReference<List<Map<String, Object>>>() {});
+                if (results != null && results.stream().anyMatch(r -> {
+                    Object error = r.get("error");
+                    return error == null || String.valueOf(error).isBlank();
+                })) {
+                    return true;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return false;
+    }
+
     public record StartRequest(String conditionKey,String taskKey,String taskOrder,Long assignmentId,String consentVersion,boolean consentAccepted) { public StartRequest(String conditionKey,String taskKey,String consentVersion,boolean consentAccepted){this(conditionKey,taskKey,null,null,consentVersion,consentAccepted);} }
     public record MeasureRequest(String phase,double score,List<String> responses) { }
     public record CompleteRequest(int elapsedSeconds,int psychologicalEffort,String feedback) { }
-    public record SessionView(Long id,String conditionKey,String taskKey,String taskOrder,Long assignmentId,String consentVersion,LocalDateTime startedAt,LocalDateTime completedAt,Integer elapsedSeconds,Integer psychologicalEffort,String feedback) { }
+    public record SessionView(Long id,String conditionKey,String taskKey,String taskOrder,Long assignmentId,String consentVersion,LocalDateTime startedAt,LocalDateTime completedAt,Integer elapsedSeconds,Integer psychologicalEffort,String feedback,List<String> completedPhases) {
+        public SessionView(Long id,String conditionKey,String taskKey,String taskOrder,Long assignmentId,String consentVersion,LocalDateTime startedAt,LocalDateTime completedAt,Integer elapsedSeconds,Integer psychologicalEffort,String feedback){
+            this(id,conditionKey,taskKey,taskOrder,assignmentId,consentVersion,startedAt,completedAt,elapsedSeconds,psychologicalEffort,feedback,List.of());
+        }
+    }
     public record SummaryView(String conditionKey,Long sampleCount,Double medianPreScore,Double stddevPreScore,Double iqrPreScore,Double meanPreScore,Double meanPostScore,Double medianPostScore,Double stddevPostScore,Double iqrPostScore,Double meanDelayedScore,Double medianDelayedScore,Double meanGain,Double meanEffort,Double medianEffort,Double stddevEffort,Double iqrEffort,Double meanElapsedSeconds,Double medianElapsedSeconds,Double stddevElapsedSeconds,Double iqrElapsedSeconds,Long feedbackCount) { }
 }

@@ -422,28 +422,28 @@ M2 提交信息：`style: unify visual system across student and admin views`
 - **受影响既有测试与更新指引**：更新 EvaluationView test link query；在其同一文件 import real router，断言新 route roles=STUDENT 且 ADMIN cross-visit 重定向。ExperimentsView test 覆盖 student mode 隐藏 rubric/editor/history/export/summary/rating、body exact `{taskId}`、未分配/403 显真实错误。
 - **单任务验证命令**：`cd frontend; npx vitest run src/views/EvaluationView.test.ts src/views/ExperimentsView.test.ts`。
 
-### - [ ] M3-T7 评估顺序以 assignment group 为权威
+### - [x] M3-T7 评估顺序以 assignment group 为权威
 - **涉及文件**：`backend/learning-service/src/main/java/edu/wfust/learning/platform/mapper/ExperimentAssignmentMapper.java`；`backend/learning-service/src/main/java/edu/wfust/learning/platform/evaluation/EvaluationService.java`；`backend/learning-service/src/main/java/edu/wfust/learning/platform/experimenttask/ExperimentTaskService.java`；`backend/learning-service/src/test/java/edu/wfust/learning/platform/evaluation/EvaluationServiceTest.java`
 - **前置依赖**：M3-T2、M3-T3、M3-T4、M3-T5、M3-T6。
 - **精确改造指令**：新增 mapper query 以 assignmentId+JWT userId join `experiment_group/task` 返回 order/status。`taskOrder` wire values 只允许 `A→B`/`B→A`；它们表示该管理员任务描述中明示的两个 protocol step 顺序，不内置“图谱/直答”含义、不称随机分配。`EvaluationService.start` assignment-linked 时 server order 唯一权威；legacy NULL 或客户端发送非匹配 order 时拒绝 409/400，不猜默认值；assignment 不存在/非本人 404、非 OPEN 或 completed 409。非 assignment session 保留明确填入的 order。
 - **受影响既有测试与更新指引**：保留 `rejectsEvaluationStartForAnotherUsersAssignment`；覆盖 server 两种顺序、client tampering、closed task、nonowner/completed assignment。SessionView taskOrder 必须是持久化服务端顺序。
 - **单任务验证命令**：`mvn -f backend/pom.xml -pl learning-service -am -Dtest=EvaluationServiceTest -Dsurefire.failIfNoSpecifiedTests=false test`。
 
-### - [ ] M3-T8 服务端权威用时
+### - [x] M3-T8 服务端权威用时
 - **涉及文件**：`backend/learning-service/src/main/java/edu/wfust/learning/platform/evaluation/EvaluationService.java`；`backend/learning-service/src/test/java/edu/wfust/learning/platform/evaluation/EvaluationServiceTest.java`
 - **前置依赖**：M3-T7。
 - **精确改造指令**：不改 schema/controller。Assignment-linked elapsed 起点用 `experiment_assignment.started_at`（首次真实 run bind 时 server 写入）；unassigned session 用 `learning_evaluation_session.started_at`。`EvaluationService.start` insert 后用 `findSession(userId,id)` 读回 DB timestamp。现有 request `elapsedSeconds` 字段继续 required 以保持旧接口契约，但 service 完成时忽略其值；用 `Duration.between(serverStart,now(clock))` 算 1–86400 秒，缺起点/越界 400。Owner+session WHERE 保持，不重算历史。
 - **受影响既有测试与更新指引**：扩展 `EvaluationServiceTest` fixed Clock：assignment server start 已过 120 秒且客户端传 1 时存 120；unassigned 用 session.startedAt；覆盖 >24h、起点 null 与 owner 404。保留既有 CompleteRequest 必传字段签名。
 - **单任务验证命令**：`mvn -f backend/pom.xml -pl learning-service -am -Dtest=EvaluationServiceTest -Dsurefire.failIfNoSpecifiedTests=false test`。
 
-### - [ ] M3-T9 问答运行不得提前完成实验分配
+### - [x] M3-T9 问答运行不得提前完成实验分配
 - **涉及文件**：`backend/learning-service/src/main/java/edu/wfust/learning/platform/experiment/AiExperimentController.java`；`backend/learning-service/src/main/java/edu/wfust/learning/platform/experimenttask/ExperimentTaskService.java`；`backend/learning-service/src/test/java/edu/wfust/learning/platform/experimenttask/ExperimentTaskServiceTest.java`；`backend/learning-service/src/test/java/edu/wfust/learning/platform/experiment/AiExperimentControllerTest.java`
 - **前置依赖**：M3-T5。
 - **精确改造指令**：移除当前 run 成功后调用 `completeRun` 的副作用；`bindRun` 只将 ASSIGNED 改为 IN_PROGRESS；任意实验 run success/failure 都不完成 assignment。只有 M3-T10 EvaluationService 在评估条件都满足后调用 owner-scoped completion。不得接受浏览器提供的成功标志；不新增表/mapper。
 - **受影响既有测试与更新指引**：更新 `ExperimentTaskServiceTest.bindingARealRunStartsAssignmentAndCompletionRequiresServerRun` 为 binding 后 IN_PROGRESS。扩展由 M3-T5 创建的 `AiExperimentControllerTest`，分别运行成功和失败结果，断言 assignment 都仍为 IN_PROGRESS 且 controller 不调用 `completeRun`；保留 owner/security tests，不移除现有断言。
 - **单任务验证命令**：`mvn -f backend/pom.xml -pl learning-service -am -Dtest=ExperimentTaskServiceTest,AiExperimentResponseGuardTest -Dsurefire.failIfNoSpecifiedTests=false test`。
 
-### - [ ] M3-T10 提交评估后才完成 assignment
+### - [x] M3-T10 提交评估后才完成 assignment
 - **涉及文件**：`backend/learning-service/src/main/java/edu/wfust/learning/platform/evaluation/EvaluationService.java`；`backend/learning-service/src/main/java/edu/wfust/learning/platform/mapper/EvaluationMapper.java`；`backend/learning-service/src/test/java/edu/wfust/learning/platform/evaluation/EvaluationServiceTest.java`；`backend/learning-service/src/test/java/edu/wfust/learning/platform/evaluation/EvaluationMapperProgressIntegrationTest.java`（Create）
 - **前置依赖**：M3-T8、M3-T9。
 - **精确改造指令**：新增 owner-scoped `EvaluationMapper.hasMeasurement(userId,sessionId,phase)` 与 `listOwnedPhaseStatuses(userId)`。后者一条 SQL 返回 owned session 的 sessionId 和 PRE/POST/DELAYED phase；`mine()` 以两次查询组装 `SessionView.completedPhases`，取值只能是 phase 子集、不对别的 user 返回行。Assignment-linked complete 必须有 PRE+POST+effort 1–9+同一 owner assignment 的已持久化成功 run；通过现有 `AiExperimentMapper.selectList` 按 user_id+assignment_id 读 internal results JSON 并检查 error 状态，不暴露给 response/export。缺条件 409，不完成 evaluation/assignment；全部通过才在一 transaction 写 evaluation 与调用现有 owner-scoped `completeRun(true)`。无 assignment session 维持原契约。

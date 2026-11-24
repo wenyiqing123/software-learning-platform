@@ -53,6 +53,24 @@ public interface EvaluationMapper {
         public SessionRow(Long id,Long userId,String conditionKey,String taskKey,String taskOrder,Long assignmentId,String consentVersion,LocalDateTime consentedAt,LocalDateTime startedAt,LocalDateTime completedAt,Integer elapsedSeconds,Integer psychologicalEffort,String feedback){this.id=id;this.userId=userId;this.conditionKey=conditionKey;this.taskKey=taskKey;this.taskOrder=taskOrder;this.assignmentId=assignmentId;this.consentVersion=consentVersion;this.consentedAt=consentedAt;this.startedAt=startedAt;this.completedAt=completedAt;this.elapsedSeconds=elapsedSeconds;this.psychologicalEffort=psychologicalEffort;this.feedback=feedback;}
         public Long getId(){return id;} public void setId(Long value){id=value;} public Long getUserId(){return userId;} public String getConditionKey(){return conditionKey;} public String getTaskKey(){return taskKey;} public String getTaskOrder(){return taskOrder;} public Long getAssignmentId(){return assignmentId;} public String getConsentVersion(){return consentVersion;} public LocalDateTime getConsentedAt(){return consentedAt;} public LocalDateTime getStartedAt(){return startedAt;} public LocalDateTime getCompletedAt(){return completedAt;} public Integer getElapsedSeconds(){return elapsedSeconds;} public Integer getPsychologicalEffort(){return psychologicalEffort;} public String getFeedback(){return feedback;}
     }
+    @Select("""
+        SELECT COUNT(*) > 0
+        FROM learning_evaluation_measurement m
+        JOIN learning_evaluation_session s ON s.id = m.session_id
+        WHERE s.user_id = #{userId} AND m.user_id = #{userId} AND m.session_id = #{sessionId} AND m.phase = #{phase}
+        """)
+    boolean hasMeasurement(@Param("userId") long userId, @Param("sessionId") long sessionId, @Param("phase") String phase);
+
+    @Select("""
+        SELECT m.session_id AS sessionId, m.phase
+        FROM learning_evaluation_measurement m
+        JOIN learning_evaluation_session s ON s.id = m.session_id
+        WHERE s.user_id = #{userId} AND m.user_id = #{userId} AND m.phase IN ('PRE', 'POST', 'DELAYED')
+        ORDER BY m.session_id, m.phase
+        """)
+    List<PhaseRow> listOwnedPhaseStatuses(@Param("userId") long userId);
+
+    record PhaseRow(Long sessionId, String phase) { }
     record SummaryRow(String conditionKey,Long sampleCount,Double meanPreScore,Double meanPostScore,Double meanGain,Double meanEffort,Double meanElapsedSeconds,Long feedbackCount) { }
     record DetailRow(Long userId,String conditionKey,String taskKey,String taskOrder,Integer elapsedSeconds,Integer effort,Double preScore,Double postScore,Double delayedScore,Boolean feedbackProvided) { }
 }

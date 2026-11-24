@@ -29,6 +29,19 @@ import java.util.List;
         WHERE #{taskId} IS NULL OR a.task_id=#{taskId} ORDER BY a.id
         """)
     List<ExportRow> exportRows(@Param("taskId") Long taskId);
+
+    @Select("""
+        SELECT a.id, a.user_id AS userId, a.task_id AS taskId, a.group_id AS groupId, a.status AS assignmentStatus,
+               t.status AS taskStatus, g.task_order AS taskOrder, a.started_at AS startedAt
+        FROM experiment_assignment a
+        JOIN experiment_task t ON t.id=a.task_id
+        JOIN experiment_group g ON g.id=a.group_id
+        WHERE a.id=#{assignmentId} AND a.user_id=#{userId}
+        LIMIT 1
+        """)
+    AssignmentDetail findDetailForUser(@Param("assignmentId") Long assignmentId, @Param("userId") Long userId);
+
     record AssignmentRow(Long id,Long taskId,Long groupId,String status,LocalDateTime assignedAt,LocalDateTime startedAt,LocalDateTime completedAt,String title,String description,String experimentType,String question,String taskStatus,String groupName,String conditionKey,String taskOrder) { }
     record ExportRow(Long id,Long taskId,Long groupId,Long userId,String status,LocalDateTime assignedAt,LocalDateTime startedAt,LocalDateTime completedAt,String title,String taskStatus,String groupName,String conditionKey,Long runCount) { }
+    record AssignmentDetail(Long id,Long userId,Long taskId,Long groupId,String assignmentStatus,String taskStatus,String taskOrder,LocalDateTime startedAt) { }
 }

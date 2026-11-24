@@ -179,6 +179,61 @@ public class AiExperimentControllerTest {
 
         // 验证 AI 调用使用了服务端权威问题，而非学生伪造的问题
         verify(comparisonClient).compare(eq("服务端权威问题内容"), eq(false), anyString());
+        // 验证学生运行不会提前触发 assignment complete
+        verify(taskService, never()).completeRun(anyLong(), anyLong(), anyBoolean());
+    }
+
+    @Test
+    void studentRunDoesNotCompleteAssignmentOnSuccessOrFailure() throws Exception {
+        // 1. 成功运行场景
+        when(taskService.getAssignedRunSpec(101L, 9L)).thenReturn(new ExperimentTaskService.AssignedRunSpec(
+                31L, 9L, "问题", "答案", List.of(), "METHODS", false
+        ));
+        when(taskService.bindRun(101L, 9L)).thenReturn(31L);
+        when(comparisonClient.compare(eq("问题"), eq(false), anyString())).thenReturn(List.of(
+                Map.of("resultKey", "DIRECT", "mode", "DIRECT", "answer", "直答")
+        ));
+
+        doAnswer(inv -> {
+            AiExperimentEntity entity = inv.getArgument(0);
+            entity.setId(101L);
+            return 1;
+        }).when(experimentMapper).insert(any(AiExperimentEntity.class));
+
+        AiExperimentEntity saved = new AiExperimentEntity();
+        saved.setId(101L);
+        saved.setUserId(101L);
+        saved.setTaskId(9L);
+        saved.setAssignmentId(31L);
+        saved.setQuestion("问题");
+        saved.setResultsJson("[{\"mode\":\"DIRECT\",\"resultKey\":\"DIRECT\",\"answer\":\"直答\"}]");
+        saved.setRatingsJson("{}");
+        saved.setEvaluationJson("{\"source\":\"SERVER_AI_SERVICE\",\"experimentType\":\"METHODS\",\"metricsByMode\":{}}");
+        when(experimentMapper.selectById(101L)).thenReturn(saved);
+
+        mvc.perform(post("/api/experiments/run")
+                        .with(user("101").roles("STUDENT"))
+                        .header("Authorization", "Bearer student-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"taskId\":9}"))
+                .andExpect(status().isCreated());
+
+        // 2. 失败运行场景
+        when(comparisonClient.compare(eq("问题"), eq(false), anyString())).thenReturn(List.of(
+                Map.of("resultKey", "DIRECT", "mode", "DIRECT", "error", "模型服务异常")
+        ));
+        saved.setId(102L);
+        when(experimentMapper.selectById(102L)).thenReturn(saved);
+
+        mvc.perform(post("/api/experiments/run")
+                        .with(user("101").roles("STUDENT"))
+                        .header("Authorization", "Bearer student-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"taskId\":9}"))
+                .andExpect(status().isCreated());
+
+        // 严密断言：成功或失败均不调用 completeRun
+        verify(taskService, never()).completeRun(anyLong(), anyLong(), anyBoolean());
     }
 
     @Test

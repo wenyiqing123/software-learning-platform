@@ -50,6 +50,7 @@ class ExperimentTaskServiceTest {
         long assignmentId = service.bindRun(7L, 9L);
         assertThat(assignmentId).isEqualTo(21L);
         verify(assignments).start(eq(21L), any());
+        assertThat(assignment.getStatus()).isEqualTo("IN_PROGRESS");
 
         service.completeRun(7L, 21L, true);
         verify(assignments).complete(eq(21L), eq(7L), any());

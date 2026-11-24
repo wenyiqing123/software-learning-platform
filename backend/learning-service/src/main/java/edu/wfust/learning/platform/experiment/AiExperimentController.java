@@ -115,12 +115,6 @@ public class AiExperimentController {
         entity.setRatingsJson("{}");
         entity.setEvaluationJson(json.writeValueAsString(evaluation));
         mapper.insert(entity);
-        if(assignmentId!=null){
-            taskService.completeRun(userId(auth),assignmentId,results.stream().anyMatch(result->{
-                Object e=result.get("error");
-                return e==null||String.valueOf(e).isBlank();
-            }));
-        }
 
         var view=view(mapper.selectById(entity.getId()));
         if(!isAdmin){
