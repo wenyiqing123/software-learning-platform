@@ -55,4 +55,22 @@ describe('design system source contracts', () => {
     expect(designSystem).not.toMatch(/@media\s*\(max-width:\s*620px\)\s*\{[^}]*\.sidebar/)
     expect(designSystem).not.toContain('.course-switch:hover')
   })
+
+  it('assigns generic feedback, spinners, and motion ownership to design system, keeping styles-learning scoped to learning domain', () => {
+    const designSystem = style('styles-design-system.css')
+    const learning = style('styles-learning.css')
+
+    expect(designSystem).toContain('.feedback-state')
+    expect(designSystem).toContain('.empty-state')
+    expect(designSystem).toContain('.spinner')
+    expect(designSystem).toContain('@keyframes spin')
+    expect(designSystem).toContain('@media (prefers-reduced-motion:reduce)')
+
+    expect(learning).not.toContain('.feedback-state')
+    expect(learning).not.toContain('.empty-state')
+    expect(learning).not.toContain('@keyframes spin')
+    expect(learning).not.toContain('@media (prefers-reduced-motion:reduce)')
+    expect(learning).toContain('.quiz-layout')
+    expect(learning).toContain('.answer-option')
+  })
 })

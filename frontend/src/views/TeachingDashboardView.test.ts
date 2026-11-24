@@ -32,10 +32,28 @@ describe('TeachingDashboardView', () => {
     expect(wrapper.text()).toContain('4 人')
     expect(wrapper.text()).toContain('数据流图')
     expect(wrapper.find('[data-testid="teaching-charts"]').exists()).toBe(true)
+
+    const kpiLabels = wrapper.findAll('.teaching-kpis article span').map(el => el.text())
+    expect(kpiLabels).toEqual(['活跃学习者', '练习正确率', '阅读完成', '平均掌握度', '待处理错题'])
+    expect(wrapper.findAll('.teaching-kpis article strong')[4].text()).toBe('2 次')
+
     await wrapper.get('[data-testid="dashboard-days"]').setValue('14')
     await wrapper.get('button[aria-label="刷新教学看板"]').trigger('click')
     await flushPromises()
     expect(http.get).toHaveBeenLastCalledWith('/admin/teaching-dashboard', { params: { days: 14, courseId: 1 } })
+    wrapper.unmount()
+  })
+
+  it('renders feedback state when teaching dashboard has no aggregate data', async () => {
+    http.get.mockImplementation(async (path: string) => {
+      if (path === '/admin/courses') return { data: [{ id: 1, name: '软件工程', term: '2026 秋季' }] }
+      if (path === '/admin/teaching-dashboard') return { data: null }
+      throw new Error('unexpected path: ' + path)
+    })
+    const wrapper = mount(TeachingDashboardView)
+    await flushPromises()
+    expect(wrapper.text()).toContain('暂无教学聚合数据')
+    expect(wrapper.find('.teaching-kpis').exists()).toBe(false)
     wrapper.unmount()
   })
 })

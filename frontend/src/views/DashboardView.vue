@@ -36,7 +36,7 @@ onBeforeUnmount(() => window.removeEventListener('learning:changed', refreshCont
 <template>
   <div class="page-stack">
     <SectionHeading eyebrow="课程学习空间" title="今天，从一个知识点开始" description="把知识点串起来，让每次练习都更有方向。">
-      <button class="button button-dark" @click="emit('navigate', 'tutor')"><Sparkles :size="16" />问问 AI 助教</button>
+      <button class="button button-outline" @click="emit('navigate', 'tutor')"><Sparkles :size="16" />问问 AI 助教</button>
     </SectionHeading>
     <section class="metric-grid" aria-label="学习统计" :aria-busy="loading">
       <MetricTile label="累计答题" :value="overview?.completed ?? '—'" detail="服务端保存的提交次数" tone="green" />

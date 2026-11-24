@@ -227,28 +227,28 @@ Element Plus CSS 只通过实际消费的变量覆盖；不得给不存在的变
 - **受影响既有测试与更新指引**：保留既有 `GraphView.test.ts`、`MasteryMapView.test.ts` 和 `VisualizationViewport.test.ts`；新增 `GraphEvidenceDrawer.test.ts` 检查真实 triples、空证据及 keyboard disclosure。
 - **单任务验证命令**：`cd frontend; npx vitest run src/views/GraphView.test.ts src/views/MasteryMapView.test.ts src/components/GraphEvidenceDrawer.test.ts src/components/VisualizationViewport.test.ts`。
 
-### - [ ] M2-T4 学习域 CSS 重复与空态统一
+### - [x] M2-T4 学习域 CSS 重复与空态统一
 - **涉及文件**：`frontend/src/styles-learning.css`；`frontend/src/styles-design-system.css`；`frontend/tests/design-system-contract.test.ts`
 - **前置依赖**：M2-T2。
 - **精确改造指令**：`styles-learning.css` 只保留 quiz/answer/wrong/review/plan/recommend/experiment domain；通用 feedback/skeleton/table/control/notice 属 design system；`.feedback-state` 唯一 owner，spinner 已由 M2-T3 迁走。按每个重复 selector+property 源头合并，只删除被 AST 证明确实重复且无 distinct media/scoped behavior 的声明；保留 focus、判题 contrast、Paas/task 状态、responsive/reduced-motion。不得压成不可读单行。四份 CSS 合计目标 `<=43,000 B`，如果为达到目标必须破坏行为则保留规则并报告实际 bytes。
 - **受影响既有测试与更新指引**：保留 `design-system-contract.test.ts` 单 root、tokens、motion、zero-important；更新其所有权 assertions 指向 design system/learning-domain owner。
 - **单任务验证命令**：`cd frontend; npx vitest run tests/design-system-contract.test.ts src/views/PracticeView.test.ts src/views/WrongBookView.test.ts src/views/StudyPlanAndReviewView.test.ts`；先记录四份 CSS bytes，再比较合并后 bytes。
 
-### - [ ] M2-T5 登录与学生总览层级
+### - [x] M2-T5 登录与学生总览层级
 - **涉及文件**：`frontend/src/views/LoginView.vue`；`frontend/src/views/DashboardView.vue`；`frontend/src/views/LoginView.test.ts`；`frontend/src/views/DashboardView.test.ts`；`frontend/src/styles.css`
 - **前置依赖**：M2-T2。
 - **精确改造指令**：登录标题/表单是首屏主操作，保留无凭据提示；Dashboard 顺序为 4 个真实指标→继续上次学习唯一深色主操作→待复习/推荐次级→周活动/知识点。将头部“问问 AI 助教”从第二个深色主按钮改成 outline，保持 click handler。数值 tabular-nums；loading/error/retry/zero data 不混淆。1440x900/1280x800 真实 screenshot 核验首屏和按钮对比。
 - **受影响既有测试与更新指引**：保留 Login 错误、注册/登录切换测试；Dashboard 指标接口、上下文 query 跳转、空数据测试均保留并补充按钮排序断言。
 - **单任务验证命令**：`cd frontend; npx vitest run src/views/LoginView.test.ts src/views/DashboardView.test.ts`；预期所有业务触发与跳转不变。
 
-### - [ ] M2-T6 教学总览 KPI 与图表层级
+### - [x] M2-T6 教学总览 KPI 与图表层级
 - **涉及文件**：`frontend/src/views/TeachingDashboardView.vue`；`frontend/src/components/TeachingDashboardCharts.vue`；`frontend/src/views/TeachingDashboardView.test.ts`；`frontend/src/styles.css`
 - **前置依赖**：M2-T5。
 - **精确改造指令**：KPI 只重排现有五字段，不改 DTO/统计口径：activeLearners/accuracy/completedReads/averageMastery 作为主数，openWrong 作为次数；不触碰独立 `MetricTile.vue`（其由 Dashboard 使用）。charts 保留真实空态，不加静态 axis 假数；图表高度 252px，宽度 `>850px` 两列、`<=850px` 单列。数值 tabular-nums；筛选 query/API 不变。不写因果效果。
 - **受影响既有测试与更新指引**：保留 `TeachingDashboardView.test.ts` 的真实 DTO 到图表适配、course filter、空态 tests；新增 KPI 语义顺序和无数据不得显示 chart series。
 - **单任务验证命令**：`cd frontend; npx vitest run src/views/TeachingDashboardView.test.ts src/domain/teachingDashboardCharts.test.ts`；预期真实 DTO mapping 不变。
 
-### - [ ] M2-T7 课程阅读与笔记单层工作台
+### - [x] M2-T7 课程阅读与笔记单层工作台
 - **涉及文件**：`frontend/src/views/CourseView.vue`；`frontend/src/components/LearningNotesPanel.vue`；`frontend/src/components/LearningNotesPanel.test.ts`；`frontend/src/views/CourseView.test.ts`（Create）
 - **前置依赖**：M2-T4。
 - **精确改造指令**：保留目录、课程进度、当前 section、正文、已读状态、notes/bookmark 和 LearningContextActions。桌面布局只保留导航树/正文两个一级 surface，笔记作为可折叠次级面板而不是第三个白卡套白卡。正文 `max-width:72ch`、font 15px、line-height 1.7；大于 760px 固定目录可滚动，小屏目录收为顶部 disclosure。note 保存/编辑状态须可见，离开确认由 M3 hook 管理，不先在本任务增加 dirty behavior。

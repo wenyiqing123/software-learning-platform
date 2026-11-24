@@ -61,12 +61,6 @@
 .wrong-content>div{margin-top:6px}
 .wrong-meta{color:var(--text-muted);font-size:12px;font-variant-numeric:tabular-nums}
 .mastered-button{color:var(--accent-strong);border:1px solid var(--border-default)}
-.empty-state,.loading-row{display:grid;place-content:center;justify-items:center;gap:8px;min-height:150px;padding:20px;color:var(--text-muted);text-align:center;font-size:13px}
-.empty-state>strong{color:var(--text);font-size:16px}
-.empty-state>span:not(.spinner):not(.empty-check){max-width:48ch;line-height:1.65}
-.empty-state>svg,.empty-check{color:var(--accent)}
-.empty-check{display:grid;place-items:center;width:36px;height:36px;background:var(--accent-soft);border-radius:50%}
-.loading-row{grid-auto-flow:column;align-items:center}
 .recommendation-list,.plan-task-list,.adaptive-list{background:var(--surface);border:1px solid var(--border-default);border-radius:var(--radius-md);box-shadow:var(--shadow-xs)}
 .recommendation-row{display:grid;grid-template-columns:32px minmax(0,1fr) auto;align-items:start;gap:10px 12px;padding:16px 18px;border-bottom:1px solid var(--border-soft)}
 .recommendation-row:last-child{border-bottom:0}
@@ -88,8 +82,6 @@
 .saved-experiment-list{display:grid;margin-top:8px}
 .saved-experiment-list button{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px 12px;width:100%;padding:10px 8px;color:var(--text);background:transparent;border:0;border-top:1px solid var(--border-soft);text-align:left}
 .saved-experiment-list button small{color:var(--text-muted);font-size:12px}
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto;animation-duration:.01ms;animation-iteration-count:1;transition-duration:.01ms}
-}
 .review-workspace{max-width:900px}
 .review-progress{justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border-soft);font-size:13px}
 .review-progress span:first-child,.plan-minutes{display:inline-flex;align-items:center;gap:6px}

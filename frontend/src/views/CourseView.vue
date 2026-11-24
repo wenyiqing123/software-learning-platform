@@ -61,7 +61,7 @@ async function loadCourses() {
 function chooseSection(section: StudySection) {
   activeId.value = section.id; progressError.value = ''
   rememberLearningContext({ courseId: courseId.value ?? undefined, sectionId: section.id, knowledgePointId: section.knowledgePointId, entity: section.graphEntity })
-  void router.replace({ path: '/courses', query: { courseId: courseId.value, sectionId: section.id } })
+  void router.replace({ path: '/courses', query: { courseId: courseId.value, sectionId: section.id }, hash: '#section-' + section.id })
 }
 function chooseCourse() { if (courseId.value) { void router.replace({ path: '/courses', query: { courseId: courseId.value } }); void loadCourse(courseId.value) } }
 async function markRead() {
@@ -102,10 +102,10 @@ onMounted(loadCourses)
       <FeedbackState v-if="!sections.length" empty empty-title="本课程的阅读内容正在准备中。" empty-text="可先查看课程知识关系。" empty-action-label="浏览知识图谱" @action="router.push({ path: '/knowledge', query: { courseId } })" />
       <div v-else class="study-layout">
         <div class="study-rail">
-        <aside id="course-outline" class="study-outline" aria-label="章节目录"><div class="outline-heading"><h2>章节目录</h2><span>{{ sections.length }} 节</span></div><section v-for="(chapter, index) in study.chapters" :key="chapter.id"><h3>{{ String(index + 1).padStart(2, '0') }} {{ chapter.name }}</h3><p>{{ chapter.description }}</p><button v-for="section in chapter.sections" :key="section.id" class="outline-item" :class="{ active: active?.id === section.id }" :aria-current="active?.id === section.id ? 'page' : undefined" :aria-controls="'section-' + section.id" @click="chooseSection(section)"><span class="outline-status" aria-hidden="true">{{ section.completed ? '✓' : '○' }}</span><span>{{ section.title }}<small>{{ section.completed ? '已完成阅读' : section.knowledgePointName }}</small></span></button></section></aside>
+          <details id="course-outline" class="study-outline" open aria-label="章节目录"><summary class="outline-heading"><h2>章节目录</h2><span>{{ sections.length }} 节</span></summary><div class="outline-content"><section v-for="(chapter, index) in study.chapters" :key="chapter.id"><h3>{{ String(index + 1).padStart(2, '0') }} {{ chapter.name }}</h3><p>{{ chapter.description }}</p><button v-for="section in chapter.sections" :key="section.id" class="outline-item" :class="{ active: active?.id === section.id }" :aria-current="active?.id === section.id ? 'page' : undefined" :aria-controls="'section-' + section.id" @click="chooseSection(section)"><span class="outline-status" aria-hidden="true">{{ section.completed ? '✓' : '○' }}</span><span>{{ section.title }}<small>{{ section.completed ? '已完成阅读' : section.knowledgePointName }}</small></span></button></section></div></details>
           <LearningNotesPanel v-if="active" :section-id="active.id" :knowledge-point-id="active.knowledgePointId" start-collapsed />
         </div>
-        <article v-if="active" :id="'section-' + active.id" class="study-reading" :aria-labelledby="'section-title-' + active.id">
+        <article v-if="active" :id="'section-' + active.id" class="study-reading reading-flow" :aria-labelledby="'section-title-' + active.id">
           <p class="eyebrow">小节 {{ position + 1 }} / {{ sections.length }} · {{ active.knowledgePointName }}</p><h2 :id="'section-title-' + active.id">{{ active.title }}</h2>
           <section class="study-objectives"><h3>本节学习目标</h3><ul><li v-for="objective in active.objectives" :key="objective">{{ objective }}</li></ul></section>
           <section v-for="block in active.content" :key="block.heading" class="reading-block"><h3>{{ block.heading }}</h3><p v-for="paragraph in block.paragraphs" :key="paragraph">{{ paragraph }}</p></section>
@@ -132,8 +132,10 @@ onMounted(loadCourses)
 .study-layout{display:grid;grid-template-columns:minmax(214px,254px) minmax(0,1fr);align-items:start;gap:20px}
 .study-rail{display:grid;gap:16px;min-width:0}
 .study-outline,.study-reading{min-width:0;background:var(--surface);border:1px solid var(--border-default);border-radius:var(--radius-md);box-shadow:var(--shadow-xs)}
-.study-outline{max-height:420px;overflow:auto;padding:16px}
-.outline-heading{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding-bottom:12px;border-bottom:1px solid var(--border-soft)}
+.study-outline{padding:16px}
+.study-outline summary{display:flex;list-style:none;cursor:pointer}
+.study-outline summary::-webkit-details-marker{display:none}
+.outline-heading{width:100%;display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding-bottom:12px;border-bottom:1px solid var(--border-soft)}
 .outline-heading span,.study-outline section>p{color:var(--text-muted);font-size:12px}
 .study-outline h3{margin:14px 0 3px;font-size:13px}
 .study-outline section>p{margin:0 0 8px}
@@ -143,7 +145,8 @@ onMounted(loadCourses)
 .outline-item small,.outline-status{font-size:12px;color:var(--text-muted)}
 .outline-item small{display:block;margin-top:2px}
 .outline-status{flex:0 0 16px;color:var(--accent);text-align:center}
-.study-reading{padding:24px clamp(20px,3vw,40px)}
+.study-reading{padding:24px clamp(20px,3vw,40px);font-size:15px;line-height:1.7}
+.study-reading.reading-flow{max-width:var(--reading-width)}
 .study-reading>h2{margin:0 0 20px;font-size:24px;line-height:1.35}
 .study-reading h3{margin:0 0 8px;font-size:16px;line-height:1.55}
 .study-objectives,.reading-block,.study-resources{max-width:var(--reading-width);font-size:15px;line-height:1.7}
@@ -161,5 +164,14 @@ onMounted(loadCourses)
 .study-notice,.study-empty{padding:20px;border-radius:var(--radius-md)}
 .study-notice{color:var(--danger);background:var(--danger-soft)}
 .study-empty{color:var(--text-muted);text-align:center;background:var(--surface);border:1px solid var(--border-default)}
-@media(max-width:760px){.study-layout{grid-template-columns:1fr}.study-summary{align-items:flex-start;flex-direction:column}.study-outline{max-height:240px}.study-reading{padding:20px 16px}}
+@media(min-width:761px){
+  .study-outline{position:sticky;top:calc(var(--topbar-height) + 16px);max-height:calc(100vh - var(--topbar-height) - 40px);overflow-y:auto}
+  .study-outline summary{cursor:default;pointer-events:none}
+}
+@media(max-width:760px){
+  .study-layout{grid-template-columns:1fr}
+  .study-summary{align-items:flex-start;flex-direction:column}
+  .study-outline{max-height:none}
+  .study-reading{padding:20px 16px}
+}
 </style>

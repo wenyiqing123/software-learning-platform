@@ -170,3 +170,22 @@
   - 代码质量与规范：`git diff --check` 通过；全局 CSS 与 Vue 模板 `!important` 扫描结果为 0；
   - 施工任务书：`M1-T1` ~ `M1-T9` 全部勾选为 `[x]`。
 - 严格遵循红线与纪律：未修改外部 Mecha-QA、Python Bridge、NebulaGraph 图空间与模型权重，未透出 RANKED 后台固定证据约束系统提示词，未删改或弱化既有测试。本地合并提交，暂不推送远程。
+
+## 里程碑 M2 推进记录（第一/二批：M2-T1 ~ M2-T7，2026-11-24）
+
+- 贯彻施工任务书【里程碑 M2】全站视觉美学重构与 CSS 净瘦身，采用分批 checkpoint 提交模式稳健推进。
+- 第一批已锁定本地提交（`4fcded7`：`style(ui): establish css ownership and element-plus theme bridge (M2-T1..M2-T3)`）：
+  - `M2-T1`：`styles.css` 成为壳层布局唯一 owner，合并 900px/620px 响应式壳选择器；
+  - `M2-T2`：`main.ts` 按严格顺序引入 Element Plus 组件级样式；`styles-design-system.css` 完整补齐 `--el-*` 变量映射体系；原生 baseline 限制于 `:is(.app-shell, .login-page)`；`compliance-guard.test.ts` 扩展管理端与微课/评价 copy 守卫；
+  - `M2-T3`：`styles-graph.css` 移出通用 spinner，添加 `.graph-page{min-width:0}`；新建 `GraphEvidenceDrawer.test.ts`（覆盖真实三元组证据、空提示及 disclosure 展开折叠）。
+- 第二批完成并验证（`M2-T4` ~ `M2-T7`）：
+  - `M2-T4`：学习域 CSS 重复与空态统一。将通用 `.empty-state`、`.loading-row`、`.empty-check` 以及 `@media (prefers-reduced-motion:reduce)` 迁入 `styles-design-system.css`；从 `styles-learning.css` 剥离非学习域通用反馈，使其纯粹内聚于 quiz/wrong/review/plan/recommend/experiment，单文件净瘦身 700 字节；
+  - `M2-T5`：登录与学生总览视觉层级精修。`DashboardView.vue` 将“问问 AI 助教”调整为次级按钮样式（`button-outline`），保持唯一深色“继续上次学习”主行动点清晰；强化视图层级测试；
+  - `M2-T6`：教学总览 KPI 与图表层级精修。`TeachingDashboardView.vue` KPI 指标严格按照 activeLearners / accuracy / completedReads / averageMastery 为主数，错题待复习呈现为“2 次”；补充 KPI 顺序与真实空态测试；
+  - `M2-T7`：课程阅读与笔记单层工作台。`CourseView.vue` 目录支持粘顶滚动与移动端折叠，正文限宽 `--reading-width`（72ch），切节路由 hash 联动；新增 `CourseView.test.ts` 验证目录、正文宽度类、笔记初始折叠态及切节路由 hash。
+- 门禁实测结果：
+  - 定向测试：11 个测试文件，26 项测试全部通过（26 passed）；
+  - 生产构建：`npm run build` 成功完成，0 错误，0 chunk warning；
+  - 代码格式与规范：`git diff --check` 通过；全仓 CSS/Vue 中 `!important` 严格保持为 0；
+  - 任务书勾选状态：`M2-T1` ~ `M2-T7` 已全部勾选为 `[x]`。
+
