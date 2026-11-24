@@ -580,28 +580,28 @@ M3 commit message：`feat: secure assigned experiments and guided evaluation`
 
 ## M4：文档对齐和终版验收
 
-### - [ ] M4-T1 README 与 API 合同对齐
+### - [x] M4-T1 README 与 API 合同对齐
 - **涉及文件**：`README.md`；`docs/api.md`
 - **前置依赖**：M1–M3 全部通过。
 - **精确改造指令**：README 写清 5 学生分组/3 admin workbench、role route、password/refresh semantics、V16 nullable group order（不代表随机化）、ADMIN fixed-case manifest 与 browser-only batch queue。API 文档逐项对照最终 manifest controller 和所有 route/method/body/status/error/role；M3-T11 完成后，`GET /admin/experiments/fixed-suite` 必须记录为 ADMIN-only，并只列 `suiteVersion` 与 `caseId/question/sourceSection/knowledgePoint` 字段。不得写 V17 migration、题库答案作为 reference 或未实现 server durable queue；API 文档保持既有省略 `/api` 前缀约定。
 - **受影响既有测试与更新指引**：flyway V1–V15 history 不改；V16 schema 用于新 order 字段。静态查每个 API route 对照 controller paths，不更改 DTO 来“方便文档”。
 - **单任务验证命令**：`rg -n "fixed-suite|V16|V17|A_TO_B|A→B|password|/experiments/run" README.md docs/api.md`；M3-T11 已完成时，fixed-suite 的角色、路径和字段必须与 controller 一致；不得声称 V17 已实现或把 fixed-suite 说成不存在；随后 `git diff --check`。
 
-### - [ ] M4-T2 UI 设计说明与答辩剧本对齐
+### - [x] M4-T2 UI 设计说明与答辩剧本对齐
 - **涉及文件**：`docs/ui-design.md`；`docs/答辩现场演示剧本与故障应急清单.md`
 - **前置依赖**：M4-T1。
 - **精确改造指令**：更新 tokens/Element Plus 版本、四 CSS owner/byte、学生五组/管理三板块、8 条 fixed manifest 不含答案、batch 只在客户端运行、server order/evaluation/password flow。同步写本轮 screenshot 基线数与缺陷：课程笔记 rail、题后内容高度、Tutor empty-state、admin experiment 全长、question bank 表单留白、dashboard empty chart。答辩操作绑定 canonical route；图谱离线真实 error；API mock smoke 不说成后端联调；密码用合成账号。
 - **受影响既有测试与更新指引**：页面路线必须全部来自 `router.ts`，实际旧路由与 role 与 smoke scenario 对齐。
 - **单任务验证命令**：`rg -n "RANKED|生理|降低认知负荷|可解释规则推荐|1440|1280|158/158|batch|V16" docs/ui-design.md docs/答辩现场演示剧本与故障应急清单.md`；检查无过期 route、错误 UI status 或越界成功表述。
 
-### - [ ] M4-T3 测试报告与工程验收报告同步
+### - [x] M4-T3 测试报告与工程验收报告同步
 - **涉及文件**：`docs/test-report.md`；`docs/毕业设计工程验收报告.md`
 - **前置依赖**：M4-T1、M4-T2。
 - **精确改造指令**：只填该次实际 Maven module test counts、Vitest files/tests、两视口 smoke 总数/角色拆分/errors、production chunks/warnings、CSS exact bytes、V16 status、compliance/credential checks。保留历史章节，在终版追加实际日期与运行命令；不得追写历史伪数据。API fixture smoke 与 real backend integration 清楚分栏。
 - **受影响既有测试与更新指引**：报告每个数字均由刚运行 CLI 输出核实；没有运行的凭据扫描/DB migration MySQL test 明记 not run，不写 pass。
 - **单任务验证命令**：`rg -n "mvn|Vitest|Playwright|V[0-9]+|B|test files|chunk|warning" docs/test-report.md docs/毕业设计工程验收报告.md`；与最新终版日志人工交叉核验。
 
-### - [ ] M4-T4 Continuation ledger 与 smoke matrix 锁定
+### - [x] M4-T4 Continuation ledger 与 smoke matrix 锁定
 - **涉及文件**：`docs/development/continuation-ledger.md`；`frontend/scripts/authenticated-ui-smoke.mjs`；`frontend/tests/design-system-contract.test.ts`
 - **前置依赖**：M4-T3。
 - **精确改造指令**：continuation ledger 记最终 HEAD、V16、实际结果与遗留风险；smoke routes 直接与 `router.ts` canonical + legacy 列表逐项对齐，含 STUDENT `/experiment-run` 与 ADMIN 四 canonical、guest/login redirects；视口 1440×900/1280×800。保留当前指标并扩 scenario: unsaved-route confirm、password modal validation、student assigned run hidden rubric、A/B task order。测试 console/pageerror/unexpected HTTP/overflow/topbar/buttons/native controls/table/role redirects；明确命名允许的 403 场景，不能 suppress 全局 errors。design contract 使用 M2-T23 AST scanner 及全部 4 CSS。

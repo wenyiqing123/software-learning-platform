@@ -349,6 +349,39 @@
   - 代码规范与合规：`git diff --check` 通过（0 处空白错误）；全仓 CSS/Vue 中 `!important` 严格为 0；
   - 任务书勾选状态：【里程碑 M3】全量 25 项原子任务（`M3-T1` ~ `M3-T25`）已全部标记为 `[x]`！
 
+## 里程碑 M4：文档对齐与终版验收完成记录（2026-11-24）
 
-
+- **前序 HEAD**：`a33b1d817e2ea74bb49ca2b40fcd12a831d1f5bb`（M3 完整收口提交）；
+- **完成任务项**：
+  - `M4-T1`：README 与 API 合同对齐。同步更新 `README.md` 与 `docs/api.md`，对齐学生端 5 大核心模块与管理端 3 大工作台中心路由体系；增加 `PATCH /auth/password`、`GET /admin/experiments/fixed-suite`（ADMIN-only，仅暴露 8 个固定案例元数据，无标准答案）、V16 组间评估顺序字段与向导状态机闭环；末尾声明 V16 为终版架构，不存在 V17 迁移；
+  - `M4-T2`：UI 设计说明与答辩剧本对齐。`docs/ui-design.md` 记录四份 CSS 职责与精确体积、表单防丢离开确认、修改密码弹窗、固定案例目录与纯浏览器批次队列、评估向导流转及 170/170 视觉基线；`docs/答辩现场演示剧本与故障应急清单.md` 对齐 Canonical 路由点击路径与应急处置方案，严格锁定学术红线；
+  - `M4-T3`：测试报告与工程验收报告同步。`docs/test-report.md` 与 `docs/毕业设计工程验收报告.md` 追加 2026-11-24 终版验收章节，严格填写真实实测数据（后端 282 项、前端 189 项、Smoke 170 场景、四 CSS 58,955 B），明确区分 API fixture smoke 运行态与 real backend integration，未在本地执行的真实独立 MySQL/外部二进制工具标记为 `not run`；
+  - `M4-T4`：Continuation ledger 与 smoke matrix 锁定。更新本台账，锁定 `frontend/scripts/authenticated-ui-smoke.mjs`（170 场景矩阵）、`frontend/tests/design-system-contract.test.ts` 契约测试，完成所有 61 项原子任务勾选。
+- **全量门禁实测数据锁定（重点纠偏与核对）**：
+  - **Java 后端三模块测试**（OpenJDK 21）：总计 **282/282 全部通过**（纠偏上一轮构建日志截断导致的误读）：
+    - `learning-service`: **175** tests, 0 failures, 0 errors, 0 skipped
+    - `ai-service`: **102** tests, 0 failures, 0 errors, 0 skipped
+    - `learning-gateway`: **5** tests, 0 failures, 0 errors, 0 skipped
+  - **前端自动化测试**（Vitest）：**56 个测试文件、189 项测试全部通过**（189 passed，0 failures，0 errors）；
+  - **前端生产分包构建**：`built in 10.59s`，**0 error，0 chunk warning**；
+  - **AST 幽灵类名扫描**：49 个 SFC 视图组件，1,155 处模板类名引用，**0 missing classes（100% 匹配）**；
+  - **双角色运行态视觉巡检（Smoke Matrix）**：
+    - 脚本：`frontend/scripts/authenticated-ui-smoke.mjs`
+    - 视口覆盖：桌面 `1440×900` 与便携笔记本 `1280×800`
+    - 路由与场景覆盖：29 条页面路由 × 双角色 + 4 个新增专项场景（受限实验运行参考答案隔离、A→B 顺序展示、未保存草稿离开拦截、密码修改对话框校验）
+    - 实测结果：**170/170 场景 100% 通过（85 student + 85 admin）**，0 控制台错误，0 页面异常，0 水平滚动条溢出，巡检生成的临时截图目录 `.ui-visual-review` 已彻底清理；
+  - **全局四份 CSS 体系与代码卫生**：
+    - `styles-design-system.css`: 28,734 B (0 `!important`)
+    - `styles.css`: 15,535 B (0 `!important`)
+    - `styles-learning.css`: 11,389 B (0 `!important`)
+    - `styles-graph.css`: 3,297 B (0 `!important`)
+    - 四 CSS 合计 58,955 B，全仓 `!important` 严格为 **0**，退出码 0；
+  - **Docker Compose 配置校验**：`docker compose --env-file deploy/.env.server.example -f deploy/compose.server.yml config --quiet` 退出码 0，46 个环境变量插值完全合规；
+  - **数据库迁移版本**：已应用 `V16__add_task_group_order.sql`；声明不存在 V17 迁移；
+  - **学术合规与凭据自查**：合规守卫 4/4 通过；全仓无 RANKED 固定提示词泄露，无真实生产凭据泄露。
+- **遗留风险与陈述边界**：
+  - UI Smoke 巡检通过 Vite Preview 注入 Mock 响应断言前端排版与路由守卫，不替代全栈真实联调；
+  - 正式毕业论文中的实验效果与认知负荷结论必须依托规范的实验流程、受试者样本与教师人工盲评，严禁将工程验收数据直接作为论文实验结论。
+- **任务书完成度**：
+  - 里程碑 M1（10 项）、M2（23 项）、M3（25 项）、M4（4 项）共 **61 项原子任务全部 100% 勾选为 `[x]`，全仓施工完美收官！**
 

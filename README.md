@@ -100,15 +100,43 @@ try {
 
 `.env.example` 覆盖本地 MySQL、Redis、RabbitMQ、JWT、Python Bridge、Gateway、模型超时、RANKED/Qwen 可选开关和管理员引导变量；服务器部署使用 `deploy/.env.server.example`，其中只放占位符。Compose 会显式传递 `RABBITMQ_VHOST`、Python 图谱超时、Gateway 地址、AI 生成参数和可选 RANKED 参数，实际密钥只写入服务器的受限 `.env.server`。
 
-当前专用数据库已应用至 V15。已经执行的迁移保持原样；未来表结构变更使用 V16+。不要修改已执行的 SQL 或清空 Flyway 历史。
+当前专用数据库已通过 Flyway 应用至 V16（包含 V16 为实验组增加的可空 task_order 评估顺序字段）。已经执行的迁移保持原样；历史迁移严格不可变，未来扩展预留 V17+（当前系统不存在 V17 迁移）。不要修改已执行的 SQL 或清空 Flyway 历史。
 
-## 账户与管理端
+## 账户、工作台与权限边界
 
-学生在登录页注册；答题、错题、推荐、会话和实验均按当前用户隔离。
+### 双角色空间与工作台架构
 
-本机管理员用户名见 .env.local 中 SLP_BOOTSTRAP_ADMIN_USERNAME，随机密码见 SLP_BOOTSTRAP_ADMIN_PASSWORD。仅 local/docker profile 且显式配置时创建新管理员，不提升或重置已有账户。
+平台严格实施基于角色的访问控制（RBAC）与工作区分割：
 
-/admin 支持课程新增/编辑/启停、题目新增/编辑/启停和同课程知识点映射，校验单选/多选/判断题的选项与标准答案。学生列表不返回标准答案，提交后才返回正确答案与解析。
+- **学生学习空间（5 大核心学习分组，16 个 Canonical 路由）**：
+  - 基础学习：课程阅读（`/courses`）、概念知识图谱（`/knowledge`）、先修掌握图谱（`/mastery-map`）、AI 交互助教（`/tutor`）；
+  - 题库练习：基础章节练习（`/practice`）、自适应强化练习（`/adaptive-practice`）；
+  - 复习规划：错题笔记本（`/wrong-book`）、艾宾浩斯间隔复习（`/review`）、今日动态学习计划（`/study-plan`）；
+  - 微课微测：微课浏览中心（`/micro-lessons`）、学习成效评估向导（`/evaluation`）、学情报告与雷达图（`/learning-report`）；
+  - 受限任务：指派实验任务入口（`/experiment-tasks`）、受限实验运行页（`/experiment-run`）。
+- **管理员管理空间（3 大聚合工作台中心）**：
+  - 教学总览工作台（`/teaching-dashboard`）：班级学习指标、学习活跃度、薄弱知识点分布与匿名学情导出；
+  - 内容与题库中心（`/admin/content`）：集成课程与知识点管理、题库版本与批次 JSON 导入、干扰项错因诊断配置、已发布微课管理；
+  - 实验与评价中心（`/admin/experiments`）：集成多模式问答对照实验、实验任务配组与学生派发、去标识化心理努力与成效统计；
+  - 兼容保留独立问答实验入口（`/experiments`）以及 7 条 Legacy 管理端重定向路由。
+
+### 安全凭据、密码修改与 Single-flight 刷新
+
+- **修改密码与令牌撤销**：提供安全修改密码接口（`PATCH /api/auth/password`），客户端弹出修改密码安全对话框，校验当前密码与新密码复杂度（8~72 字符，新旧密码不一致校验）。密码修改成功后，服务端事务内主动撤销（revoke）该用户所有的活跃 Refresh Token；客户端一次性彻底清理本地凭据并安全重定向至登录页。
+- **并发 401 令牌刷新（Single-flight）**：HTTP 客户端拦截器实现并发请求 Single-flight 保护。当多个异步请求几乎同时收到 401 响应时，仅发出唯一一次 `/api/auth/refresh` 请求，挂起的请求排队等待；刷新成功后携带新 Token 恰好重放一次；刷新失败则统一注销会话并拒绝所有等待中的请求，彻底杜绝死循环和并发重刷竞争。
+
+### 实验分组顺序与评估向导权威性
+
+- **V16 组间任务顺序**：`V16__experiment_group_task_order.sql` 为实验组持久化 `task_order`（可设置为 `'A→B'` 或 `'B→A'`，默认可空）；该字段表示预先设定的评估测验顺序（**不代表随机化**），由管理员在任务中心配组时指定。
+- **服务端权威状态机**：评估向导步骤与任务顺序严格以服务端返回的 `taskOrder` 和 `completedPhases` 为唯一权威，客户端严禁伪造解锁或跳过前置阶段；问答运行不提前结单，必须完成完整向导并在后测提交后闭环结单。
+- **受限运行与答案隔离**：学生在受限实验运行页（`/experiment-run`）完成任务时，服务端严格隔离参考答案与评分标准，客户端不呈现评分标准与参考答案。
+
+### 固定案例目录与批次实验
+
+- **固定案例目录（ADMIN-only）**：`GET /admin/experiments/fixed-suite` 为管理员提供 8 个预置案例清单（复用 V4 种子题干），仅包含 `caseId`、`question`、`sourceSection` 与 `knowledgePoint`，不包含答案 key 也不构成参考答案语料。
+- **纯浏览器内存批次队列（Browser-only batch queue）**：批次实验完全在浏览器端内存中串行调度，逐项调用真实实验接口并独立保存，失败继续推进；队列与进度不声明服务端持久队列或刷新恢复；支持实时进度、暂停、继续、跳过与错误重试；支持包含套件元数据的 UTF-8 BOM CSV 与 JSON 导出。
+
+/admin 兼容路由支持课程新增/编辑/启停、题目新增/编辑/启停和同课程知识点映射，校验单选/多选/判断题的选项与标准答案。学生列表不返回标准答案，提交后才返回正确答案与解析。
 
 /courses 提供软件工程正文、目标与案例；阅读完成状态按用户保存。图谱页按课程概念查询关系、查看三元组并跳转助教提问。
 
@@ -154,9 +182,14 @@ Wave 4 将问答生成执行拆为显式策略选择器：普通聊天策略负�
 
 设计与计划在 docs/superpowers/，接口摘要在 docs/api.md，开发记录在 docs/development/continuation-ledger.md。论文应说明控制变量、评测集来源、人工评分规则与实验限制；真实实验完成前不填写虚构效果或性能结论。
 
-## 最终验收收口（2026-11-21）
+## 终版验收收口（2026-11-24）
 
-- 合规守卫测试已加入 AI 服务、learning-service 和前端：覆盖 RANKED 固定系统提示词不泄露、图谱/模型依赖故障诚实降级、学生提交前答案字段隔离和开题报告学术措辞边界。
-- 前端 Vite 已将 `three`、G6、布局/渲染器、Element Plus、Vue 核心和 UI 依赖拆为独立供应商块；最终构建的 `graph-three` 为 565.99 kB（gzip 139.14 kB），不再出现原 2.06 MB Three.js 单块告警。G6 作为图谱路由级供应商块为 1,366.15 kB（gzip 392.77 kB），应用壳和业务页不再携带图形运行时。
-- 最终实测：ai-service 102/102、learning-service 126/126、learning-gateway 5/5；前端 40 个测试文件、76 项通过；`npm run build`、`docker compose config --quiet`、`git diff --check` 通过。1440×900 与 1280×800 已登录态预览巡检覆盖 28 个路由访问，无控制台错误、未捕获异常、横向溢出、顶部遮挡或按钮内容溢出。
-- 任务 4/5 的答辩点击路径和故障应急命令见 [`docs/答辩现场演示剧本与故障应急清单.md`](docs/答辩现场演示剧本与故障应急清单.md)。
+- 合规守卫测试已全面加入 AI 服务、learning-service 和前端：覆盖 RANKED 固定系统提示词不泄露、图谱/模型依赖故障诚实降级、学生提交前答案字段隔离和开题报告学术措辞边界（严禁机器学习知识追踪、采集生理信号或预设降低认知负荷表述）。
+- 前端生产构建已完成代码分割与供应商分包：最终构建的 `graph-three` 为 565.99 kB（gzip 139.14 kB），`graph-g6` 为 1,366.15 kB（gzip 392.77 kB），0 error、0 chunk warning。四份全局 CSS 精确大小：`styles-design-system.css` 28,734 B、`styles.css` 15,535 B、`styles-learning.css` 11,389 B、`styles-graph.css` 3,297 B，合计 58,955 B，全局严格 0 个 `!important`。
+- 终版精测试验矩阵：
+  - 后端三模块全量回归：**282/282 项测试全部通过**（0 失败，0 错误），其中 `learning-service` 175/175、`ai-service` 102/102、`learning-gateway` 5/5；
+  - 前端全量测试：**56 个测试文件、189 项测试全部通过**（0 失败）；
+  - AST 模板类名扫描：49 个 SFC、1155 处模板类名引用，**0 missing classes**（100% 匹配）；
+  - 真实运行态视觉巡检（Playwright UI Smoke）：双视口（1440×900 与 1280×800）、三角色（STUDENT, ADMIN, GUEST），覆盖 29 个路由与进阶场景，**170/170 场景全部通过**，无控制台错误、未捕获异常、横向溢出或组件回归；
+  - 容器与工程配置：`docker compose --env-file deploy/.env.server.example -f deploy/compose.server.yml config --quiet` 校验通过；`git diff --check` 通过（0 处空白错误）。
+- 答辩点击路径和故障应急命令见 [`docs/答辩现场演示剧本与故障应急清单.md`](docs/答辩现场演示剧本与故障应急清单.md)。

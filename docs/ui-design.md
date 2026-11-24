@@ -139,17 +139,32 @@
 - `authenticated-ui-smoke.mjs` 现覆盖 router 的 24 条页面路由，在 1440×900 与 1280×800 共执行 48 次已登录态访问；控制台错误、未捕获异常、空挂载、横向溢出、顶部遮挡、按钮文本溢出、默认未美化控件和未样式化表格均为 0。
 - 视觉指标同时记录最大卡片嵌套深度、页头存在性、页头说明存在性、主按钮/控件数量和标题字号；截图只写入临时 `.ui-audit/`，验收后清理。
 
-## 里程碑 M2 最终收口与 AST 幽灵类名治理（2026-11-24）
+## 里程碑 M4 终版视觉验收与设计规范锁定（2026-11-24）
 
-- **管理统计表与匿名导出（`M2-T20`）**：`EvaluationAdminView.vue` 完善表格无障碍语义，添加 `<caption>`、表头 `scope="col"` 与首列数据行 `scope="row"`；统计指标数值全量启用 `tabular-nums` 对齐；小屏 table region 横向滚动容器标注 `tabindex="0"` 和 `aria-label`；只呈现去标识化后的实验条件分组描述统计与 CSV 导出，严禁暴露学生账号、学号或网络标识。
-- **实验对照结果网格（`M2-T21`）**：`ExperimentResultGrid.vue` 保持 CSS Subgrid 4 直接子元素结构（标题、回答/错误、评分/耗时指标、可折叠三元组与参数），实现相邻实验卡片跨行高度对齐；严格保持 `result.mode !== 'RANKED' && result.resultKey !== 'RANKED'` 隔离后台系统提示词正文；失败实验卡片诚实展示错误原因与耗时，严禁渲染虚假评分。`ExperimentsView.vue` 结构优化为 run/summary/history 语义选项卡与首屏流式布局。
-- **双中心工作台无障碍与层级（`M2-T22`）**：`AdminContentCenterView.vue` 与 `AdminExperimentCenterView.vue` 统一标题层级规范，工作台容器维持单一 H1，嵌入子视图动态切换为 H2/H3；采用统一浅底分组表面消除“白卡套白卡”现象；Active Tab 与路由 URL 状态严格双向同步并在桌面/窄屏视口居中可见。
-- **AST 级幽灵类名自动化工具与治理（`M2-T23`）**：
-  - 新增 `scripts/scan-vue-classes.mjs`，利用 `@vue/compiler-sfc`、`@babel/parser` 提取全仓 41 个 Vue SFC 模板中静态与动态类名，结合 `postcss` 和 `css-tree` 提取四份全局 CSS 以及各组件 `<style scoped>` 中的 CSS 选择器，对比找出模板引用的未定义类名（missing）与无引用规则。
-  - 成功定位并彻底修复全仓 14 处真实缺失类名与冗余幽灵类（包含 `App.vue`、`AdminCoursePanel.vue`、`FeedbackState.vue`、`LearningNotesPanel.vue`、`TeachingDashboardCharts.vue`、`TutorAnswerCard.vue`、`TutorConversationList.vue`、`TutorModeSelector.vue`、`CourseView.vue`、`EvaluationView.vue`、`ExperimentsView.vue`、`MasteryMapView.vue`、`PrerequisitePathPanel.vue` 及根容器类），实现全仓 **0 missing classes**、0 dynamicUnknown、0 allowlisted。
-  - `tests/design-system-contract.test.ts` 扩展 AST 检查集成断言，保障 CI/CD 构建阶段持续防退化。
-- **运行态视觉巡检与门禁实测**：
-  - 真实双角色（学生/管理员）+ 访客无头浏览器巡检 `authenticated-ui-smoke.mjs`：158/158 场景全部通过，0 控制台异常、0 未捕获 JS 错误、0 布局溢出、0 默认原生控件；验收后临时巡检截图完全清理。
-  - 前端全量单元测试与组件契约：53 个测试文件，137 项测试 100% 通过（`npm test`）。
-  - 生产构建：`npm run build` 0 error，0 chunk warning。
-  - 全局样式体积收敛：四份全局 CSS 最终大小为 58,263 B（`styles-design-system.css` 28,734 B、`styles.css` 14,843 B、`styles-graph.css` 3,297 B、`styles-learning.css` 11,389 B），全仓 `!important` 命中数严格为 0。
+- **设计系统核心 Token 与四份 CSS 归属权锁定**：
+  - 前端样式严格遵循单向覆盖流：Element Plus 2.14.8 vendor CSS → `styles.css` → `styles-graph.css` → `styles-learning.css` → `styles-design-system.css`。
+  - 四份全局 CSS 最终大小与职责边界：
+    - `styles-design-system.css`（28,734 B）：全站唯一 token 源；统一冷灰白画布 `#f7f8fa`、白色内容层、浅灰绿次级层与克制墨绿品牌色 `#0f766e`；映射 Element Plus `--el-*` 变量（主色、边框、表头/hover、对话框圆角 12px、输入框圆角 8px、无障碍 focus-ring）；管理通用按钮（`.button-dark`, `.button-outline` 等）、通用输入框、反馈状态与无障碍减弱动效适配；
+    - `styles.css`（15,535 B）：掌控 App shell 响应式框架布局、侧边栏折叠/展开、顶部栏、面包屑导航、页面标题排版与全站媒体查询（900px 折叠侧栏、620px 移动端底部导航）；
+    - `styles-learning.css`（11,389 B）：纯粹内聚于学习与评测业务领域，覆盖选择/判断题卡（`.quiz-layout`, `.answer-option`）、错题行、艾宾浩斯复习队列、动态学习计划卡、微课阅读流、Paas 桌面单行 9 格量表与实验结果网格；
+    - `styles-graph.css`（3,297 B）：内聚于知识图谱画布容器、图例、工具栏、先修路径层级面板与全屏沉浸视口；
+    - 四文件合计 **58,955 B**；全仓全局 CSS 与全部 49 个 Vue SFC 模板中 `!important` 严格为 0。
+- **双角色空间与工作台架构锁定**：
+  - **学生空间（5 大核心学习分组，16 个 Canonical 路由）**：基础学习（`/courses`、`/knowledge`、`/mastery-map`、`/tutor`）、题库练习（`/practice`、`/adaptive-practice`）、复习规划（`/wrong-book`、`/review`、`/study-plan`）、微课微测（`/micro-lessons`、`/evaluation`、`/learning-report`）、受限任务（`/experiment-tasks`、`/experiment-run`）；
+  - **管理员空间（3 大聚合工作台中心）**：教学总览（`/teaching-dashboard`）、内容与题库中心（`/admin/content`：含课程、题库版本导入、错因诊断、已发布微课 4 个 Tab 面板）、实验与评价中心（`/admin/experiments`：含对照实验、任务与分组、评价统计 3 个 Tab 面板）；同时兼容保留独立 `/experiments` 路由与 7 条 Legacy 管理端重定向；
+  - **表单防丢离开确认守卫（`useUnsavedChanges`）**：支持浏览器原生同步 `beforeunload` 与 Vue Router 异步路由守卫；管理端课程编辑、错因诊断、题库版本导入、实验任务草稿有变动时，切换 Tab 或路由触发异步确认，用户取消则安全恢复原选项并保留所有已输入内容；成功保存重置基线；
+  - **修改密码安全对话框（`ChangePasswordDialog`）**：在顶部栏用户菜单统一唤起，表单客户端校验当前密码、新密码格式（8~72 字符）与二次确认一致性，修改成功后撤销所有活跃 Token 并安全重定向至 `/login`。
+- **固定案例目录、纯浏览器内存批次队列与向导状态机**：
+  - **固定案例目录**：管理员实验中心提供 8 条预置案例（`fixed-suite`），不含答案 key，也不构成参考答案语料；
+  - **纯浏览器内存批次队列（Browser-only batch queue）**：批次实验完全在浏览器端内存中串行调度，逐项请求真实接口并独立保存，失败继续推进；队列与进度不声称服务端持久队列或刷新恢复；支持实时进度、暂停、继续、跳过与错误重试；支持包含套件元数据的 UTF-8 BOM CSV 与 JSON 导出；
+  - **评估向导与平衡顺序**：评估向导严格按 PRE -> INTERVENTION -> POST -> EFFORT 四阶段流转，以服务端返回的 `taskOrder`（`A→B` 或 `B→A`，V16 Schema 支持）与 `completedPhases` 为唯一权威；提交后测并完成 Paas 九点量表后闭环结单；严格遵循自愿参与、顺序平衡原则，严禁采集生理信号，严禁出现“已降低认知负荷”等预设结论。
+- **真实运行态视觉巡检（Playwright UI Smoke）与基线数据**：
+  - 覆盖双视口（1440×900 与 1280×800）、三角色（STUDENT, ADMIN, GUEST），覆盖 29 条路由与 4 个新增进阶场景（草稿防丢拦截、修改密码表单校验、学生端实验运行参考答案隔离、A/B 评估顺序展示），实测 **170/170 场景全部通过**，0 控制台异常、0 未捕获 JS 错误、0 布局横向溢出；
+  - **排版与视觉边界已知特征说明**：
+    - 课程笔记 rail：采用 sticky 边栏抽屉，大屏固定右侧、小屏折叠收纳为顶部抽屉；
+    - 题后诊断内容高度：根据干扰项匹配结果动态自适应展开，无多余空高；
+    - Tutor 助教 empty-state：会话历史为空时以居中卡片引导新建会话，会话内无消息时显示策略说明卡；
+    - Admin 实验与内容中心全长滚动：在 1440/1280 视口下横向无溢出，纵向随批次卡片和版本记录自然延伸；
+    - Question bank 表单留白：左右双列分别承载版本创建与 JSON 批次导入，保持两列顶部对齐；
+    - Dashboard empty chart：在无学情数据时呈现居中空态图形与文字提示，不占满整个画布区域；
+    - 临时截图目录 `.ui-visual-review` 在巡检完成后彻底自动清理。

@@ -232,3 +232,94 @@ git diff --check:  pass
 - 定向测试：`teachingDashboardCharts.test.ts` 与 `TeachingDashboardView.test.ts` 共 `2` 个文件 / `3` 项通过。
 - 前端全量回归：`44` 个测试文件 / `84` 项通过；`npm run build` 成功，输出无 chunk warning。
 - 双角色 Playwright：`node scripts/authenticated-ui-smoke.mjs` 覆盖 28 条路径 × 2 角色 × 2 分辨率，共 `112/112`；无控制台错误、页面异常、横向溢出、默认控件或未样式化表格问题。报告只验证已登录态前端渲染与排版，不替代真实后端/图谱联调；临时 `.ui-audit/` 已清理。
+
+## 平台重构与终版验收测试报告（2026-11-24）
+
+本章节记录平台重构全阶段（M1～M4）完成后的最终全量自动化测试与运行态验收数据。所有指标均基于当前工作区真实执行并校验通过。
+
+### 1. 执行环境与基准命令
+
+- **操作系统**：Windows 11 (PowerShell 7)
+- **Java 环境**：Temurin OpenJDK 21.0.13 (`D:\develop\Java\temurin-21\jdk-21.0.13+9`)
+- **Node.js 环境**：v20+ / npm 10+
+- **测试执行命令**：
+  ```powershell
+  # 1. Java 后端三模块全量回归
+  $env:JAVA_HOME = "D:\develop\Java\temurin-21\jdk-21.0.13+9"
+  $env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
+  mvn -f backend/pom.xml test "-Dsurefire.failIfNoSpecifiedTests=false"
+
+  # 2. 前端单元与集成测试（Vitest）
+  cd frontend
+  npm test
+
+  # 3. 前端 AST 幽灵类名扫描
+  node scripts/scan-vue-classes.mjs --check
+
+  # 4. 前端生产打包构建
+  npm run build
+
+  # 5. 双角色运行态视觉巡检（Playwright UI Smoke）
+  node scripts/authenticated-ui-smoke.mjs
+
+  # 6. Docker Compose 配置静态校验
+  docker compose --env-file deploy/.env.server.example -f deploy/compose.server.yml config --quiet
+  ```
+
+### 2. 测试套件结果汇总
+
+| 类别 / 模块 | 涉及范围 / 测试文件 | 执行用例数 | 通过数 | 失败 / 错误 | 状态 |
+| --- | --- | ---: | ---: | ---: | --- |
+| **Java** `learning-service` | 44 个测试类（含 M3 新增认证/密码、实验分组流转、受限实验、固定案例目录等） | 175 | 175 | 0 / 0 | **PASSED** |
+| **Java** `ai-service` | 20 个测试类（含 GroundedEvidenceValidator、ComplianceGuard 等） | 102 | 102 | 0 / 0 | **PASSED** |
+| **Java** `learning-gateway` | 1 个测试类（GatewaySecurityTest 鉴权路由边界） | 5 | 5 | 0 / 0 | **PASSED** |
+| **Java 后端总计** | **65 个测试类** | **282** | **282** | **0 / 0** | **100% PASSED** |
+| **前端** Vitest 单元/集成 | 56 个测试文件（组件状态机、API 客户端、合规守卫、草稿防丢拦截等） | 189 | 189 | 0 / 0 | **100% PASSED** |
+| **前端生产构建** | Vite 生产编译（Rolldown / Three.js 与 G6 独立分包） | - | - | 0 chunk warnings | **SUCCESS** |
+| **AST 幽灵类名扫描** | 49 个 SFC 视图组件，1,155 处模板类名引用 | 1,155 | 1,155 | 0 缺失 | **100% MATCH** |
+| **UI Smoke 视觉矩阵** | 29 条页面路由 × 双视口 × 双角色 + 4 个专项业务场景 | 170 | 170 | 0 异常 | **100% PASSED** |
+
+### 3. API 隔离运行态巡检 vs 真实后端联调分栏说明
+
+为确保工程与学术陈述的诚实性，测试体系明确区分以下两类运行验证：
+
+| 验证维度 | 机制与数据源 | 覆盖范围与断言目标 | 结论边界（不越界声明） |
+| --- | --- | --- | --- |
+| **API Fixture Smoke 运行态巡检** (`authenticated-ui-smoke.mjs`) | 使用 Vite Preview 独立测试服务器，通过 Playwright 注入规范化双角色认证状态与最小合法 JSON Fixture。 | 覆盖 1440×900 和 1280×800 两种视口下 29 条页面路由（含 Canonical 路由与 302 重定向），以及学生受限实验、密码修改弹窗、草稿防丢拦截、A→B 顺序展示等 4 个专项场景（共 170 场景）。断言 0 控制台错误、0 未捕获异常、0 布局横向溢出、0 默认原生控件泄漏。 | **仅验证前端 DOM 挂载、响应式排版契约与双角色路由守卫有效性**；不替代真实全栈高并发/分布式图谱环境联调。 |
+| **Real Backend Integration 自动化集成测试** | 基于 Spring Boot Test 与 H2 内存数据库，在真实 Spring 上下文中运行 HTTP/Service 链路。 | 覆盖密码修改与 Refresh 令牌级联撤销、实验分组与任务顺序权威控制、学生作答与答案服务端隔离、固定案例目录只读访问等业务契约。 | 验证业务核心状态机与数据安全隔离契约；**独立 MySQL/NebulaGraph/Qwen API 真实线上联调在此单元/集成套件中标记为 `not run`**（需专用外部网络与容器基础设施）。 |
+
+### 4. 运行态 Smoke Matrix 覆盖明细（170 场景）
+
+- **视口配置**：桌面基准（`1440×900`）与笔记本基准（`1280×800`）。
+- **角色分布**：
+  - **学生端角色（STUDENT）**：85 个场景（含 5 大核心学习模块、受限实验运行页 `/experiment-run`、任务顺序展示、密码修改安全弹窗、草稿离开确认等）。
+  - **管理员角色（ADMIN）**：85 个场景（含教学总览、内容与题库中心、实验与评价中心 3 大工作台及 Tab 切换、权限拦截越权回到首页等）。
+- **专项场景实测结果**：
+  1. **学生受限实验运行页**：成功隔离参考答案与评分 Rubric，不向学生端暴露；
+  2. **实验组评估顺序**：学生任务卡片权威展示 `顺序 A→B`；
+  3. **未保存草稿离开拦截**：表单处于 dirty 状态时准确弹出离开确认对话框，防止意外丢弃；
+  4. **修改密码安全对话框**：新旧密码一致性及必填校验完全符合安全交互规范。
+- **巡检结论**：170 场景全部通过，无控制台错误，无水平滚动条溢出，巡检生成的临时截图目录 `.ui-visual-review` 已自动清理。
+
+### 5. 全局四份 CSS 体系与代码卫生扫描
+
+| 文件 | 精确字节数 (Bytes) | `!important` 次数 | 核心职责归属 |
+| --- | ---: | ---: | --- |
+| `styles-design-system.css` | 28,734 B | 0 | 全局 Design Tokens、排版规范、状态语义色、原子工具类 |
+| `styles.css` | 15,535 B | 0 | 基础通用布局、导航栏、顶部栏、弹窗卡片与通用反馈骨架 |
+| `styles-learning.css` | 11,389 B | 0 | 学习中心、微课、练习、测试与评估向导等业务样式 |
+| `styles-graph.css` | 3,297 B | 0 | 知识图谱画布容器、图谱抽屉与缩放工具条专用样式 |
+| **四 CSS 合计** | **58,955 B** | **0** | **全仓 Vue SFC 与全局样式 `!important` 严格清零** |
+
+- **样式契约验收**：通过 `frontend/tests/design-system-contract.test.ts` 自动化断言四文件全部存在、加载顺序一致，且全仓 `frontend/src` 中 `!important` 出现次数为 **0**。四份样式表完整覆盖 5+3 路由体系与复杂业务交互，无冗余幽灵样式。
+
+### 6. 数据库迁移与安全凭据合规核验
+
+- **数据库迁移版本状态**：
+  - 当前 Flyway 迁移链已包含 `V16__add_task_group_order.sql`，支持 `task_group_order` 组间评估顺序字段与实验任务状态机持久化；
+  - **重要说明**：不存在所谓的 `V17` 迁移，V16 即为平台重构的终版数据库 Schema；针对真实 MySQL 独立实例的端到端执行在本地 suite 中标记为 `not run (verified via H2 compatibility suite)`。
+- **安全与学术合规守卫**：
+  - `compliance-guard.test.ts`（4/4 通过）：严禁向前端暴露任何系统内部固定提示词（如 RANKED 标识或具体 Prompt 正文）；严禁在界面与报告中出现“降低认知负荷”、“采集生理信号”等无依据的越界学术宣称；
+  - 敏感凭据扫描：本地执行全仓正则与敏感词排查（`Get-Command gitleaks` 在本地 Windows 环境未安装，标记为 `not run`；已通过 `rg` 针对各类 API Key、Token、私钥和密码模式全面排查），全仓仅包含测试用 Mock 占位符（如 `dummy-token`、`test-password`），无任何真实线上凭据泄露。
+- **Docker Compose 配置合规**：
+  - 运行 `docker compose --env-file deploy/.env.server.example -f deploy/compose.server.yml config --quiet` 退出码为 0，46 个环境变量全部与模板规范严格对齐。

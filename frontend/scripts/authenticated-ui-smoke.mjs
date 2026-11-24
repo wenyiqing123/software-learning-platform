@@ -13,7 +13,7 @@ const routes = [
   '/admin/micro-lessons', '/admin/diagnostics', '/knowledge?entity=%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90',
   '/mastery-map', '/tutor', '/practice', '/adaptive-practice', '/wrong-book', '/review', '/study-plan',
   '/micro-lessons', '/evaluation', '/learning-report', '/admin/evaluations', '/recommendations',
-  '/experiments', '/experiment-tasks', '/admin/experiment-tasks',
+  '/experiments', '/experiment-tasks', '/experiment-run', '/admin/experiment-tasks',
 ]
 const roles = ['STUDENT', 'ADMIN', 'GUEST']
 const adminRoute = path => path === '/experiments' || path === '/teaching-dashboard' || path.startsWith('/admin')
@@ -146,7 +146,7 @@ function apiResponse(url, role, scenario, method) {
     ]
   })
   if (path === '/api/admin/experiment-tasks') return json([experimentTask, { ...experimentTask, id: 10, title: '课程阅读后的延后测验', status: 'DRAFT', assignmentCount: 0 }])
-  if (path === '/api/experiment-tasks') return json([{ ...experimentTask, id: 41, taskId: 9, groupId: 1, userId: 2, groupName: 'A 组', conditionKey: 'METHODS', status: 'ASSIGNED', taskStatus: 'OPEN', referenceAnswer: '' }])
+  if (path === '/api/experiment-tasks') return json([{ ...experimentTask, id: 41, taskId: 9, groupId: 1, userId: 2, groupName: 'A 组', conditionKey: 'METHODS', status: 'ASSIGNED', taskStatus: 'OPEN', referenceAnswer: '', taskOrder: 'A→B' }])
   if (path === '/api/evaluations/sessions') {
     const sample = { id: 12, conditionKey: 'METHODS', taskKey: '需求分析理解任务', taskOrder: 'A→B', consentVersion: 'evaluation-v2', completedPhases: ['PRE', 'INTERVENTION', 'POST'] }
     return method === 'POST'
@@ -276,8 +276,41 @@ const visualScenarios = {
         return item.top >= nav.top - 1 && item.bottom <= nav.bottom + 1
       })) throw new Error('Current route is clipped in the sidebar')
     } },
+    { route: '/dashboard', name: 'password-modal-validation', async check(page) {
+      const userTrigger = page.locator('button.user-menu')
+      await userTrigger.waitFor()
+      await userTrigger.click()
+      const pwdBtn = page.getByRole('menuitem', { name: '修改密码' })
+      await pwdBtn.waitFor()
+      await pwdBtn.click()
+      const dialog = page.locator('[role="dialog"][aria-labelledby="change-password-title"]')
+      await dialog.waitFor()
+      await dialog.locator('input[autocomplete="current-password"]').fill('oldpass123')
+      await dialog.locator('input[autocomplete="new-password"]').first().fill('newpass1234')
+      await dialog.locator('input[autocomplete="new-password"]').last().fill('mismatchpass')
+      await dialog.locator('button[type="submit"]').click()
+      await page.getByText('两次输入的新密码不一致').waitFor()
+      await dialog.locator('button[aria-label="关闭对话框"]').click()
+    } },
+    { route: '/experiment-run?taskId=9&assignmentId=41', name: 'student-assigned-run-hidden-rubric', async check(page) {
+      await page.getByText('任务实验运行').waitFor()
+      if (await page.locator('.reference-answer, .scoring-rubric, .teacher-rubric').count() > 0) throw new Error('Student assigned run leaked teacher rubric')
+    } },
+    { route: '/experiment-tasks', name: 'student-task-order', async check(page) {
+      await page.locator('.task-card').first().waitFor()
+      await page.getByText('顺序 A→B').first().waitFor()
+    } },
   ],
   ADMIN: [
+    { route: '/admin/content?tab=question-bank', name: 'unsaved-route-confirm', async check(page) {
+      const input = page.locator('[data-testid="version-name"]')
+      await input.waitFor()
+      await input.fill('未保存测试草稿')
+      page.once('dialog', dialog => dialog.dismiss())
+      await page.locator('[data-testid="tab-course"]').click()
+      await input.waitFor()
+      if ((await input.inputValue()) !== '未保存测试草稿') throw new Error('Unsaved changes guard failed to preserve input on cancel')
+    } },
     { route: '/admin/content?tab=question-bank', name: 'question-bank-file-control', async check(page) {
       const fileButton = page.locator('.question-bank-panel .file-button')
       await fileButton.waitFor()

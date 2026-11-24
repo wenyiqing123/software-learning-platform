@@ -6,8 +6,9 @@
 | --- | --- | --- |
 | POST | /auth/register | username、password（8–72字符）、displayName；返回201及访问/刷新令牌 |
 | POST | /auth/login | username、password |
-| POST | /auth/refresh | refreshToken；一次使用后立即轮换 |
+| POST | /auth/refresh | refreshToken；一次使用后立即轮换，并发 401 客户端执行 Single-flight 保护 |
 | POST | /auth/logout | refreshToken；返回204 |
+| PATCH | /auth/password | currentPassword、newPassword（8–72字符）；修改成功返回204并撤销当前用户所有活跃刷新令牌 |
 | GET | /auth/me | 当前用户ID、显示名称和角色 |
 | GET | /system/status | 当前账号可见的 MySQL、Redis、RabbitMQ、Python Bridge/知识图谱和 AI 服务状态；只返回状态、检查时间和功能影响，不返回地址、密钥或异常栈 |
 | GET | /courses | 启用的课程 |
@@ -48,22 +49,23 @@
 | POST | /ai/ask/stream | 相同输入，SSE状态、证据、文本片段与完成结果 |
 | POST | /ai/compare | question、includeAblations；共享检索证据，保持生成配置一致 |
 | GET | /ai/dependencies | 默认模型与Python依赖状态，以及 RANKED 专用模型的开关、配置状态和模型ID；不返回 Key、地址或凭据。`rankedModelStatus=CONFIGURED` 仅表示配置完整，不代表远端推理服务健康 |
-| GET | /experiments | 本人最近100次实验 |
-| POST | /experiments/run | question；includeAblations、referenceAnswer、expectedEntities可选；后端调用AI并保存实际结果 |
+| GET | /experiments | 本人最近100次实验（ADMIN-only） |
+| POST | /experiments/run | question（或任务指派 taskId）；includeAblations、referenceAnswer、expectedEntities可选；后端调用AI并保存实际结果；学生任务运行不返回参考答案与评分标准 |
 | PUT | /experiments/{id}/ratings | ratings对象，键为本次成功返回的模式，值1–5 |
 | GET | /experiments/export | 当前用户实验的服务端 CSV 导出；包含问题、实验类型、条件、证据返回顺序、耗时、模型/生成参数快照、提示词版本/hash、分项指标、人工评分和错误状态；不包含任何提示词正文 |
 | GET | /experiments/export/json | 与 CSV 同口径的 JSON 导出，schemaVersion=`experiment-export-v2`；RANKED 只保留版本/hash元数据，不返回后台固定系统提示词 |
-| GET | /experiment-tasks | 当前用户被分配的实验任务 |
-| POST | /experiment-tasks/{assignmentId}/start | 开始当前用户的实验分配；任务必须处于 OPEN |
+| GET | /admin/experiments/fixed-suite | 管理员固定实验案例目录（ADMIN-only）；返回 suiteVersion 与 cases 列表，字段仅含 caseId、question、sourceSection、knowledgePoint，不含答案 key，不构成参考答案语料 |
+| GET | /experiment-tasks | 当前用户被分配的实验任务；包含服务端权威 taskOrder 与 assignment 状态 |
+| POST | /experiment-tasks/{assignmentId}/start | 开始当前用户的实验分配；任务必须处于 OPEN，运行问答不提前结单 |
 | GET / POST | /admin/experiment-tasks | 管理员查询 / 创建实验任务 |
-| POST | /admin/experiment-tasks/{id}/groups | 新增实验组；conditionKey 用于记录实验条件 |
-| POST | /admin/experiment-tasks/{id}/assign | 将用户ID列表分配到指定实验组，重复分配幂等 |
+| POST | /admin/experiment-tasks/{id}/groups | 新增实验组；name、conditionKey、sortOrder、taskOrder（A→B 或 B→A，V16 持久化字段，不代表随机化） |
+| POST | /admin/experiment-tasks/{id}/assign | 将用户ID列表分配到指定实验组，原子派发且仅允许 STUDENT 账号 |
 | PUT | /admin/experiment-tasks/{id}/status | DRAFT、OPEN、CLOSED |
 | GET | /admin/experiment-tasks/export?taskId=... | 导出任务、实验组、参与者、状态和真实运行次数 CSV |
-| GET | /evaluations/sessions | 当前用户评估会话；包含条件、任务顺序、任务编号、用时和 Paas 评分状态 |
-| POST | /evaluations/sessions | conditionKey、taskKey、taskOrder、assignmentId、consentVersion、consentAccepted；创建带知情同意的评估会话 |
-| POST | /evaluations/sessions/{id}/measurements | phase=PRE、POST、DELAYED 或 EQUIVALENT，score(0–100)；延后测验独立保存 |
-| POST | /evaluations/sessions/{id}/complete | elapsedSeconds、psychologicalEffort(1–9)、feedback；结束单任务计时并保存 Paas/反馈 |
+| GET | /evaluations/sessions | 当前用户评估会话；包含条件、任务顺序、已完成阶段列表（completedPhases）、用时和 Paas 评分状态 |
+| POST | /evaluations/sessions | conditionKey、taskKey、taskOrder、assignmentId、consentVersion、consentAccepted；创建带知情同意的评估会话，startedAt 由服务端生成 |
+| POST | /evaluations/sessions/{id}/measurements | phase=PRE、POST、DELAYED 或 EQUIVALENT，score(0–100)；延后测验独立保存，向导严格按阶段流转 |
+| POST | /evaluations/sessions/{id}/complete | elapsedSeconds、psychologicalEffort(1–9)、feedback；结束单任务计时（用时由服务端时间差权威计算），提交评估后才闭环完成 assignment 并保存 Paas/反馈 |
 | GET | /admin/evaluations/summary | 按条件返回 n、均值、中位数、标准差、四分位距、增益、用时和反馈数；仅管理员 |
 | GET | /admin/evaluations/export | 去标识化 CSV；参与者真实 userId 转为稳定匿名编号，保留分组、任务顺序、条件、用时、Paas、前/后/延后测验，不导出身份字段 |
 
@@ -116,6 +118,12 @@ results 为后端 AI 服务的实际响应；evaluation.source=SERVER_AI_SERVICE
 问答实验页面另外提供客户端 CSV 展平导出和原始 JSON 导出；导出字段包含运行时间、实验类型、策略、模型变体、成功/失败、耗时、分项指标、人工评分、回答和错误信息。失败运行保留在报告中但不进入成功答案指标或人工评分。
 
 ROUGE-L 使用小写 Unicode 字母/数字字符序列的最长公共子序列F1；BLEU 使用同一分词，最大4阶并对短文本采用有效阶数，不做平滑；实体召回率按去重的期望实体是否出现在回答中计算。它们不等同于完整事实正确性。个人跨次统计包含不同问题与配置，正式论文分析应导出后按评测集和配置分组。
+
+### 固定案例与批次实验边界
+
+- `GET /admin/experiments/fixed-suite` 为管理员提供只读的固定实验套件 manifest，包含 8 个由系统预置的典型案例（仅含 `caseId`、`question`、`sourceSection` 与 `knowledgePoint`），不含答案 key，也不构成教师审核过的参考答案 corpus。
+- 批次实验队列仅驻留浏览器内存（browser-only batch queue），逐项调用真实 `POST /experiments/run` 并独立保存，失败继续推进；队列与进度不声称服务端持久队列或刷新恢复；现有 compare endpoint 超时时间最长支持 600s。
+- 数据库 Flyway 迁移已应用至 V16（`V16__experiment_group_task_order.sql`，支持组间评估顺序可空字段），历史迁移严格不可变，本平台未实现也不声明 V17 迁移。
 
 ## 最终合规守卫
 
