@@ -147,3 +147,26 @@
 - Playwright 为微课页面新增正常数据与真实权限拒绝两个隔离场景。管理员调用学生专属 `/api/courses/3/study` 仍如实得到 403，页面显示错误且禁用生成；脚本通过 response URL/status/method 明确归类，只容许命名故障场景的该接口 403，其他 HTTP、资源、控制台和页面错误均失败。
 - 最终前端测试为 50 文件 / 97 项通过；`npm run build` 通过且无 chunk 告警；双尺寸全角色 Playwright 158/158（学生每视口 44、管理员每视口 34、访客登录每视口 1）。控制台错误、未捕获异常、非预期 HTTP 错误、横向溢出、按钮挤压、裸控件及未样式表格均为 0；命名权限拒绝态另有 4 个预期 403 响应（每视口 2 次调用）。
 - 四份全局 CSS 为 47,560 B，较第 3 批减少 7,823 B；CSS/Vue 强制覆盖规则扫描为 0。临时截图已清理，`git diff --check` 通过。仅前端与文档改动，待创建第 4 个独立本地提交，暂不推送。
+
+## 里程碑 M1 收口记录（2026-11-24）
+
+- 完成施工任务书【里程碑 M1】全部 9 项原子任务（M1-T1 ~ M1-T9）落地与逐项单任务定向验证。
+- 前端核心改动：
+  - `M1-T1`：学生端导航收敛为五个一级入口（学习概览、知识图谱、AI 助教、练习与评测、实验与认知负荷），管理员保持教学总览、内容与题库中心、实验与评价中心三大工作台；
+  - `M1-T2`：新增 `StudentLearningSections` 二级分段导航，通过 query 参数在练习与评测（刷题/自适应/错题/复习/每日计划）、实验与认知负荷（问答实验/认知负荷）下实现平滑子页面分段切换；
+  - `M1-T3`：路由兼容性升级，保留 `/practice/adaptive`、`/practice/review` 等历史 URL 自动映射并高亮所属一级导航；强化角色守卫矩阵，学生与管理员未授权互斥阻断并正确定向；
+  - `M1-T4`：管理工作台 Tab 与旧入口无缝映射，移除重复面包屑与冗余入口。
+- 后端核心改动：
+  - `M1-T5`：后端实验与学习接口双向互斥，管理员访问学生自适应练习、微课学习返回 403，学生访问管理员中心返回 403；新增 `RoleBoundaryMvcTest`；
+  - `M1-T6`：管理工作流测试账号语义校准，在 `AdminStudyWorkflowTest` 中注入独立 ADMIN 账号（`id=3`），学生接口保持 `STUDENT` 身份，新增管理员访问学习进度 403 检查；
+  - `M1-T7`：教学统计 SQL 护栏测试，新增 `TeachingDashboardMapperRoleTest` 反射校验个人指标 SQL 均已 join `sys_user.role='STUDENT'`；
+  - `M1-T8`：评价统计 STUDENT 样本护栏测试，新增 `EvaluationMapperRoleTest` 反射校验评价统计与导出 SQL 均锁定 STUDENT 角色且公共 DTO 绝不泄露 userId；
+  - `M1-T9`：实验分组派发学生身份护栏，在 `ExperimentTaskService` 将方法安全注解从 `isAuthenticated()` 收敛强化为 `hasRole('STUDENT')`。
+- 门禁实测通过情况：
+  - 前端全量测试：51 个测试文件，117 项测试全部通过；
+  - 前端生产构建：`npm run build` 成功完成，0 chunk warning；
+  - 后端 M1 核心测试集（RoleBoundaryMvcTest、AdminStudyWorkflowTest、TeachingDashboardMapperRoleTest、TeachingDashboardServiceTest、EvaluationMapperRoleTest、EvaluationServiceTest、ExperimentTaskServiceTest）：54 项全部通过；
+  - 后端全量测试：learning-service（102 项通过）、ai-service（通过）、learning-gateway（5 项通过），三模块 BUILD SUCCESS；
+  - 代码质量与规范：`git diff --check` 通过；全局 CSS 与 Vue 模板 `!important` 扫描结果为 0；
+  - 施工任务书：`M1-T1` ~ `M1-T9` 全部勾选为 `[x]`。
+- 严格遵循红线与纪律：未修改外部 Mecha-QA、Python Bridge、NebulaGraph 图空间与模型权重，未透出 RANKED 后台固定证据约束系统提示词，未删改或弱化既有测试。本地合并提交，暂不推送远程。

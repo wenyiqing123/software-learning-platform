@@ -24,7 +24,18 @@ function selectTab(key: string) { void router.replace({ path: '/admin/content', 
   <div class="page-stack admin-center-page">
     <SectionHeading eyebrow="管理员工作台 · 内容资产" title="内容与题库中心" description="在同一个工作台维护课程、知识点、题库版本、错因诊断和已发布微课。" />
     <nav class="admin-center-tabs" role="tablist" aria-label="内容与题库中心">
-      <button v-for="tab in tabs" :key="tab.key" type="button" role="tab" :aria-selected="activeKey === tab.key" :class="{ active: activeKey === tab.key }" @click="selectTab(tab.key)">{{ tab.label }}</button>
+      <button
+        v-for="tab in tabs"
+        :key="tab.key"
+        type="button"
+        role="tab"
+        :data-testid="`tab-${tab.key}`"
+        :aria-selected="activeKey === tab.key"
+        :class="{ active: activeKey === tab.key }"
+        @click="selectTab(tab.key)"
+      >
+        {{ tab.label }}
+      </button>
     </nav>
     <component :is="activeTab.component" embedded />
   </div>

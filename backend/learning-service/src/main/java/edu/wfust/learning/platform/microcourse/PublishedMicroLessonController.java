@@ -1,10 +1,12 @@
 package edu.wfust.learning.platform.microcourse;
 
 import jakarta.validation.constraints.Positive;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/courses/{courseId}/study/sections/{sectionId}/micro-lesson")
+@PreAuthorize("hasRole('STUDENT')")
 public class PublishedMicroLessonController {
     private final MicroLessonService service;
     public PublishedMicroLessonController(MicroLessonService service) { this.service = service; }

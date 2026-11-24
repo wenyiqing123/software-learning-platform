@@ -41,6 +41,11 @@
 .user-menu:hover{border-color:var(--border-focus);background:var(--surface-soft)}
 .avatar{width:28px;height:28px;display:grid;place-items:center;color:var(--accent-strong);background:var(--accent-soft);border-radius:50%;font-size:12px;font-weight:650}
 .user-menu>svg{color:var(--text-subtle)}
+.student-sections-strip{display:flex;align-items:center;gap:6px;padding:8px var(--page-gutter);background:var(--surface);border-bottom:1px solid var(--border-soft);overflow-x:auto;scrollbar-width:thin}
+.student-section-link{display:inline-flex;align-items:center;padding:5px 12px;border-radius:var(--radius-sm);color:var(--text-muted);font-size:13px;text-decoration:none;white-space:nowrap;transition:color 150ms cubic-bezier(0.2,0,0,1),background 150ms cubic-bezier(0.2,0,0,1)}
+.student-section-link:hover{color:var(--accent);background:var(--surface-soft)}
+.student-section-link.active{color:var(--accent-strong);background:var(--accent-soft);font-weight:600}
+.student-section-link:focus-visible{outline:2px solid var(--border-focus);outline-offset:1px}
 .page-content{width:min(100%,1400px);margin:0 auto;padding:28px var(--page-gutter) 56px}
 .page-stack{display:flex;flex-direction:column;gap:20px}
 .section-heading,.page-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px 20px}

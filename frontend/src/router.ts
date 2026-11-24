@@ -29,13 +29,13 @@ const routes: RouteRecordRaw[] = [
   { path: '/admin/content', component: () => import('./views/AdminContentCenterView.vue'), meta: { roles: ['ADMIN'] } },
   { path: '/admin/experiments', component: () => import('./views/AdminExperimentCenterView.vue'), meta: { roles: ['ADMIN'] } },
   { path: '/experiments', component: () => import('./views/ExperimentsView.vue'), meta: { roles: ['ADMIN'] } },
-  { path: '/admin', redirect: '/teaching-dashboard', meta: { roles: ['ADMIN'] } },
-  { path: '/admin/teaching-dashboard', redirect: '/teaching-dashboard', meta: { roles: ['ADMIN'] } },
-  { path: '/admin/question-bank', redirect: '/admin/content?tab=question-bank', meta: { roles: ['ADMIN'] } },
-  { path: '/admin/micro-lessons', redirect: '/admin/content?tab=micro-lessons', meta: { roles: ['ADMIN'] } },
-  { path: '/admin/diagnostics', redirect: '/admin/content?tab=diagnosis', meta: { roles: ['ADMIN'] } },
-  { path: '/admin/experiment-tasks', redirect: '/admin/experiments?tab=tasks', meta: { roles: ['ADMIN'] } },
-  { path: '/admin/evaluations', redirect: '/admin/experiments?tab=evaluation', meta: { roles: ['ADMIN'] } },
+  { path: '/admin', redirect: (to) => ({ path: '/teaching-dashboard', query: to.query }), meta: { roles: ['ADMIN'] } },
+  { path: '/admin/teaching-dashboard', redirect: (to) => ({ path: '/teaching-dashboard', query: to.query }), meta: { roles: ['ADMIN'] } },
+  { path: '/admin/question-bank', redirect: (to) => ({ path: '/admin/content', query: { ...to.query, tab: 'question-bank' } }), meta: { roles: ['ADMIN'] } },
+  { path: '/admin/micro-lessons', redirect: (to) => ({ path: '/admin/content', query: { ...to.query, tab: 'micro-lessons' } }), meta: { roles: ['ADMIN'] } },
+  { path: '/admin/diagnostics', redirect: (to) => ({ path: '/admin/content', query: { ...to.query, tab: 'diagnosis' } }), meta: { roles: ['ADMIN'] } },
+  { path: '/admin/experiment-tasks', redirect: (to) => ({ path: '/admin/experiments', query: { ...to.query, tab: 'tasks' } }), meta: { roles: ['ADMIN'] } },
+  { path: '/admin/evaluations', redirect: (to) => ({ path: '/admin/experiments', query: { ...to.query, tab: 'evaluation' } }), meta: { roles: ['ADMIN'] } },
 ]
 
 const router = createRouter({
@@ -47,26 +47,48 @@ const router = createRouter({
   routes,
 })
 
-async function resolveRole(): Promise<UserRole | null> {
-  const cached = localStorage.getItem('slp-user-role')
-  if (cached === 'STUDENT' || cached === 'ADMIN') return cached
-  try {
-    const account = await learningApi.currentUser()
-    const role = account?.role === 'ADMIN' ? 'ADMIN' : account?.role === 'STUDENT' ? 'STUDENT' : null
-    if (role) localStorage.setItem('slp-user-role', role)
-    return role
-  } catch { return null }
+let rolePromiseCache: { token: string; promise: Promise<UserRole | null> } | null = null
+
+export function clearRoleCache() {
+  rolePromiseCache = null
+}
+
+export async function resolveRole(token: string | null): Promise<UserRole | null> {
+  if (!token) {
+    rolePromiseCache = null
+    return null
+  }
+  if (rolePromiseCache && rolePromiseCache.token === token) {
+    return rolePromiseCache.promise
+  }
+  const promise = (async () => {
+    try {
+      const account = await learningApi.currentUser()
+      const role = account?.role === 'ADMIN' ? 'ADMIN' : account?.role === 'STUDENT' ? 'STUDENT' : null
+      if (role) localStorage.setItem('slp-user-role', role)
+      return role
+    } catch {
+      const cached = localStorage.getItem('slp-user-role')
+      if (cached === 'STUDENT' || cached === 'ADMIN') return cached
+      return null
+    }
+  })()
+  rolePromiseCache = { token, promise }
+  return promise
 }
 
 router.beforeEach(async (to) => {
   const token = localStorage.getItem('slp-access-token')
+  if (!token) {
+    rolePromiseCache = null
+  }
   if (to.path === '/login') {
     if (!token) return true
-    const role = await resolveRole()
+    const role = await resolveRole(token)
     return role ? homeForRole(role) : true
   }
   if (!token) return '/login'
-  const role = await resolveRole()
+  const role = await resolveRole(token)
   if (!role) return '/login'
   if (to.path === '/') return homeForRole(role)
   const allowed = (to.meta.roles as UserRole[] | undefined) || []

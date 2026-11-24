@@ -8,6 +8,7 @@ import edu.wfust.learning.platform.experimenttask.ExperimentTaskService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -35,8 +36,11 @@ public class AiExperimentController {
     }
     public record RatingRequest(@NotEmpty @Size(max=8)Map<@NotBlank String,@Min(1)@Max(5)Integer> ratings){}
     public record ExperimentView(String id,String question,String createdAt,List<Map<String,Object>> results,Map<String,Integer> ratings,Map<String,Object> evaluation,Long taskId,Long assignmentId){}
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping public List<ExperimentView> list(Authentication auth){return mapper.selectList(new QueryWrapper<AiExperimentEntity>().eq("user_id",userId(auth)).orderByDesc("created_at").last("LIMIT 100")).stream().map(this::view).toList();}
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping(value="/export",produces="text/csv;charset=UTF-8") public String exportCsv(Authentication auth){return ExperimentExport.csv(exporter.rows(list(auth)));}
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping(value="/export/json",produces="application/json") public Map<String,Object> exportJson(Authentication auth){return Map.of("schemaVersion","experiment-export-v2","exportedAt",LocalDateTime.now().toString(),"runs",exporter.rows(list(auth)));}
 
     @PostMapping("/run") @ResponseStatus(HttpStatus.CREATED)
@@ -59,6 +63,7 @@ public class AiExperimentController {
         evaluation.put("source","SERVER_AI_SERVICE");evaluation.put("experimentType",experimentType);evaluation.put("referenceAnswer",request.referenceAnswer()==null?"":request.referenceAnswer());evaluation.put("expectedEntities",request.expectedEntities()==null?List.of():request.expectedEntities());evaluation.put("metricsByMode",perMode);evaluation.put("note",experimentType.equals("QWEN_MATRIX")?"Qwen 基座与 LoRA × DIRECT/TRIPLES/RANKED；实体召回率、中文字符级 ROUGE-L/BLEU 与人工评分用于同题配对比较。未审校训练标签的结果属于探索性证据。":"中文字符级 ROUGE-L / BLEU（最高4阶，有效阶数）；实体指标为期望实体召回率；参考答案与人工评分由评测者提供。");
         var entity=new AiExperimentEntity();entity.setUserId(userId(auth));entity.setTaskId(request.taskId());entity.setAssignmentId(assignmentId);entity.setQuestion(request.question().strip());entity.setResultsJson(json.writeValueAsString(results));entity.setRatingsJson("{}");entity.setEvaluationJson(json.writeValueAsString(evaluation));mapper.insert(entity);if(assignmentId!=null)taskService.completeRun(userId(auth),assignmentId,results.stream().anyMatch(result->{Object e=result.get("error");return e==null||String.valueOf(e).isBlank();}));return view(mapper.selectById(entity.getId()));
     }
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}/ratings") @Transactional
     public ExperimentView rate(Authentication auth,@PathVariable Long id,@Valid @RequestBody RatingRequest request){
         long userId=userId(auth);var entity=mapper.selectOne(new QueryWrapper<AiExperimentEntity>().eq("id",id).eq("user_id",userId));

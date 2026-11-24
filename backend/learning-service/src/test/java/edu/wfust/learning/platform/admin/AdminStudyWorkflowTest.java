@@ -83,6 +83,7 @@ class AdminStudyWorkflowTest {
         new ResourceDatabasePopulator(new ClassPathResource("admin-study-base.sql")).execute(dataSource);
         var migration = new ClassPathResource("db/migration/V4__course_content_question_bank.sql");
         new ResourceDatabasePopulator(migration).execute(dataSource);
+        jdbc.update("INSERT INTO sys_user (id, username, password_hash, display_name, role, enabled) VALUES (3, 'admin-user', 'unused', '管理员', 'ADMIN', TRUE)");
         mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
     }
     @Test void studentsCannotReadOrMutateAdminCoursesOrQuestions() throws Exception {
@@ -92,11 +93,16 @@ class AdminStudyWorkflowTest {
         mvc.perform(put("/api/admin/courses/1/enabled").with(user("1").roles("STUDENT")).contentType("application/json").content("{\"enabled\":false}")).andExpect(status().isForbidden());
     }
     @Test void administratorsCannotUseStudentPersonalLearningEndpoints() throws Exception {
-        mvc.perform(get("/api/quizzes").with(user("1").roles("ADMIN"))).andExpect(status().isForbidden());
-        mvc.perform(get("/api/wrong-book").with(user("1").roles("ADMIN"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/quizzes").with(user("3").roles("ADMIN"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/wrong-book").with(user("3").roles("ADMIN"))).andExpect(status().isForbidden());
+    }
+    @Test void adminCannotReadOrMutateStudentStudyProgress() throws Exception {
+        mvc.perform(get("/api/courses/1/study").with(user("3").roles("ADMIN"))).andExpect(status().isForbidden());
+        long section = jdbc.queryForObject("SELECT MIN(id) FROM course_study_section", Long.class);
+        mvc.perform(put("/api/courses/1/study/sections/" + section + "/progress").with(user("3").roles("ADMIN")).contentType("application/json").content("{\"completed\":true}")).andExpect(status().isForbidden());
     }
     @Test void administratorCanReadPrerequisiteQualityReport() throws Exception {
-        mvc.perform(get("/api/admin/courses/1/prerequisite-quality").with(user("1").roles("ADMIN")))
+        mvc.perform(get("/api/admin/courses/1/prerequisite-quality").with(user("3").roles("ADMIN")))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.courseId").value(1))
             .andExpect(jsonPath("$.pointCount").value(8))
@@ -148,25 +154,25 @@ class AdminStudyWorkflowTest {
     }) void rejectsInvalidQuestionBeforePersistence(String replacement) throws Exception {
         var parts = replacement.split("\\|", 2);
         long before = jdbc.queryForObject("SELECT COUNT(*) FROM quiz_question", Long.class);
-        mvc.perform(post("/api/admin/questions").with(user("1").roles("ADMIN")).contentType("application/json").content(VALID.replace(parts[0], parts[1])))
+        mvc.perform(post("/api/admin/questions").with(user("3").roles("ADMIN")).contentType("application/json").content(VALID.replace(parts[0], parts[1])))
             .andExpect(status().isBadRequest());
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM quiz_question", Long.class)).isEqualTo(before);
     }
     @Test void createsUpdatesAndDisablesQuestionWithoutExposingItsKeyOnStudentListing() throws Exception {
-        var created = mvc.perform(post("/api/admin/questions").with(user("1").roles("ADMIN")).contentType("application/json").content(VALID))
+        var created = mvc.perform(post("/api/admin/questions").with(user("3").roles("ADMIN")).contentType("application/json").content(VALID))
             .andExpect(status().isCreated()).andExpect(jsonPath("$.answer[0]").value("A")).andReturn();
         long id = JsonMapper.builder().build().readTree(created.getResponse().getContentAsString()).get("id").asLong();
-        mvc.perform(put("/api/admin/questions/" + id).with(user("1").roles("ADMIN")).contentType("application/json").content(VALID.replace("\"answer\":[\"A\"]", "\"answer\":[\"B\"]"))).andExpect(status().isOk()).andExpect(jsonPath("$.answer[0]").value("B"));
+        mvc.perform(put("/api/admin/questions/" + id).with(user("3").roles("ADMIN")).contentType("application/json").content(VALID.replace("\"answer\":[\"A\"]", "\"answer\":[\"B\"]"))).andExpect(status().isOk()).andExpect(jsonPath("$.answer[0]").value("B"));
         mvc.perform(get("/api/quizzes").with(user("1").roles("STUDENT"))).andExpect(status().isOk()).andExpect(jsonPath("$[0].answer").doesNotExist()).andExpect(jsonPath("$[0].answerJson").doesNotExist()).andExpect(jsonPath("$[0].explanation").doesNotExist());
-        mvc.perform(put("/api/admin/questions/" + id + "/enabled").with(user("1").roles("ADMIN")).contentType("application/json").content("{\"enabled\":false}")).andExpect(status().isOk());
+        mvc.perform(put("/api/admin/questions/" + id + "/enabled").with(user("3").roles("ADMIN")).contentType("application/json").content("{\"enabled\":false}")).andExpect(status().isOk());
         assertThat(jdbc.queryForObject("SELECT enabled FROM quiz_question WHERE id=?", Boolean.class, id)).isFalse();
         mvc.perform(get("/api/quizzes").param("knowledgePointId", "1").with(user("1").roles("STUDENT"))).andExpect(jsonPath("$[?(@.id == " + id + ")]").isEmpty());
     }
     @Test void duplicateCourseConflictsAndDisableHidesStudy() throws Exception {
         String course = "{\"code\":\"NEW\",\"name\":\"软件测试\",\"term\":\"2026 秋季\",\"description\":\"测试课程\",\"graphSpaceId\":1}";
-        mvc.perform(post("/api/admin/courses").with(user("1").roles("ADMIN")).contentType("application/json").content(course)).andExpect(status().isCreated());
-        mvc.perform(post("/api/admin/courses").with(user("1").roles("ADMIN")).contentType("application/json").content(course)).andExpect(status().isConflict());
-        mvc.perform(put("/api/admin/courses/1/enabled").with(user("1").roles("ADMIN")).contentType("application/json").content("{\"enabled\":false}")).andExpect(status().isOk());
+        mvc.perform(post("/api/admin/courses").with(user("3").roles("ADMIN")).contentType("application/json").content(course)).andExpect(status().isCreated());
+        mvc.perform(post("/api/admin/courses").with(user("3").roles("ADMIN")).contentType("application/json").content(course)).andExpect(status().isConflict());
+        mvc.perform(put("/api/admin/courses/1/enabled").with(user("3").roles("ADMIN")).contentType("application/json").content("{\"enabled\":false}")).andExpect(status().isOk());
         mvc.perform(get("/api/courses/1/study").with(user("1").roles("STUDENT"))).andExpect(status().isNotFound());
     }
     @Test void seededContentCoversEachCurrentPointAndContainsTwentyFourValidatedQuestions() throws Exception {
@@ -219,25 +225,25 @@ class AdminStudyWorkflowTest {
         assertThat(jdbc.queryForObject("SELECT graph_space_id FROM course WHERE id=1", Integer.class)).isEqualTo(1);
     }
     @Test void courseGraphMappingIsRestrictedToExistingSpaceOne() throws Exception {
-        mvc.perform(post("/api/admin/courses").with(user("1").roles("ADMIN")).contentType("application/json").content("""
+        mvc.perform(post("/api/admin/courses").with(user("3").roles("ADMIN")).contentType("application/json").content("""
             {"code":"SPACE","name":"课程","term":"2026 秋季","description":"说明","graphSpaceId":2}
             """)).andExpect(status().isBadRequest());
     }
     @Test void trueFalseAndMultiplePayloadsPersistTheirKeys() throws Exception {
-        mvc.perform(post("/api/admin/questions").with(user("1").roles("ADMIN")).contentType("application/json").content("""
+        mvc.perform(post("/api/admin/questions").with(user("3").roles("ADMIN")).contentType("application/json").content("""
             {"courseId":1,"knowledgePointId":1,"type":"TRUE_FALSE","stem":"需求应可验证。",
              "options":[{"key":"TRUE","text":"正确"},{"key":"FALSE","text":"错误"}],"answer":["TRUE"],"explanation":"需求应有验收条件。","difficulty":1}
             """)).andExpect(status().isCreated()).andExpect(jsonPath("$.answer[0]").value("TRUE"));
-        mvc.perform(post("/api/admin/questions").with(user("1").roles("ADMIN")).contentType("application/json").content(VALID.replace("\"type\":\"SINGLE\"", "\"type\":\"MULTIPLE\"").replace("\"answer\":[\"A\"]", "\"answer\":[\"A\",\"B\"]")))
+        mvc.perform(post("/api/admin/questions").with(user("3").roles("ADMIN")).contentType("application/json").content(VALID.replace("\"type\":\"SINGLE\"", "\"type\":\"MULTIPLE\"").replace("\"answer\":[\"A\"]", "\"answer\":[\"A\",\"B\"]")))
             .andExpect(status().isCreated()).andExpect(jsonPath("$.answer.length()").value(2));
     }
     @Test void invalidUpdateCannotChangeExistingQuestionAndDisabledPointCannotBePublished() throws Exception {
         long id = jdbc.queryForObject("SELECT MIN(id) FROM quiz_question", Long.class);
         String oldStem = jdbc.queryForObject("SELECT stem FROM quiz_question WHERE id=?", String.class, id);
-        mvc.perform(put("/api/admin/questions/" + id).with(user("1").roles("ADMIN")).contentType("application/json").content(VALID.replace("\"knowledgePointId\":1", "\"knowledgePointId\":9"))).andExpect(status().isBadRequest());
+        mvc.perform(put("/api/admin/questions/" + id).with(user("3").roles("ADMIN")).contentType("application/json").content(VALID.replace("\"knowledgePointId\":1", "\"knowledgePointId\":9"))).andExpect(status().isBadRequest());
         assertThat(jdbc.queryForObject("SELECT stem FROM quiz_question WHERE id=?", String.class, id)).isEqualTo(oldStem);
         jdbc.update("UPDATE knowledge_point SET enabled=FALSE WHERE id=1");
-        mvc.perform(post("/api/admin/questions").with(user("1").roles("ADMIN")).contentType("application/json").content(VALID)).andExpect(status().isBadRequest());
+        mvc.perform(post("/api/admin/questions").with(user("3").roles("ADMIN")).contentType("application/json").content(VALID)).andExpect(status().isBadRequest());
     }
 
 }
