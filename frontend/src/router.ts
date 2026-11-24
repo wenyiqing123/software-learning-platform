@@ -25,6 +25,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/learning-report', component: () => import('./views/LearningReportView.vue'), meta: { roles: ['STUDENT'] } },
   { path: '/recommendations', component: () => import('./views/RecommendationsView.vue'), meta: { roles: ['STUDENT'] } },
   { path: '/experiment-tasks', component: () => import('./views/ExperimentTasksView.vue'), meta: { roles: ['STUDENT'] } },
+  { path: '/experiment-run', component: () => import('./views/ExperimentsView.vue'), props: { studentTaskMode: true }, meta: { roles: ['STUDENT'] } },
   { path: '/teaching-dashboard', component: () => import('./views/TeachingDashboardView.vue'), meta: { roles: ['ADMIN'] } },
   { path: '/admin/content', component: () => import('./views/AdminContentCenterView.vue'), meta: { roles: ['ADMIN'] } },
   { path: '/admin/experiments', component: () => import('./views/AdminExperimentCenterView.vue'), meta: { roles: ['ADMIN'] } },

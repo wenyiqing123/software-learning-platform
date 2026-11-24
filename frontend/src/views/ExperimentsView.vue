@@ -2,15 +2,21 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowDownToLine, CircleHelp, FlaskConical, Play, Plus, Timer, X } from '@lucide/vue'
-import { apiError, learningApi } from '../api/client'
+import { apiError, learningApi, type ExperimentAssignment } from '../api/client'
 import SectionHeading from '../components/SectionHeading.vue'
 import { experimentCsv, experimentJson, type ExperimentExportRun } from '../domain/experimentExport'
 import ExperimentResultGrid from '../components/ExperimentResultGrid.vue'
 
-defineProps<{ embedded?: boolean }>()
+const props = withDefaults(defineProps<{ embedded?: boolean; studentTaskMode?: boolean }>(), {
+  embedded: false,
+  studentTaskMode: false
+})
 
 const route = useRoute()
 const router = useRouter()
+
+const isStudentMode = computed(() => Boolean(props.studentTaskMode || route.path === '/experiment-run'))
+const assignedTask = ref<ExperimentAssignment | null>(null)
 
 interface Answer {
   mode: string
@@ -48,7 +54,18 @@ const expectedEntityInputs = ref(['动宾短语', '', ''])
 const experimentType = ref<'METHODS' | 'QWEN_MATRIX'>('METHODS')
 const rankedPromptVersion = 'ranked-grounded-v3'
 const includeAblations = ref(false)
-const taskId = computed(() => Number(new URLSearchParams(window.location.search).get('taskId')) || undefined)
+const taskId = computed(() => {
+  const q = route.query.taskId
+  if (typeof q === 'string' && q.trim()) return Number(q) || undefined
+  if (typeof q === 'number') return q
+  return Number(new URLSearchParams(window.location.search).get('taskId')) || undefined
+})
+const assignmentId = computed(() => {
+  const q = route.query.assignmentId
+  if (typeof q === 'string' && q.trim()) return Number(q) || undefined
+  if (typeof q === 'number') return q
+  return Number(new URLSearchParams(window.location.search).get('assignmentId')) || undefined
+})
 const running = ref(false), error = ref(''), latest = ref<Run | null>(null), history = ref<Run[]>([])
 const executionPhase = ref<'idle' | 'running' | 'complete'>('idle')
 const executionStartedAt = ref<number | null>(null)
@@ -131,10 +148,28 @@ const summary = computed(() => {
 })
 
 onMounted(async () => {
-  try {
-    history.value = await learningApi.listExperiments()
-  } catch (e) {
-    error.value = apiError(e)
+  if (isStudentMode.value) {
+    try {
+      const assignments = await learningApi.experimentAssignments()
+      const matched = assignments.find(a =>
+        (taskId.value != null && a.taskId === taskId.value) ||
+        (assignmentId.value != null && a.id === assignmentId.value)
+      )
+      if (!matched) {
+        error.value = '未找到指派给您的有效实验任务，请确认任务是否开放或联系教师'
+      } else {
+        assignedTask.value = matched
+        question.value = matched.question || matched.title || ''
+      }
+    } catch (e) {
+      error.value = apiError(e, '获取实验任务指派失败')
+    }
+  } else {
+    try {
+      history.value = await learningApi.listExperiments()
+    } catch (e) {
+      error.value = apiError(e)
+    }
   }
 })
 
@@ -151,8 +186,14 @@ function removeExpectedEntity(index: number) {
 }
 
 async function runComparison() {
-  if (!question.value.trim() || running.value) return
-  const expectedEntities = expectedEntityInputs.value.map(value => value.trim()).filter(Boolean)
+  if (running.value) return
+  if (!isStudentMode.value && !question.value.trim()) return
+  const currentTaskId = taskId.value || assignedTask.value?.taskId
+  if (isStudentMode.value && !currentTaskId) {
+    error.value = '缺少实验任务参数'
+    return
+  }
+
   running.value = true
   error.value = ''
   executionPhase.value = 'running'
@@ -163,16 +204,24 @@ async function runComparison() {
     if (executionStartedAt.value) executionElapsed.value = Math.floor((Date.now() - executionStartedAt.value) / 1000)
   }, 1000)
   try {
-    const saved = await learningApi.runExperiment({
-      question: question.value.trim(),
-      referenceAnswer: referenceAnswer.value.trim(),
-      expectedEntities,
-      experimentType: experimentType.value,
-      includeAblations: experimentType.value === 'METHODS' && includeAblations.value,
-      taskId: taskId.value
-    }) as Run
+    let saved: Run
+    if (isStudentMode.value) {
+      saved = await learningApi.runExperiment({
+        taskId: currentTaskId
+      }) as Run
+    } else {
+      const expectedEntities = expectedEntityInputs.value.map(value => value.trim()).filter(Boolean)
+      saved = await learningApi.runExperiment({
+        question: question.value.trim(),
+        referenceAnswer: referenceAnswer.value.trim(),
+        expectedEntities,
+        experimentType: experimentType.value,
+        includeAblations: experimentType.value === 'METHODS' && includeAblations.value,
+        taskId: taskId.value
+      }) as Run
+      history.value = [saved, ...history.value].slice(0, 100)
+    }
     latest.value = saved
-    history.value = [saved, ...history.value].slice(0, 100)
     setTab('run')
   } catch (e) {
     error.value = apiError(e, '实验未完成，请检查 AI 服务和模型配置')
@@ -188,7 +237,7 @@ async function runComparison() {
 }
 
 async function rate(mode: string, score: number) {
-  if (!latest.value || !score) return
+  if (isStudentMode.value || !latest.value || !score) return
   const key = latest.value.results.find(result => result.resultKey === mode || result.mode === mode)?.resultKey || mode
   try {
     latest.value = await learningApi.rateExperiment(latest.value.id, { [key]: score })
@@ -236,15 +285,19 @@ function score(value?: number) {
 
 <template>
   <div class="page-stack experiment-page">
-    <SectionHeading :embedded="embedded" title="问答实验" description="固定问题与实验条件，对照问答策略或 Qwen 基座与 LoRA。">
-      <div class="experiment-export-actions">
+    <SectionHeading
+      :embedded="embedded"
+      :title="isStudentMode ? '任务实验运行' : '问答实验'"
+      :description="isStudentMode ? '当前为受限实验任务运行环境，服务端将自动加载指派题目与评测环境。' : '固定问题与实验条件，对照问答策略或 Qwen 基座与 LoRA。'"
+    >
+      <div v-if="!isStudentMode" class="experiment-export-actions">
         <button class="button button-outline" :disabled="!history.length" @click="exportResults"><ArrowDownToLine :size="16" />导出 JSON</button>
         <button class="button button-outline" :disabled="!history.length" @click="exportCsv"><ArrowDownToLine :size="16" />导出 CSV</button>
       </div>
     </SectionHeading>
 
-    <!-- Query/Tab 分段栏：实验输入与结果、个人统计、实验历史 -->
-    <div role="tablist" class="experiment-tabs-nav" aria-label="实验功能分段">
+    <!-- Query/Tab 分段栏：仅在管理端完整模式下展示 -->
+    <div v-if="!isStudentMode" role="tablist" class="experiment-tabs-nav" aria-label="实验功能分段">
       <button
         role="tab"
         id="tab-btn-run"
@@ -275,8 +328,8 @@ function score(value?: number) {
     </div>
 
     <!-- 选项卡 1：对比实验输入与本次结果 -->
-    <div v-show="activeTab === 'run'" role="tabpanel" aria-labelledby="tab-btn-run" class="tab-panel-container">
-      <details class="experiment-methods">
+    <div v-show="isStudentMode || activeTab === 'run'" role="tabpanel" :aria-labelledby="isStudentMode ? undefined : 'tab-btn-run'" class="tab-panel-container">
+      <details v-if="!isStudentMode" class="experiment-methods">
         <summary>实验条件说明</summary>
         <dl>
           <div><dt>大模型直答</dt><dd>直接提问，不访问图谱。</dd></div>
@@ -285,17 +338,29 @@ function score(value?: number) {
         </dl>
       </details>
       <section class="content-section experiment-run-form" aria-label="配置对照实验">
-        <label for="experiment-type">实验方案</label>
-        <select id="experiment-type" v-model="experimentType">
-          <option value="METHODS">方法对照：固定默认模型</option>
-          <option value="QWEN_MATRIX">模型对照：Qwen 基座 × LoRA × 三种方法</option>
-        </select>
-        <p v-if="experimentType === 'QWEN_MATRIX'" class="matrix-notice">此方案只调用本地 Qwen 基座和 LoRA，不调用 DeepSeek/M3E；六种组合共用一次图谱检索，逐项运行。训练标签尚未经教师审校，结果仅作探索性比较。</p>
-        <div class="experiment-input-pair">
-          <label for="experiment-question">统一测试问题<textarea id="experiment-question" v-model="question" maxlength="2000" rows="3"></textarea></label>
-          <label for="reference-answer">参考答案（可选）<textarea id="reference-answer" v-model="referenceAnswer" maxlength="4000" rows="3" placeholder="由教师或教材确定；留空时不生成文本相似度指标"></textarea></label>
+        <template v-if="!isStudentMode">
+          <label for="experiment-type">实验方案</label>
+          <select id="experiment-type" v-model="experimentType">
+            <option value="METHODS">方法对照：固定默认模型</option>
+            <option value="QWEN_MATRIX">模型对照：Qwen 基座 × LoRA × 三种方法</option>
+          </select>
+          <p v-if="experimentType === 'QWEN_MATRIX'" class="matrix-notice">此方案只调用本地 Qwen 基座和 LoRA，不调用 DeepSeek/M3E；六种组合共用一次图谱检索，逐项运行。训练标签尚未经教师审校，结果仅作探索性比较。</p>
+        </template>
+        <div class="experiment-input-pair" :class="{ 'student-mode-input': isStudentMode }">
+          <label v-if="!isStudentMode" for="experiment-question">
+            统一测试问题
+            <textarea id="experiment-question" v-model="question" maxlength="2000" rows="3"></textarea>
+          </label>
+          <div v-else class="readonly-task-stem">
+            <span class="eyebrow">指派实验题干（只读）</span>
+            <p class="task-question-display">{{ question || '正在加载指派题目…' }}</p>
+          </div>
+          <label v-if="!isStudentMode" for="reference-answer">
+            参考答案（可选）
+            <textarea id="reference-answer" v-model="referenceAnswer" maxlength="4000" rows="3" placeholder="由教师或教材确定；留空时不生成文本相似度指标"></textarea>
+          </label>
         </div>
-        <fieldset class="expected-entities">
+        <fieldset v-if="!isStudentMode" class="expected-entities">
           <legend>期望答案实体（可选）</legend>
           <div class="expected-entity-list">
             <div v-for="(entity, index) in expectedEntityInputs" :key="index" class="expected-entity-row">
@@ -307,11 +372,18 @@ function score(value?: number) {
           <p>每格内容整体作为一个答案实体或短语，可包含逗号、顿号等标点。本题可将完整目标句填写在一个框中；多个目标请分别填写或添加输入框。答案实体不是三元组的主语、关系、宾语；最多 40 项，空白不参与评分。</p>
         </fieldset>
         <div class="experiment-actions">
-          <label v-if="experimentType === 'METHODS'" class="ablation-control"><input v-model="includeAblations" type="checkbox" />附加消融实验</label>
-          <span v-else>串行运行 6 个条件；RANKED 每个模型均执行证据筛选和答案校验</span>
-          <button class="button button-dark" :disabled="running || !question.trim()" @click="runComparison"><Play :size="15" />{{ running ? '矩阵实验运行中…' : '开始对比实验' }}</button>
+          <label v-if="!isStudentMode && experimentType === 'METHODS'" class="ablation-control"><input v-model="includeAblations" type="checkbox" />附加消融实验</label>
+          <span v-else-if="!isStudentMode">串行运行 6 个条件；RANKED 每个模型均执行证据筛选和答案校验</span>
+          <span v-else>指派任务受限模式：执行预设实验条件，自动汇总对比</span>
+          <button
+            class="button button-dark"
+            :disabled="running || (isStudentMode ? (!taskId && !assignedTask?.taskId) : !question.trim())"
+            @click="runComparison"
+          >
+            <Play :size="15" />{{ running ? '实验运行中…' : (isStudentMode ? '运行问答对比' : '开始对比实验') }}
+          </button>
         </div>
-        <small v-if="experimentType === 'METHODS'">各模式使用相同模型与生成参数；排序评分组包含证据选择和生成两次调用，总耗时与 token 按实际记录。失败结果不参与评分，参考答案与期望实体仅用于生成后的评价。</small>
+        <small v-if="!isStudentMode && experimentType === 'METHODS'">各模式使用相同模型与生成参数；排序评分组包含证据选择和生成两次调用，总耗时与 token 按实际记录。失败结果不参与评分，参考答案与期望实体仅用于生成后的评价。</small>
       </section>
       <section class="experiment-execution-status" aria-live="polite">
         <div>
@@ -319,7 +391,7 @@ function score(value?: number) {
           <strong>{{ executionStatusText }}</strong>
         </div>
         <div class="execution-status-meta">
-          <span>预期条件 {{ expectedConditions }}</span>
+          <span v-if="!isStudentMode">预期条件 {{ expectedConditions }}</span>
           <span v-if="executionPhase === 'running'">已运行 {{ executionElapsed }} 秒</span>
           <span v-if="latest">实际返回 {{ latest.results.length }} 条</span>
         </div>
@@ -334,12 +406,20 @@ function score(value?: number) {
           </div>
           <span class="history-count"><Timer :size="13" />{{ new Date(latest.createdAt).toLocaleString('zh-CN') }}</span>
         </div>
-        <ExperimentResultGrid :results="latest.results" :ratings="latest.ratings" :metrics="latest.evaluation?.metricsByMode" :mode-names="modeNames" :score="score" @rate="rate" />
+        <ExperimentResultGrid
+          :results="latest.results"
+          :ratings="latest.ratings"
+          :metrics="latest.evaluation?.metricsByMode"
+          :mode-names="modeNames"
+          :score="score"
+          :hide-rating="isStudentMode"
+          @rate="rate"
+        />
         <small class="local-history-note">{{ latest.evaluation?.note || '早期导入记录，未生成可复核的实验指标。自动指标与人工评分分别呈现，不等同于事实正确性。' }}</small>
       </section>
 
-      <!-- 历史记录快速选择区（移出首屏主阅读区，置于底部） -->
-      <section class="content-section experiment-history">
+      <!-- 历史记录快速选择区（仅管理端全功能模式展示） -->
+      <section v-if="!isStudentMode" class="content-section experiment-history">
         <div class="section-title-row">
           <h2>实验历史</h2>
           <span class="history-count">{{ history.length }} 条</span>
@@ -358,67 +438,316 @@ function score(value?: number) {
       </section>
     </div>
 
-    <!-- 选项卡 2：个人实验统计 -->
-    <div v-show="activeTab === 'summary'" role="tabpanel" aria-labelledby="tab-btn-summary" class="tab-panel-container">
-      <section class="content-section">
-        <div class="section-title-row">
-          <h2>个人实验统计</h2>
-          <small>方法实验与 Qwen 矩阵分组汇总；不同实验类型不会混算</small>
-        </div>
-        <div v-if="summary.length" class="table-scroll">
-          <table class="experiment-table">
-            <thead>
-              <tr>
-                <th scope="col">实验条件</th>
-                <th scope="col">运行数</th>
-                <th scope="col">错误率</th>
-                <th scope="col">成功平均耗时</th>
-                <th scope="col">成功 P95</th>
-                <th scope="col">人工均分</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in summary" :key="row.key">
-                <td>{{ row.label }}</td>
-                <td>{{ row.count }}</td>
-                <td>{{ (row.failed * 100 / row.count).toFixed(1) }}%</td>
-                <td>{{ row.mean == null ? '未测得' : row.mean + ' ms' }}</td>
-                <td>{{ row.p95 == null ? '未测得' : row.p95 + ' ms' }}</td>
-                <td>{{ row.csat }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div v-else class="empty-state compact-empty">
-          <FlaskConical :size="24" />
-          <strong>暂无统计数据</strong>
-          <span>运行对比实验后将自动生成统计指标。</span>
-        </div>
-      </section>
-    </div>
+    <!-- 选项卡 2：个人实验统计（仅管理端全功能模式渲染） -->
+    <template v-if="!isStudentMode">
+      <div v-show="activeTab === 'summary'" role="tabpanel" aria-labelledby="tab-btn-summary" class="tab-panel-container">
+        <section class="content-section">
+          <div class="section-title-row">
+            <h2>个人实验统计</h2>
+            <small>方法实验与 Qwen 矩阵分组汇总；不同实验类型不会混算</small>
+          </div>
+          <div v-if="summary.length" class="table-scroll">
+            <table class="experiment-table">
+              <thead>
+                <tr>
+                  <th scope="col">实验条件</th>
+                  <th scope="col">运行数</th>
+                  <th scope="col">错误率</th>
+                  <th scope="col">成功平均耗时</th>
+                  <th scope="col">成功 P95</th>
+                  <th scope="col">人工均分</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in summary" :key="row.key">
+                  <td>{{ row.label }}</td>
+                  <td>{{ row.count }}</td>
+                  <td>{{ (row.failed * 100 / row.count).toFixed(1) }}%</td>
+                  <td>{{ row.mean == null ? '未测得' : row.mean + ' ms' }}</td>
+                  <td>{{ row.p95 == null ? '未测得' : row.p95 + ' ms' }}</td>
+                  <td>{{ row.csat }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div v-else class="empty-state compact-empty">
+            <FlaskConical :size="24" />
+            <strong>暂无统计数据</strong>
+            <span>运行对比实验后将自动生成统计指标。</span>
+          </div>
+        </section>
+      </div>
 
-    <!-- 选项卡 3：实验历史 -->
-    <div v-show="activeTab === 'history'" role="tabpanel" aria-labelledby="tab-btn-history" class="tab-panel-container">
-      <section class="content-section experiment-history">
-        <div class="section-title-row">
-          <h2>实验历史</h2>
-          <span class="history-count">{{ history.length }} 条</span>
-        </div>
-        <div v-if="history.length" class="saved-experiment-list">
-          <button v-for="run in history" :key="run.id" @click="selectRun(run)">
-            <span>{{ run.question }}</span>
-            <small>{{ new Date(run.createdAt).toLocaleString('zh-CN') }}</small>
-          </button>
-        </div>
-        <div v-else class="empty-state compact-empty">
-          <FlaskConical :size="24" />
-          <strong>还没有实验记录</strong>
-          <span>运行一次对比，记录会保存到当前账户。</span>
-        </div>
-      </section>
-    </div>
+      <!-- 选项卡 3：实验历史（仅管理端全功能模式渲染） -->
+      <div v-show="activeTab === 'history'" role="tabpanel" aria-labelledby="tab-btn-history" class="tab-panel-container">
+        <section class="content-section experiment-history">
+          <div class="section-title-row">
+            <h2>实验历史</h2>
+            <span class="history-count">{{ history.length }} 条</span>
+          </div>
+          <div v-if="history.length" class="saved-experiment-list">
+            <button v-for="run in history" :key="run.id" @click="selectRun(run)">
+              <span>{{ run.question }}</span>
+              <small>{{ new Date(run.createdAt).toLocaleString('zh-CN') }}</small>
+            </button>
+          </div>
+          <div v-else class="empty-state compact-empty">
+            <FlaskConical :size="24" />
+            <strong>还没有实验记录</strong>
+            <span>运行一次对比，记录会保存到当前账户。</span>
+          </div>
+        </section>
+      </div>
+    </template>
   </div>
 </template>
+
+<style scoped>
+.experiment-page {
+  font-variant-numeric: tabular-nums;
+}
+
+.experiment-tabs-nav {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-soft);
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+
+.exp-tab-button {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all var(--motion);
+}
+
+.exp-tab-button:hover {
+  color: var(--text);
+  background: var(--surface-soft);
+}
+
+.exp-tab-button.active {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.tab-panel-container {
+  display: grid;
+  gap: 16px;
+}
+
+.experiment-export-actions,
+.experiment-actions,
+.experiment-execution-status,
+.execution-status-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.experiment-methods,
+.experiment-execution-status,
+.matrix-notice {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-tint);
+}
+
+.experiment-methods summary {
+  width: fit-content;
+  color: var(--accent-strong);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.experiment-methods dl,
+.experiment-input-pair,
+.expected-entity-list {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.student-mode-input {
+  grid-template-columns: 1fr;
+}
+
+.readonly-task-stem {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  background: var(--surface-base);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+}
+
+.readonly-task-stem .eyebrow {
+  margin: 0;
+}
+
+.task-question-display {
+  margin: 0;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.experiment-methods dt {
+  font-weight: 650;
+}
+
+.experiment-methods dd {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.experiment-run-form {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.experiment-input-pair {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.experiment-run-form label,
+.expected-entities legend {
+  display: grid;
+  gap: 5px;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.experiment-run-form > select {
+  justify-self: start;
+}
+
+.experiment-run-form textarea,
+.expected-entity-row input {
+  width: 100%;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.expected-entities {
+  min-width: 0;
+  margin: 4px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.expected-entities legend {
+  margin-bottom: 8px;
+  padding: 0;
+}
+
+.expected-entity-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.expected-entity-row .icon-button {
+  flex: none;
+}
+
+.expected-entities .text-button {
+  margin-top: 6px;
+}
+
+.expected-entities p,
+.experiment-run-form > small,
+.matrix-notice {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.matrix-notice {
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.experiment-actions {
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.experiment-actions .ablation-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.experiment-actions > span,
+.execution-status-meta,
+.experiment-execution-status small {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.experiment-execution-status {
+  justify-content: space-between;
+}
+
+.experiment-execution-status .eyebrow {
+  margin: 0;
+}
+
+.experiment-execution-status small {
+  flex-basis: 100%;
+}
+
+.experiment-history .section-title-row {
+  flex-wrap: wrap;
+}
+
+.table-scroll {
+  margin-top: 12px;
+  overflow: auto;
+}
+
+.compact-empty {
+  padding: 18px;
+}
+
+.experiment-table {
+  min-width: 520px;
+  overflow: hidden;
+}
+
+.experiment-table :is(th, td):not(:first-child) {
+  text-align: right;
+}
+
+@media (max-width: 700px) {
+  .experiment-methods dl,
+  .experiment-input-pair,
+  .expected-entity-list {
+    grid-template-columns: 1fr;
+  }
+  .experiment-run-form {
+    padding: 16px;
+  }
+}
+</style>
 
 <style scoped>
 .experiment-page {

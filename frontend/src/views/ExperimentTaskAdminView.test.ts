@@ -3,14 +3,67 @@ import { flushPromises, mount } from '@vue/test-utils'
 import ExperimentTaskAdminView from './ExperimentTaskAdminView.vue'
 
 const http = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), put: vi.fn() }))
-vi.mock('../api/client', () => ({ api: http, apiError: vi.fn(() => '任务管理请求失败') }))
+vi.mock('../api/client', () => ({
+  api: http,
+  apiError: vi.fn((err: any, fallback: string) => err?.response?.data?.message || fallback)
+}))
 
 beforeEach(() => {
   vi.resetAllMocks()
   vi.spyOn(window, 'confirm').mockReturnValue(true)
-  http.get.mockResolvedValue({ data: [{ id: 9, title: '需求分析任务', description: '完成服务器实验', experimentType: 'METHODS', question: '数据流图中加工如何命名？', status: 'DRAFT', groupCount: 0, assignmentCount: 0 }] })
-  http.post.mockResolvedValue({ data: { id: 9, title: '需求分析任务', description: '完成服务器实验', experimentType: 'METHODS', question: '数据流图中加工如何命名？', status: 'DRAFT', groupCount: 0, assignmentCount: 0 } })
-  http.put.mockResolvedValue({ data: { id: 9, title: '需求分析任务', description: '完成服务器实验', experimentType: 'METHODS', question: '数据流图中加工如何命名？', status: 'OPEN', groupCount: 0, assignmentCount: 0 } })
+  http.get.mockImplementation((url: string) => {
+    if (url === '/admin/experiment-tasks') {
+      return Promise.resolve({
+        data: [{
+          id: 9,
+          title: '需求分析任务',
+          description: '完成服务器实验',
+          experimentType: 'METHODS',
+          question: '数据流图中加工如何命名？',
+          status: 'DRAFT',
+          groupCount: 1,
+          assignmentCount: 0
+        }]
+      })
+    }
+    if (url === '/admin/experiment-tasks/9/groups') {
+      return Promise.resolve({
+        data: [{
+          id: 31,
+          taskId: 9,
+          name: '三元组对照组',
+          conditionKey: 'TRIPLES',
+          sortOrder: 1,
+          taskOrder: 'A→B'
+        }]
+      })
+    }
+    return Promise.resolve({ data: [] })
+  })
+  http.post.mockResolvedValue({
+    data: {
+      id: 9,
+      title: '需求分析任务',
+      description: '完成服务器实验',
+      experimentType: 'METHODS',
+      question: '数据流图中加工如何命名？',
+      status: 'DRAFT',
+      groupCount: 0,
+      assignmentCount: 0
+    }
+  })
+  http.put.mockResolvedValue({
+    data: {
+      id: 9,
+      title: '需求分析任务',
+      description: '完成服务器实验',
+      experimentType: 'METHODS',
+      question: '数据流图中加工如何命名？',
+      status: 'OPEN',
+      groupCount: 0,
+      assignmentCount: 0
+    }
+  })
 })
 afterEach(() => vi.restoreAllMocks())
 
@@ -38,6 +91,109 @@ describe('ExperimentTaskAdminView', () => {
     await wrapper.get('button[aria-label="开放实验任务 9"]').trigger('click')
     await flushPromises()
     expect(http.put).toHaveBeenCalledWith('/admin/experiment-tasks/9/status', { status: 'OPEN' })
+    wrapper.unmount()
+  })
+
+  it('fetches and displays groups with order values for task', async () => {
+    const wrapper = mount(ExperimentTaskAdminView)
+    await flushPromises()
+    expect(http.get).toHaveBeenCalledWith('/admin/experiment-tasks/9/groups')
+    expect(wrapper.text()).toContain('三元组对照组')
+    expect(wrapper.text()).toContain('A→B')
+    wrapper.unmount()
+  })
+
+  it('creates group with required order values', async () => {
+    const wrapper = mount(ExperimentTaskAdminView)
+    await flushPromises()
+
+    await wrapper.get('[data-testid="group-name"]').setValue('消融对照组')
+    await wrapper.get('[data-testid="group-condition"]').setValue('ABLATION')
+
+    // 未选择 taskOrder 时尝试创建应提示错误并阻止请求
+    await wrapper.get('button[aria-label="添加实验组 9"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('必须指定评估顺序')
+    expect(http.post).not.toHaveBeenCalledWith(expect.stringContaining('/groups'), expect.anything())
+
+    // 选择 A→B 正常提交
+    await wrapper.get('[data-testid="group-task-order"]').setValue('A→B')
+    await wrapper.get('button[aria-label="添加实验组 9"]').trigger('click')
+    await flushPromises()
+    expect(http.post).toHaveBeenCalledWith('/admin/experiment-tasks/9/groups', {
+      name: '消融对照组',
+      conditionKey: 'ABLATION',
+      sortOrder: 1,
+      taskOrder: 'A→B'
+    })
+    wrapper.unmount()
+  })
+
+  it('assigns students with parsed unique IDs and confirmation', async () => {
+    const wrapper = mount(ExperimentTaskAdminView)
+    await flushPromises()
+
+    // 选组并输入逗号和换行混排的 student IDs
+    await wrapper.get('[data-testid="assign-group-select"]').setValue('31')
+    const textarea = wrapper.get('[data-testid="assign-student-ids"]')
+    await textarea.setValue('101, 102\n103')
+
+    await wrapper.get('button[aria-label="派发学生 9"]').trigger('click')
+    await flushPromises()
+
+    expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('3 名'))
+    expect(http.post).toHaveBeenCalledWith('/admin/experiment-tasks/9/assign', {
+      groupId: 31,
+      userIds: [101, 102, 103]
+    })
+    // 成功后输入框清空
+    expect((wrapper.get('[data-testid="assign-student-ids"]').element as HTMLTextAreaElement).value).toBe('')
+    wrapper.unmount()
+  })
+
+  it('cancels assign confirmation without sending requests', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const wrapper = mount(ExperimentTaskAdminView)
+    await flushPromises()
+
+    await wrapper.get('[data-testid="assign-group-select"]').setValue('31')
+    await wrapper.get('[data-testid="assign-student-ids"]').setValue('101, 102')
+
+    await wrapper.get('button[aria-label="派发学生 9"]').trigger('click')
+    await flushPromises()
+
+    expect(http.post).not.toHaveBeenCalledWith(expect.stringContaining('/assign'), expect.anything())
+    wrapper.unmount()
+  })
+
+  it('rejects duplicate or invalid IDs and retains input on 400 error', async () => {
+    const wrapper = mount(ExperimentTaskAdminView)
+    await flushPromises()
+
+    await wrapper.get('[data-testid="assign-group-select"]').setValue('31')
+    const textarea = wrapper.get('[data-testid="assign-student-ids"]')
+
+    // 重复 ID
+    await textarea.setValue('101, 102, 101')
+    await wrapper.get('button[aria-label="派发学生 9"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('重复')
+    expect(http.post).not.toHaveBeenCalledWith(expect.stringContaining('/assign'), expect.anything())
+
+    // 非法 ID
+    await textarea.setValue('101, -5')
+    await wrapper.get('button[aria-label="派发学生 9"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('正整数')
+
+    // 后端返回 400 失败时保留输入
+    http.post.mockRejectedValueOnce({ response: { data: { message: '实验任务只能分配给学生账号' } } })
+    await textarea.setValue('101, 102')
+    await wrapper.get('button[aria-label="派发学生 9"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('只能分配给学生账号')
+    expect((wrapper.get('[data-testid="assign-student-ids"]').element as HTMLTextAreaElement).value).toBe('101, 102')
     wrapper.unmount()
   })
 })

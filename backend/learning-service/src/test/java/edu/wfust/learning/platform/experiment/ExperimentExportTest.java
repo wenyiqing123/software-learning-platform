@@ -16,7 +16,9 @@ class ExperimentExportTest {
         var rows = new ExperimentExport().rows(List.of(run));
         assertThat(rows).hasSize(1);
         assertThat(rows.getFirst()).doesNotContainKey("prompt");
+        assertThat(rows.getFirst()).doesNotContainKeys("referenceAnswer", "expectedEntities", "userId", "userName", "studentId");
         assertThat(rows.getFirst()).containsEntry("promptVersion", "ranked-grounded-v3");
         assertThat(ExperimentExport.csv(rows)).doesNotContain("hidden original prompt body");
+        assertThat(ExperimentExport.csv(rows)).doesNotContain("referenceAnswer", "expectedEntities");
     }
 }

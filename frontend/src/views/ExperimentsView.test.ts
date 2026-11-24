@@ -7,10 +7,12 @@ const experimentApi = vi.hoisted(() => ({
   listExperiments: vi.fn(),
   runExperiment: vi.fn(),
   rateExperiment: vi.fn(),
+  experimentAssignments: vi.fn(),
+  studentAssignments: vi.fn(),
 }))
 
 vi.mock('../api/client', () => ({
-  apiError: vi.fn(() => '实验请求失败'),
+  apiError: vi.fn((e: unknown, fallback = '实验请求失败') => (e instanceof Error ? e.message : (e as any)?.message || fallback)),
   learningApi: experimentApi,
 }))
 
@@ -41,6 +43,8 @@ beforeEach(() => {
   vi.resetAllMocks()
   experimentApi.listExperiments.mockResolvedValue([])
   experimentApi.runExperiment.mockResolvedValue(savedRun())
+  experimentApi.experimentAssignments.mockResolvedValue([])
+  experimentApi.studentAssignments.mockResolvedValue([])
 })
 
 afterEach(() => vi.restoreAllMocks())
@@ -155,5 +159,94 @@ describe('experiment expected entities', () => {
     expect(tabs[0].attributes('aria-selected')).toBe('true')
     expect(wrapper.text()).toContain('本次结果')
     expect(wrapper.text()).toContain('加工是变换数据流的操作')
+  })
+})
+
+describe('student task restricted mode', () => {
+  async function renderStudentExperiments(path = '/experiment-run?taskId=101&assignmentId=5') {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/experiment-run', component: ExperimentsView, props: { studentTaskMode: true } },
+        { path: '/experiments', component: ExperimentsView }
+      ]
+    })
+    await router.push(path)
+    await router.isReady()
+    const wrapper = mount(ExperimentsView, {
+      props: { studentTaskMode: true },
+      global: { plugins: [router] }
+    })
+    await flushPromises()
+    return wrapper
+  }
+
+  it('hides rubric, free editor, history tabs, export buttons, and rating controls in studentTaskMode', async () => {
+    experimentApi.experimentAssignments.mockResolvedValue([
+      { id: 5, taskId: 101, title: '实验任务-数据流图', question: '数据流图中加工的命名应采用什么形式？', status: 'IN_PROGRESS' }
+    ])
+    const wrapper = await renderStudentExperiments('/experiment-run?taskId=101&assignmentId=5')
+
+    // 只读题干呈现
+    expect(wrapper.text()).toContain('指派实验题干（只读）')
+    expect(wrapper.text()).toContain('数据流图中加工的命名应采用什么形式？')
+
+    // 自由输入与各编辑项隐藏
+    expect(wrapper.find('#experiment-question').exists()).toBe(false)
+    expect(wrapper.find('#reference-answer').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="expected-entity-input"]').exists()).toBe(false)
+    expect(wrapper.find('#experiment-type').exists()).toBe(false)
+    expect(wrapper.find('.ablation-control').exists()).toBe(false)
+
+    // 导出与管理历史/统计隐藏
+    expect(wrapper.find('.experiment-export-actions').exists()).toBe(false)
+    expect(wrapper.find('[role="tablist"]').exists()).toBe(false)
+    expect(wrapper.find('.saved-experiment-list').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('个人实验统计')
+
+    // 运行按钮处于只读学生任务态
+    const runBtn = wrapper.get('button.button-dark')
+    expect(runBtn.text()).toContain('运行问答对比')
+    expect(runBtn.attributes('disabled')).toBeUndefined()
+  })
+
+  it('sends exact { taskId } without rubric or question parameters when running in student mode', async () => {
+    experimentApi.experimentAssignments.mockResolvedValue([
+      { id: 5, taskId: 101, title: '实验任务-数据流图', question: '数据流图中加工的命名应采用什么形式？', status: 'IN_PROGRESS' }
+    ])
+    experimentApi.runExperiment.mockResolvedValue({
+      id: 'run-student-1',
+      question: '数据流图中加工的命名应采用什么形式？',
+      createdAt: '2026-11-20T12:00:00Z',
+      results: [
+        { mode: 'DIRECT', answer: '采用动宾短语形式', latencyMs: 45 },
+        { mode: 'TRIPLES', answer: '采用动词加宾语的动宾短语形式', latencyMs: 80 }
+      ],
+      ratings: {},
+      evaluation: { source: 'SERVER_AI_SERVICE', metricsByMode: {} }
+    })
+
+    const wrapper = await renderStudentExperiments('/experiment-run?taskId=101&assignmentId=5')
+    await wrapper.get('button.button-dark').trigger('click')
+    await flushPromises()
+
+    // 严格断言请求体：只发送 taskId: 101，严禁带 question / referenceAnswer / expectedEntities / experimentType / includeAblations
+    expect(experimentApi.runExperiment).toHaveBeenCalledWith({ taskId: 101 })
+
+    // 验证结果渲染且隐藏人工评分下拉框
+    expect(wrapper.text()).toContain('采用动宾短语形式')
+    expect(wrapper.find('.rating-select').exists()).toBe(false)
+  })
+
+  it('renders real error message when student has no matched assignment or when assignment request fails', async () => {
+    // 场景 1：未匹配到指派
+    experimentApi.experimentAssignments.mockResolvedValue([])
+    const wrapperNoMatch = await renderStudentExperiments('/experiment-run?taskId=999')
+    expect(wrapperNoMatch.find('[role="alert"]').text()).toContain('未找到指派给您的有效实验任务')
+
+    // 场景 2：接口 403 权限拒绝
+    experimentApi.experimentAssignments.mockRejectedValue(new Error('403 Forbidden: 学生无权访问该资源'))
+    const wrapperForbidden = await renderStudentExperiments('/experiment-run?taskId=101')
+    expect(wrapperForbidden.find('[role="alert"]').text()).toContain('403 Forbidden: 学生无权访问该资源')
   })
 })

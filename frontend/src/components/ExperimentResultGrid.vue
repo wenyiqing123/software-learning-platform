@@ -24,6 +24,7 @@ defineProps<{
   metrics?: Record<string, Scores>
   modeNames: Record<string, string>
   score: (value?: number) => string
+  hideRating?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -69,7 +70,7 @@ function isRankedMode(mode?: string, resultKey?: string): boolean {
       </dl>
 
       <div class="compare-result-details">
-        <label v-if="!result.error" class="rating-select">
+        <label v-if="!result.error && !hideRating" class="rating-select">
           人工评分
           <select
             :value="ratings[result.resultKey || result.mode || ''] || ''"

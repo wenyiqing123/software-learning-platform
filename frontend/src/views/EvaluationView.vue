@@ -251,7 +251,7 @@ onBeforeUnmount(() => {
         <article class="evaluation-card">
           <p class="eyebrow">2 · 当前任务</p><h3>完成课程学习或问答任务</h3>
           <p>可返回课程、知识图谱、练习或 AI 助教完成任务；用时由系统计时。</p>
-          <RouterLink v-if="route.query.taskId" class="button button-outline button-small" :to="{ path: '/experiments', query: { taskId: String(route.query.taskId), assignmentId: assignmentId ? String(assignmentId) : undefined } }">进入问答任务</RouterLink>
+          <RouterLink v-if="route.query.taskId" class="button button-outline button-small" :to="{ path: '/experiment-run', query: { taskId: String(route.query.taskId), assignmentId: assignmentId ? String(assignmentId) : (route.query.assignmentId ? String(route.query.assignmentId) : undefined) } }">进入问答任务</RouterLink>
         </article>
         <article class="evaluation-card">
           <p class="eyebrow">3 · 后测</p><h3>完成任务后填写</h3>

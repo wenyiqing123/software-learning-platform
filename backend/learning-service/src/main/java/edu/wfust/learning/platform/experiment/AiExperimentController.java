@@ -28,7 +28,7 @@ public class AiExperimentController {
     private final ExperimentTaskService taskService;
     private final ExperimentExport exporter;
     public AiExperimentController(AiExperimentMapper mapper,ObjectMapper json,AiComparisonClient ai,ExperimentMetrics metrics,ExperimentTaskService taskService,ExperimentExport exporter){this.mapper=mapper;this.json=json;this.ai=ai;this.metrics=metrics;this.taskService=taskService;this.exporter=exporter;}
-    public record RunRequest(@NotBlank @Size(max=2000)String question,Boolean includeAblations,@Size(max=4000)String referenceAnswer,@Size(max=40)List<@NotBlank @Size(max=100)String> expectedEntities,String experimentType,Long taskId){
+    public record RunRequest(@Size(max=2000)String question,Boolean includeAblations,@Size(max=4000)String referenceAnswer,@Size(max=40)List<@NotBlank @Size(max=100)String> expectedEntities,String experimentType,Long taskId){
         public RunRequest {
             if(includeAblations==null) includeAblations=false;
             if(experimentType==null || experimentType.isBlank()) experimentType="METHODS";
@@ -45,23 +45,100 @@ public class AiExperimentController {
 
     @PostMapping("/run") @ResponseStatus(HttpStatus.CREATED)
     public ExperimentView run(Authentication auth,@RequestHeader("Authorization")String authorization,@Valid @RequestBody RunRequest request){
-        String experimentType = request.experimentType();
-        if (!Set.of("METHODS", "QWEN_MATRIX").contains(experimentType)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"实验类型无效");
+        boolean isAdmin=auth.getAuthorities().stream().anyMatch(a->a.getAuthority().equals("ROLE_ADMIN"));
+        Long assignmentId=null;
+        String question;
+        String experimentType;
+        boolean includeAblations;
+        String referenceAnswer;
+        List<String> expectedEntities;
+        Long taskId=request.taskId();
+
+        if(isAdmin){
+            if(request.question()==null||request.question().isBlank()){
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"实验题目不能为空");
+            }
+            experimentType=request.experimentType();
+            if(experimentType==null||experimentType.isBlank()) experimentType="METHODS";
+            if(!Set.of("METHODS","QWEN_MATRIX").contains(experimentType)){
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"实验类型无效");
+            }
+            if(experimentType.equals("QWEN_MATRIX")&&Boolean.TRUE.equals(request.includeAblations())){
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Qwen 2×3 矩阵实验不包含既有方法消融条件");
+            }
+            question=request.question().strip();
+            includeAblations=Boolean.TRUE.equals(request.includeAblations());
+            referenceAnswer=request.referenceAnswer()==null?"":request.referenceAnswer().strip();
+            expectedEntities=request.expectedEntities()==null?List.of():request.expectedEntities();
+            if(taskId!=null) assignmentId=taskService.bindRun(userId(auth),taskId);
+        }else{
+            if(taskId==null){
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"学生运行实验必须指定任务 ID");
+            }
+            var spec=taskService.getAssignedRunSpec(userId(auth),taskId);
+            assignmentId=taskService.bindRun(userId(auth),taskId);
+            question=spec.question().strip();
+            experimentType=spec.experimentType();
+            includeAblations=spec.includeAblations();
+            referenceAnswer=spec.referenceAnswer()==null?"":spec.referenceAnswer().strip();
+            expectedEntities=spec.expectedEntities()==null?List.of():spec.expectedEntities();
         }
-        if (experimentType.equals("QWEN_MATRIX") && Boolean.TRUE.equals(request.includeAblations())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Qwen 2×3 矩阵实验不包含既有方法消融条件");
-        }
-        Long assignmentId=request.taskId()==null?null:taskService.bindRun(userId(auth),request.taskId());
+
         var results=experimentType.equals("QWEN_MATRIX")
-                ? ai.compareQwenMatrix(request.question().strip(),authorization)
-                : ai.compare(request.question().strip(),Boolean.TRUE.equals(request.includeAblations()),authorization);
+                ? ai.compareQwenMatrix(question,authorization)
+                : ai.compare(question,includeAblations,authorization);
         results=sanitizeResults(results);
         var perMode=new LinkedHashMap<String,Object>();
-        for(var result:results){String mode=String.valueOf(result.getOrDefault("resultKey",result.get("mode")));Object error=result.get("error");if(error==null||String.valueOf(error).isBlank())perMode.put(mode,metrics.evaluate(String.valueOf(result.getOrDefault("answer","")),request.referenceAnswer(),request.expectedEntities()));}
+        for(var result:results){
+            String mode=String.valueOf(result.getOrDefault("resultKey",result.get("mode")));
+            Object error=result.get("error");
+            if(error==null||String.valueOf(error).isBlank()){
+                perMode.put(mode,metrics.evaluate(String.valueOf(result.getOrDefault("answer","")),referenceAnswer,expectedEntities));
+            }
+        }
         var evaluation=new LinkedHashMap<String,Object>();
-        evaluation.put("source","SERVER_AI_SERVICE");evaluation.put("experimentType",experimentType);evaluation.put("referenceAnswer",request.referenceAnswer()==null?"":request.referenceAnswer());evaluation.put("expectedEntities",request.expectedEntities()==null?List.of():request.expectedEntities());evaluation.put("metricsByMode",perMode);evaluation.put("note",experimentType.equals("QWEN_MATRIX")?"Qwen 基座与 LoRA × DIRECT/TRIPLES/RANKED；实体召回率、中文字符级 ROUGE-L/BLEU 与人工评分用于同题配对比较。未审校训练标签的结果属于探索性证据。":"中文字符级 ROUGE-L / BLEU（最高4阶，有效阶数）；实体指标为期望实体召回率；参考答案与人工评分由评测者提供。");
-        var entity=new AiExperimentEntity();entity.setUserId(userId(auth));entity.setTaskId(request.taskId());entity.setAssignmentId(assignmentId);entity.setQuestion(request.question().strip());entity.setResultsJson(json.writeValueAsString(results));entity.setRatingsJson("{}");entity.setEvaluationJson(json.writeValueAsString(evaluation));mapper.insert(entity);if(assignmentId!=null)taskService.completeRun(userId(auth),assignmentId,results.stream().anyMatch(result->{Object e=result.get("error");return e==null||String.valueOf(e).isBlank();}));return view(mapper.selectById(entity.getId()));
+        evaluation.put("source","SERVER_AI_SERVICE");
+        evaluation.put("experimentType",experimentType);
+        evaluation.put("referenceAnswer",referenceAnswer);
+        evaluation.put("expectedEntities",expectedEntities);
+        evaluation.put("metricsByMode",perMode);
+        evaluation.put("note",experimentType.equals("QWEN_MATRIX")
+                ?"Qwen 基座与 LoRA × DIRECT/TRIPLES/RANKED；实体召回率、中文字符级 ROUGE-L/BLEU 与人工评分用于同题配对比较。未审校训练标签的结果属于探索性证据。"
+                :"中文字符级 ROUGE-L / BLEU（最高4阶，有效阶数）；实体指标为期望实体召回率；参考答案与人工评分由评测者提供。");
+
+        var entity=new AiExperimentEntity();
+        entity.setUserId(userId(auth));
+        entity.setTaskId(taskId);
+        entity.setAssignmentId(assignmentId);
+        entity.setQuestion(question);
+        entity.setResultsJson(json.writeValueAsString(results));
+        entity.setRatingsJson("{}");
+        entity.setEvaluationJson(json.writeValueAsString(evaluation));
+        mapper.insert(entity);
+        if(assignmentId!=null){
+            taskService.completeRun(userId(auth),assignmentId,results.stream().anyMatch(result->{
+                Object e=result.get("error");
+                return e==null||String.valueOf(e).isBlank();
+            }));
+        }
+
+        var view=view(mapper.selectById(entity.getId()));
+        if(!isAdmin){
+            var studentEval=new LinkedHashMap<>(view.evaluation());
+            studentEval.remove("referenceAnswer");
+            studentEval.remove("expectedEntities");
+            view=new ExperimentView(
+                    view.id(),
+                    view.question(),
+                    view.createdAt(),
+                    view.results(),
+                    view.ratings(),
+                    studentEval,
+                    view.taskId(),
+                    view.assignmentId()
+            );
+        }
+        return view;
     }
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}/ratings") @Transactional

@@ -255,3 +255,18 @@
   - 样式与代码规范：`scan-vue-classes.mjs --check` 0 missing classes；`!important` 扫描结果为 0；`git diff --check` 通过；
   - 任务书勾选状态：`M3-T1` ~ `M3-T3` 已全部标记为 `[x]`。
 
+## 里程碑 M3 第二批推进记录（M3-T4 ~ M3-T6，2026-11-24）
+
+- 完成施工任务书【里程碑 M3】第二批共 3 项原子任务落地与定向验证：
+  - `M3-T4`：管理端分组/顺序与学生 ID 派发 UI。`ExperimentTaskAdminView.vue` 展示各任务关联的真实实验组列表及其 `taskOrder` 徽标；新增实验组表单必选 `A→B` / `B→A` 顺序，明示其为预设实验协议步骤；学生 ID 派发支持 1–500 正整数逗号/换行输入解析与重复校验，二次确认弹窗明示目标任务/组名/顺序/总人数，取消 0 请求，400 失败保留原输入；扩展 `ExperimentTaskAdminView.test.ts`（7 项测试全绿）；
+  - `M3-T5`：指派学生实验的服务端 Rubric 与答案隔离。`ExperimentTaskService.java` 新增内部 `AssignedRunSpec` 及 `getAssignedRunSpec(userId, taskId)` 严格校验任务归属与 OPEN 状态；`AiExperimentController.java` 对学生请求以 taskId 为准，彻底忽略客户端伪造的 question/rubric，并在返回结果中脱敏剔除 `referenceAnswer` 与 `expectedEntities`；`GET /api/experiments`、导出与评分端点严格限制为 ADMIN-only；新建 `AiExperimentControllerTest.java` 并更新 `AiExperimentResponseGuardTest.java` 与 `ExperimentExportTest.java`；
+  - `M3-T6`：学生分配任务受限实验运行页。`router.ts` 新增 STUDENT-only `/experiment-run` 指向 `ExperimentsView`（`studentTaskMode=true`），`EvaluationView.vue` 任务链接指向 `/experiment-run` 并保留 `taskId` 与 `assignmentId`；`ExperimentsView.vue` 学生模式下通过 `experimentAssignments` 获取当前学生分配任务并只读展示题干，彻底隐藏参考答案、期望实体、实验方案、消融选项、历史/统计 tabs、导出按钮与人工评分；学生点击运行仅向后端发送 `{ taskId }`，失败照实呈现并允许重试；更新 `EvaluationView.test.ts` 与 `ExperimentsView.test.ts`（13 项测试全绿）。
+- 门禁实测结果：
+  - 后端全量测试：`mvn -f backend/pom.xml -pl learning-service test` 157 项测试全绿通过（157 passed，0 failed，0 error）；
+  - 前端定向与契约测试：`EvaluationView.test.ts`（4/4）、`ExperimentsView.test.ts`（9/9）、`ExperimentTaskAdminView.test.ts`（7/7）、`design-system-contract.test.ts`（7/7）、`compliance-guard.test.ts`（4/4）全量通过；
+  - 前端 AST 类名检查：`node scripts/scan-vue-classes.mjs --check` 扫描 48 个 SFC 模板（1078 处类名），0 missing classes；
+  - 前端生产构建：`npm run build` 成功完成，0 error，0 chunk warning，分包清晰；
+  - 样式与代码规范：`git diff --check` 通过；全仓 CSS/Vue 中 `!important` 扫描严格为 0；
+  - 任务书勾选状态：`M3-T4` ~ `M3-T6` 全部勾选为 `[x]`。
+
+

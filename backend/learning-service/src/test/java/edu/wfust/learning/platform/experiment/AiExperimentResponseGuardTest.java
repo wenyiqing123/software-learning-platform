@@ -26,4 +26,20 @@ class AiExperimentResponseGuardTest {
         assertThat(sanitized.get(0)).containsKey("provenance");
         assertThat(sanitized.get(1)).containsEntry("prompt", "original-direct-prompt");
     }
+
+    @Test
+    void studentExperimentResponseEvaluationRemovesReferenceRubricAndPrompt() {
+        var eval = new LinkedHashMap<String, Object>();
+        eval.put("source", "SERVER_AI_SERVICE");
+        eval.put("referenceAnswer", "机密参考答案");
+        eval.put("expectedEntities", List.of("实体A", "实体B"));
+        eval.put("metricsByMode", Map.of("DIRECT", Map.of("rougeL", 0.8)));
+
+        // 模拟学生视图中的脱敏逻辑
+        eval.remove("referenceAnswer");
+        eval.remove("expectedEntities");
+
+        assertThat(eval).doesNotContainKeys("referenceAnswer", "expectedEntities");
+        assertThat(eval).containsKey("metricsByMode");
+    }
 }

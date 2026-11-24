@@ -401,21 +401,21 @@ M2 提交信息：`style: unify visual system across student and admin views`
 - **受影响既有测试与更新指引**：扩展 ExperimentTaskServiceTest：group owner/not found、混合 STUDENT+ADMIN 全批零写入、无效/重复/501 IDs、合法多个 STUDENT、幂等重复派发。任何拒绝断言 mapper 零写。
 - **单任务验证命令**：`mvn -f backend/pom.xml -pl learning-service -am -Dtest=ExperimentTaskServiceTest -Dsurefire.failIfNoSpecifiedTests=false test`；预期无部分派发。
 
-### - [ ] M3-T4 管理端分组/顺序与学生 ID 派发 UI
+### - [x] M3-T4 管理端分组/顺序与学生 ID 派发 UI
 - **涉及文件**：`frontend/src/api/admin.ts`；`frontend/src/api/types.ts`；`frontend/src/views/ExperimentTaskAdminView.vue`；`frontend/src/views/ExperimentTaskAdminView.test.ts`
 - **前置依赖**：M3-T3。
 - **精确改造指令**：新增 `ExperimentGroup` type 和 `listExperimentGroups/createExperimentGroup/assignExperimentGroup` helpers。Admin row 展示真实 group；新建 group 必选 `A→B`/`B→A` 并在 task description 写清 A/B 表示的 protocol steps，不称随机。ID 输入按逗号/换行解析 1–500 unique positive integers。确认框说明 task/group/order/count；不请求/展示学生 PII；400 保留原输入，成功 refresh groups/count。状态顺序 DRAFT→配组→派发→OPEN。
 - **受影响既有测试与更新指引**：已有 `ExperimentTaskAdminView.test.ts`，不新建；扩展 group GET/POST、order values、ID normalize/reject、confirm cancel 0 requests、400 retain input、success reload。
 - **单任务验证命令**：`cd frontend; npx vitest run src/views/ExperimentTaskAdminView.test.ts`。
 
-### - [ ] M3-T5 指派学生实验的服务端 Rubric 与答案隔离
+### - [x] M3-T5 指派学生实验的服务端 Rubric 与答案隔离
 - **涉及文件**：`backend/learning-service/src/main/java/edu/wfust/learning/platform/experiment/AiExperimentController.java`；`backend/learning-service/src/main/java/edu/wfust/learning/platform/experimenttask/ExperimentTaskService.java`；`backend/learning-service/src/test/java/edu/wfust/learning/platform/experiment/AiExperimentResponseGuardTest.java`；`backend/learning-service/src/test/java/edu/wfust/learning/platform/experiment/AiExperimentControllerTest.java`（Create）；`backend/learning-service/src/test/java/edu/wfust/learning/platform/experiment/ExperimentExportTest.java`
 - **前置依赖**：M1-T5、M3-T2、M3-T3。
 - **精确改造指令**：StudentAssignment DTO 不含 `userId/referenceAnswer/expectedEntities`。从 assignment/task server data 建内部 `AssignedRunSpec(assignmentId,taskId,question,referenceAnswer,expectedEntities,experimentType,includeAblations)`，不可作为 JSON response 返回。`RunRequest.question` 保留 max 2000 但移除 record-level `@NotBlank`，controller 分支校验：ADMIN 的 personal run 必须 question 非空，保持旧自由输入/reference 语义；STUDENT 必须 `taskId` 且有 owner assignment+OPEN task，忽略 request question/reference/entities/type/ablations，按 server spec 运行。Student request 可不传 question，role-specific response `evaluation` 删除 rubric 字段；DB 可存内部指标评估输入。GET `/api/experiments`、CSV/JSON exports、ratings 为 ADMIN-only，POST run 仍按角色分支。失败结果不能有 answer/metrics/rating。此次不改 assignment completion（M3-T9/T10 负责）。
 - **受影响既有测试与更新指引**：`ExperimentTaskServiceTest` + `AiExperimentResponseGuardTest` 断言学生投影/response 不含 userId/reference rubric/system prompt；新 `AiExperimentControllerTest` 覆盖 STUDENT 无 taskId、伪造问题/rubric 被忽略、合法 owner assignment、ADMIN 原自由模式、student list/export/ratings 403；更新既有 `ExperimentExportTest` 断言不能导出 rubric/identity。
 - **单任务验证命令**：`mvn -f backend/pom.xml -pl learning-service -am -Dtest=AiExperimentControllerTest,AiExperimentResponseGuardTest,ExperimentTaskServiceTest,ExperimentExportTest -Dsurefire.failIfNoSpecifiedTests=false test`。
 
-### - [ ] M3-T6 学生分配任务受限实验运行页
+### - [x] M3-T6 学生分配任务受限实验运行页
 - **涉及文件**：`frontend/src/router.ts`；`frontend/src/views/EvaluationView.vue`；`frontend/src/views/EvaluationView.test.ts`；`frontend/src/views/ExperimentsView.vue`；`frontend/src/views/ExperimentsView.test.ts`
 - **前置依赖**：M3-T5。
 - **精确改造指令**：新增 STUDENT-only `/experiment-run` 指向 `ExperimentsView` `studentTaskMode=true`；保留 ADMIN `/experiments`。EvaluationView link 改目标并保留 `taskId/assignmentId`。学生模式 GET owner-scoped assignments、校验 ID 匹配、只读显示题干，隐藏 reference/entities/type/history/export/summary/rating/free editor。学生点击运行用现有 `api.post('/experiments/run',{taskId})`，不发送 question/rubric；后端从 assignment 取题目。失败照实呈现可重试；完成状态等 EvaluationService 最终完成才刷新，不以 run response 提前结单。ADMIN compare 行为不变。
