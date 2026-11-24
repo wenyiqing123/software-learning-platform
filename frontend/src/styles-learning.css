@@ -8,7 +8,7 @@
 .question-point,.topic-chip,.recommend-kind,.task-completed .task-state-label{color:var(--accent-strong);background:var(--accent-soft)}
 .question-progress{height:4px;margin-top:12px;overflow:hidden;background:var(--surface-tint);border-radius:var(--radius-pill)}
 .question-progress i{display:block;height:100%;background:var(--accent);transition:width var(--motion)}
-.question-stem,.review-question{max-width:var(--reading-width);margin:20px 0 6px;color:var(--text);font-size:20px;line-height:1.55;overflow-wrap:anywhere}
+.question-stem,.review-question{max-width:var(--reading-width);margin:20px 0 6px;color:var(--text);font-size:18px;line-height:1.55;overflow-wrap:anywhere}
 .selection-hint{margin:0;color:var(--text-muted);font-size:13px}
 .option-list,.review-options{display:grid;gap:8px;margin-top:14px}
 .answer-option{display:flex;align-items:center;gap:12px;min-width:0;min-height:48px;padding:8px 12px;color:var(--text);background:var(--surface);border:1px solid var(--border-default);text-align:left;font-size:14px;line-height:1.55}

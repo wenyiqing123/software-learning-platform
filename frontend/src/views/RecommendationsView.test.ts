@@ -30,8 +30,9 @@ describe('RecommendationsView', () => {
   it('shows explainable recommendation reasons and preserves context links', async () => {
     const { wrapper, router } = await mountPage()
     expect(wrapper.text()).toContain('基于掌握度、错题与先修关系的可解释规则推荐')
-    expect(wrapper.text()).toContain('当前掌握度较低')
+    expect(wrapper.text()).toContain('当前掌握度较低，且存在待处理错题；建议先完成本节练习。')
     expect(wrapper.text()).not.toContain('机器学习知识追踪')
+    expect(wrapper.text()).not.toContain('AI 预测掌握度')
     await wrapper.find('button.button-dark').trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.path).toBe('/practice')

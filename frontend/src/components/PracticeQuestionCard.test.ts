@@ -10,5 +10,23 @@ describe('PracticeQuestionCard', () => {
     expect(wrapper.find('[role="progressbar"]').attributes('aria-valuemax')).toBe('4')
     expect(wrapper.text()).toContain('可能混淆：加工命名')
     expect(wrapper.text()).toContain('课程配置的混淆依据')
+    expect(wrapper.find('button.answer-option.correct svg').exists()).toBe(true)
+    expect(wrapper.find('button.answer-option.incorrect svg').exists()).toBe(true)
+  })
+
+  it('keeps correct answer completely hidden before submission', () => {
+    const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/courses', component: { template: '<div />' } }, { path: '/practice', component: { template: '<div />' } }] })
+    const wrapper = mount(PracticeQuestionCard, {
+      global: { plugins: [router] },
+      props: {
+        question: { id: 1, stem: '加工如何命名？', type: 'SINGLE', options: [{ key: 'A', text: '动宾短语' }, { key: 'B', text: '名词短语' }] },
+        index: 0, total: 1, questionType: '单选题', progress: 100, isMultiple: false, isTrueFalse: false,
+        selected: ['B'], correctAnswers: [], result: null, submitting: false, submitError: '',
+        diagnoses: [], diagnosisLoading: false, diagnosisError: '',
+      },
+    })
+    expect(wrapper.text()).not.toContain('正确答案')
+    expect(wrapper.find('button.answer-option.correct').exists()).toBe(false)
+    expect(wrapper.find('button.answer-option.incorrect').exists()).toBe(false)
   })
 })

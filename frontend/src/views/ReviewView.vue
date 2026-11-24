@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { ArrowRight, BookOpen, Check, CircleAlert, CircleCheck, Clock3, Pause, RotateCcw } from '@lucide/vue'
+import { ArrowRight, BookOpen, Check, CircleAlert, CircleCheck, CircleX, Clock3, Pause, RotateCcw } from '@lucide/vue'
 import { useRoute, useRouter } from 'vue-router'
 import { learningApi, type SpacedReviewCard, type SpacedReviewResult } from '../api/client'
 import SectionHeading from '../components/SectionHeading.vue'
@@ -115,7 +115,7 @@ onMounted(() => void load())
       <LearningContextActions compact :context="{ entity: current.knowledgePoint }" />
       <div class="review-options">
         <button v-for="option in current.options" :key="option.key" class="answer-option" :class="{ selected: selected.includes(option.key), correct: result && answers.includes(option.key), incorrect: result && selected.includes(option.key) && !answers.includes(option.key) }" :disabled="!!result || submitting || showingPaused" :aria-pressed="selected.includes(option.key)" @click="toggle(option.key)">
-          <span class="option-marker">{{ option.key }}</span><span>{{ option.text }}</span><Check v-if="result && answers.includes(option.key)" :size="17" />
+          <span class="option-marker">{{ option.key }}</span><span>{{ option.text }}</span><Check v-if="result && answers.includes(option.key)" :size="17" /><CircleX v-else-if="result && selected.includes(option.key) && !answers.includes(option.key)" :size="17" />
         </button>
       </div>
       <div v-if="showingPaused" class="review-actions"><button class="button button-outline" @click="showDue">返回到期队列</button><button class="button button-dark" :disabled="submitting" @click="setState('ACTIVE')">恢复并立即安排<RotateCcw :size="15" /></button></div>

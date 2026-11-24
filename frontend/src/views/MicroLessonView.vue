@@ -50,7 +50,7 @@ onMounted(async () => { await loadCourses(); await loadSections(); await loadLes
         <div class="lesson-evidence-heading"><h3>关键三元组</h3><span>来源图谱实体：{{ lesson.evidence?.graphEntity }} · {{ lesson.evidence?.tripleCount || 0 }} 条</span></div>
         <ul><li v-for="item in lesson.triples" :key="item.subject + item.predicate + item.object">{{ item.subject }} — {{ item.predicate }} — {{ item.object }}</li></ul>
       </section>
-      <section v-if="lesson.commonErrors.length || lesson.selfTests.length" class="lesson-grid">
+      <section v-if="lesson.commonErrors.length || lesson.selfTests.length" class="lesson-grid lesson-callout-grid">
         <div v-if="lesson.commonErrors.length"><h3>常见错误</h3><ul><li v-for="item in lesson.commonErrors" :key="item.stem">{{ item.stem }}<small>{{ item.explanation }}</small></li></ul></div>
         <div v-if="lesson.selfTests.length"><h3>自测题</h3><ul><li v-for="item in lesson.selfTests" :key="item.questionId">{{ item.stem }}</li></ul></div>
       </section>
@@ -70,7 +70,7 @@ onMounted(async () => { await loadCourses(); await loadSections(); await loadLes
 .lesson-grid p,.lesson-grid small,.lesson-evidence-heading span{color:var(--text-muted);font-size:13px}
 .lesson-grid p{margin:6px 0 0}
 .lesson-grid small{display:block;margin-top:3px}
-.evidence-panel{padding:14px 16px;background:var(--surface-tint);border-radius:var(--radius-sm)}
+.evidence-panel,.lesson-callout-grid{padding:14px 16px;background:var(--surface-soft);border:1px solid var(--border-soft);border-radius:var(--radius-sm)}
 .lesson-evidence-heading{display:flex;align-items:baseline;flex-wrap:wrap;justify-content:space-between;gap:6px 12px}
 @media(max-width:650px){.lesson-grid{grid-template-columns:1fr}}
 </style>

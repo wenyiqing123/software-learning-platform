@@ -70,6 +70,6 @@ onBeforeUnmount(() => {
       </article>
     </section>
     <FeedbackState v-else empty empty-title="当前暂无学习建议" empty-text="可以先完成课程练习，再刷新查看服务端推荐。" empty-action-label="开始练习" @action="router.push('/practice')" />
-    <div v-if="hasCards" class="recommend-formula"><strong>推荐依据</strong><span>掌握度 · 错题 · 练习记录 · 先修关系；排序分不代表学习效果。</span></div>
+    <div v-if="hasCards" class="recommend-formula"><strong>可解释规则推荐依据</strong><span>基于掌握度、错题与先修关系的可解释规则推荐；排序分仅作优先级参考，不代表已验证的学习成效。</span></div>
   </div>
 </template>

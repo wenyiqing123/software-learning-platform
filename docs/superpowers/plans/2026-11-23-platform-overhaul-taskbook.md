@@ -283,28 +283,28 @@ Element Plus CSS 只通过实际消费的变量覆盖；不得给不存在的变
 - **受影响既有测试与更新指引**：TutorAnswerCard 文案、Markdown raw HTML escaped、clipboard success/error、prompt guard tests 保留并补充键盘/窄屏。
 - **单任务验证命令**：`cd frontend; npx vitest run src/components/TutorAnswerCard.test.ts src/components/MarkdownContent.test.ts src/components/TutorComposer.test.ts`。
 
-### - [ ] M2-T12 课程练习与自适应练习
+### - [x] M2-T12 课程练习与自适应练习
 - **涉及文件**：`frontend/src/views/PracticeView.vue`；`frontend/src/components/PracticeQuestionCard.vue`；`frontend/src/views/AdaptivePracticeView.vue`；`frontend/src/views/PracticeView.test.ts`；`frontend/src/components/PracticeQuestionCard.test.ts`
 - **前置依赖**：M2-T4。
 - **精确改造指令**：单题作为唯一主 surface，题干 18px、选项整行可点最小 44px；selected/disabled/correct/incorrect 各使用文字+图标或浅色双编码，禁止降低判题后对比度。回答提交前不可从 DOM/API 泄露标准答案；诊断仅展示服务端配置，不自行推断。自适应列表以解释理由、到期状态、目标知识点可扫读，保持 query context。
 - **受影响既有测试与更新指引**：保留 pre-submit answer privacy、submission result, diagnosis exact mapping tests；复用现有 `PracticeQuestionCard`/`AdaptivePracticeView` 测试并增加 keyboard/contrast 验收。
 - **单任务验证命令**：`cd frontend; npx vitest run src/views/PracticeView.test.ts src/components/PracticeQuestionCard.test.ts src/views/AdaptivePracticeView.test.ts`。
 
-### - [ ] M2-T13 错题本与间隔复习
+### - [x] M2-T13 错题本与间隔复习
 - **涉及文件**：`frontend/src/views/WrongBookView.vue`；`frontend/src/views/ReviewView.vue`；`frontend/src/views/WrongBookView.test.ts`；`frontend/src/views/StudyPlanAndReviewView.test.ts`
 - **前置依赖**：M2-T12。
 - **精确改造指令**：错题列表搜索/知识点筛选在一条 toolbar；行内容题干、错误次数、状态、定向复习和已掌握动作分列，小屏操作换行但无横向页面溢出。Review 单题聚焦显示 recall choices、interval/next due 反馈；暂停/恢复/评分 requestKey 不改业务。错误诊断仍只展示配置证据。
 - **受影响既有测试与更新指引**：保留搜索过滤、IDOR 的 UI 参数、mastered confirmation、review idempotency、interval output assertions。
 - **单任务验证命令**：`cd frontend; npx vitest run src/views/WrongBookView.test.ts src/views/StudyPlanAndReviewView.test.ts`。
 
-### - [ ] M2-T14 学习计划与规则推荐
+### - [x] M2-T14 学习计划与规则推荐
 - **涉及文件**：`frontend/src/views/StudyPlanView.vue`；`frontend/src/views/RecommendationsView.vue`；`frontend/src/views/RecommendationsView.test.ts`；`frontend/src/views/StudyPlanAndReviewView.test.ts`
 - **前置依赖**：M2-T13。
 - **精确改造指令**：计划预算/筛选作为浅底工具条，任务按序号、时长、类型、理由、状态排；complete/skip 只有当前合法状态可操作。推荐理由完整换行，不截断，规则类型与优先级次级显示，使用固定合规短语“可解释规则推荐”。
 - **受影响既有测试与更新指引**：保留 rule reason text、空态、context links、plan completion source validation；加 1280/390px 无溢出断言。
 - **单任务验证命令**：`cd frontend; npx vitest run src/views/RecommendationsView.test.ts src/views/StudyPlanAndReviewView.test.ts`。
 
-### - [ ] M2-T15 报告与发布微课阅读
+### - [x] M2-T15 报告与发布微课阅读
 - **涉及文件**：`frontend/src/views/LearningReportView.vue`；`frontend/src/views/MicroLessonView.vue`；`frontend/src/views/LearningReportView.test.ts`；`frontend/src/views/MicroLessonView.test.ts`
 - **前置依赖**：M2-T14。
 - **精确改造指令**：报告用 KPI→活动趋势→章节/知识点表格顺序，数字 tabular-nums、CSV action 唯一主按钮；微课页限制 Markdown 72ch/1.7，证据列表和常见错因作浅底分组。不得把推荐表述为机器学习，不把历史统计说成实时因果结果。
