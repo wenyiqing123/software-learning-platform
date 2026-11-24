@@ -189,3 +189,17 @@
   - 代码格式与规范：`git diff --check` 通过；全仓 CSS/Vue 中 `!important` 严格保持为 0；
   - 任务书勾选状态：`M2-T1` ~ `M2-T7` 已全部勾选为 `[x]`。
 
+## 里程碑 M2 第三批推进记录（M2-T8 ~ M2-T11，2026-11-24）
+
+- 完成施工任务书【里程碑 M2】第三批共 4 项原子任务落地与定向验证：
+  - `M2-T8`：图谱及证据抽屉。`VisualizationViewport.vue` 工具栏 action 固定高 40px、间距对齐；证据抽屉使用单层 surface，三元组卡片采用浅底分行排布；`GraphView.vue` 图谱离线/异常时诚实降级并展示空状态，绝不捏造假节点；扩展 `GraphView.test.ts`；
+  - `M2-T9`：Three.js 与先修路径细节。`ThreeGraphCanvas.vue` 保持透明背景、阻尼拖动与生命周期注销；`PrerequisitePathPanel.vue` 连接线使用 `border-soft`，四类节点状态（已掌握/学习中/下一步/阻塞）浅底深字区分，当前目标增加非颜色星标与徽标指示，支持 320px 窄屏适配；扩展 `PrerequisitePathPanel.test.ts`；
+  - `M2-T10`：Tutor 对话工作台布局。桌面保持会话列+消息列流式布局，策略说明采用原生 `<details>` 折叠收纳且徽标实时联动当前模式；会话列定高内部滚动；输入区预填实体上下文但不自动发送请求；扩展 `TutorView.test.ts` 覆盖会话操作、对比模式、分层提示与快速提问填词；
+  - `M2-T11`：Tutor Answer/Mode/Markdown 子组件。`TutorModeSelector.vue` 模式切换按钮最小高度保持 44px 以上，对比模式显式样式区分；`TutorAnswerCard.vue` 证据三元组主体/谓词/客体网格对齐，严格保持 `RANKED` 模式不暴露后台系统提示词正文；`MarkdownContent.vue` 保持 HTML 转义不执行，提供复制代码键盘操作与失败回馈。
+- 门禁实测结果：
+  - 本批定向测试与合规守卫：11 个测试文件，30 项测试全部通过（30 passed）；
+  - 生产构建：`npm run build` 成功完成，0 错误，0 chunk warning，`graph-three` 与 `graph-g6` chunk 分包清晰；
+  - 代码规范：`git diff --check` 通过；全仓 CSS/Vue 中 `!important` 扫描结果为 0；
+  - 任务书勾选状态：`M2-T8` ~ `M2-T11` 全部勾选为 `[x]`。
+
+

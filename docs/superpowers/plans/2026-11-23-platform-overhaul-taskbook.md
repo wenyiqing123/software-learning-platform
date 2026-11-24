@@ -255,28 +255,28 @@ Element Plus CSS 只通过实际消费的变量覆盖；不得给不存在的变
 - **受影响既有测试与更新指引**：保留 LearningNotesPanel CRUD、收藏和 API errors；新增 CourseView context query/目录 hash/正文 width class/notes collapsed test。
 - **单任务验证命令**：`cd frontend; npx vitest run src/components/LearningNotesPanel.test.ts src/views/CourseView.test.ts`；预期学习上下文参数逐项保持。
 
-### - [ ] M2-T8 图谱及证据抽屉
+### - [x] M2-T8 图谱及证据抽屉
 - **涉及文件**：`frontend/src/views/GraphView.vue`；`frontend/src/views/MasteryMapView.vue`；`frontend/src/components/GraphEvidenceDrawer.vue`；`frontend/src/components/VisualizationViewport.vue`；`frontend/src/views/GraphView.test.ts`
 - **前置依赖**：M2-T3、M2-T7。
 - **精确改造指令**：toolbar 可见 action 固定高 40px、工具间距 8/12/16px；画布与 drawer 各为单层 surface，triples 是浅底行。状态图例文本与图标均有编码，窄屏证据内容流式排在画布之后。Graph offline 按真实 response availability/error 展示并保持 `nodes=[]/edges=[]/evidence=[]`；mastery 只显示账户 MySQL 统计，不展示伪 NebulaGraph triples。保持 G6/Three create/destroy 行为。当前 `GraphEvidenceDrawer.vue` 已存在，本任务不可重复创建 Drawer test 文件（若必须增加断言，只能改列出的既有 `GraphView.test.ts`，或把 test 新建作为本任务第 5 个 file 且减少任一非必要源码文件）。
 - **受影响既有测试与更新指引**：保留 GraphView offline/evidence、MasteryMap real empty evidence、VisualizationViewport toolbar、3D nonblank screenshot tests；不要修改接口 fixture 伪造 online 数据。
 - **单任务验证命令**：`cd frontend; npx vitest run src/views/GraphView.test.ts src/views/MasteryMapView.test.ts src/components/VisualizationViewport.test.ts`；若 `GraphEvidenceDrawer.test.ts` 已在仓库存在，再附加该文件；不得因测试不存在而引用 phantom path。
 
-### - [ ] M2-T9 Three.js 与先修路径细节
+### - [x] M2-T9 Three.js 与先修路径细节
 - **涉及文件**：`frontend/src/components/ThreeGraphCanvas.vue`；`frontend/src/views/PrerequisitePathPanel.vue`；`frontend/src/views/PrerequisitePathPanel.test.ts`；`frontend/src/styles-graph.css`
 - **前置依赖**：M2-T8。
 - **精确改造指令**：保持 Three canvas 透明/背景、pointer drag、dispose 生命周期；工具栏 control 固定大小不因 hover 改 layout。先修节点用 mastered/in-progress/up-next/blocked 四语义色浅底深字，连接线以 `border-soft`，当前目标有非颜色指示。不能靠静态 fallback 节点显示 Bridge 离线。
 - **受影响既有测试与更新指引**：保留 prerequisite ordering/cycle test；SMOKE 继续测 canvas 非空像素和拖动状态差，新增各节点状态及 320px 布局断言。
 - **单任务验证命令**：`cd frontend; npx vitest run src/views/PrerequisitePathPanel.test.ts src/components/VisualizationViewport.test.ts; npm run build`；预期图谱 chunks 存在且无新增 chunk warning。
 
-### - [ ] M2-T10 Tutor 对话工作台布局
+### - [x] M2-T10 Tutor 对话工作台布局
 - **涉及文件**：`frontend/src/views/TutorView.vue`；`frontend/src/components/TutorConversationList.vue`；`frontend/src/components/TutorMessageList.vue`；`frontend/src/views/TutorView.test.ts`
 - **前置依赖**：M2-T8。
 - **精确改造指令**：桌面保持会话列+消息列；策略说明折叠；会话列定高内部滚动。Composer 保持在消息列底部流中，不做 viewport fixed overlay；三种模式、compare、quick prompt、send/stop 各一处。保留实体/知识点 query，不自动提交；将 canonical knowledge-point ID 对应名称预填纳入 M3-T18，M2 只保留现有实体上下文行为。SSE delta/stop/retry/history-save error 用独立状态样式/文案。
 - **受影响既有测试与更新指引**：仅保留并扩展 `TutorView.test.ts` 内 session/history/SSE/stop/compare/hint；它的依赖 mock 如需扩展，要在相同文件内改，不新增对不存在的 `TutorConversationList.test.ts` 等引用。覆盖窄屏单列和 prompt fill 不发请求。
 - **单任务验证命令**：`cd frontend; npx vitest run src/views/TutorView.test.ts`。
 
-### - [ ] M2-T11 Tutor Answer/Mode/Markdown 子组件
+### - [x] M2-T11 Tutor Answer/Mode/Markdown 子组件
 - **涉及文件**：`frontend/src/components/TutorAnswerCard.vue`；`frontend/src/components/TutorModeSelector.vue`；`frontend/src/components/MarkdownContent.vue`；`frontend/src/components/TutorAnswerCard.test.ts`；`frontend/src/components/MarkdownContent.test.ts`
 - **前置依赖**：M2-T10。
 - **精确改造指令**：三种模式改为水平 segmented control，button 高至少 44px、选中同时有边线/背景/aria；比较模式显式不同。回答 max-width 72ch, line-height 1.7；流式用小型状态 line，不闪烁。证据 triples 可折叠，每条 subject/predicate/object 对齐。Markdown 不执行 HTML；copy button 键盘操作、clipboard rejected feedback。RANKED 无 prompt body。

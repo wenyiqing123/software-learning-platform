@@ -99,8 +99,8 @@ async function toggleFullscreen() {
 .visualization-search{flex:1 1 140px;min-width:0;padding:0 10px;color:var(--text-muted);background:var(--surface-soft);border:1px solid var(--border-default);border-radius:var(--radius-sm)}
 .visualization-search input{width:100%;min-height:34px;padding:4px 0;border:0;background:transparent;outline:0;font-size:13px}
 .visualization-search:focus-within{border-color:var(--border-focus);box-shadow:var(--focus-ring)}
-.visualization-actions{gap:2px;padding:3px;background:var(--surface-tint);border-radius:var(--radius-sm)}
-.visualization-actions :deep(.el-button){width:32px;height:32px;padding:0;margin:0;color:var(--text-muted);border-radius:var(--radius-sm)}
+.visualization-actions{gap:8px;padding:3px;background:var(--surface-tint);border-radius:var(--radius-sm)}
+.visualization-actions :deep(.el-button){width:40px;height:40px;padding:0;margin:0;color:var(--text-muted);border-radius:var(--radius-sm)}
 .visualization-actions :deep(.el-button:hover),.visualization-actions :deep(.el-button[aria-pressed=true]){color:var(--accent-strong);background:var(--surface);box-shadow:var(--shadow-xs)}
 .visualization-stage{position:relative;display:grid;isolation:isolate;min-height:390px;background:var(--surface-soft) radial-gradient(var(--border-default) 1px,transparent 1px) 0 0 / 20px 20px}
 .visualization-stage > :slotted(*){width:100%;min-width:0}

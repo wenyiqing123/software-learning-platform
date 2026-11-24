@@ -94,7 +94,11 @@ onMounted(async () => { await loadPoints(); await loadPath() })
         <li v-for="(node, index) in path.nodes" :key="node.id" data-testid="path-node" class="path-node" :class="['path-' + node.status.toLowerCase(), { 'path-target': node.id === path.targetId }]">
           <div class="path-node-index">{{ index + 1 }}</div>
           <div class="path-node-main">
-            <div class="path-node-heading"><strong>{{ node.name }}</strong><span class="path-status"><CircleCheck v-if="node.status === 'MASTERED'" :size="13" />{{ statusText(node.status) }}</span></div>
+            <div class="path-node-heading">
+              <strong>{{ node.name }}</strong>
+              <span v-if="node.id === path.targetId" class="path-target-badge" aria-label="当前目标知识点">★ 当前目标</span>
+              <span class="path-status"><CircleCheck v-if="node.status === 'MASTERED'" :size="13" />{{ statusText(node.status) }}</span>
+            </div>
             <div class="path-node-meta"><span>系统掌握度 {{ Math.round(node.mastery) }}%</span><span v-if="node.prerequisiteIds.length">先修 {{ node.prerequisiteIds.length }} 项</span><span v-else>基础节点</span></div>
             <div class="path-node-actions">
               <RouterLink :to="courseHref(node)" :aria-label="'学习' + node.name + '课程内容'">课程阅读</RouterLink>
@@ -121,15 +125,17 @@ onMounted(async () => { await loadPoints(); await loadPath() })
 .path-warning{color:var(--warning);background:var(--warning-soft)}
 .path-list{display:grid;gap:6px;margin:0;padding:0;list-style:none}
 .path-node{position:relative;display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:12px;align-items:start;padding:12px}
-.path-node:not(:last-child)::after{content:"";position:absolute;left:25px;top:44px;bottom:-10px;width:1px;background:var(--border-default)}
+.path-node:not(:last-child)::after{content:"";position:absolute;left:25px;top:44px;bottom:-10px;width:1px;background:var(--border-soft)}
 .path-node-index{display:grid;place-items:center;width:28px;height:28px;color:var(--accent-strong);background:var(--accent-soft);border-radius:50%;font-size:12px;font-weight:650;font-variant-numeric:tabular-nums}
 .path-node-heading,.path-node-meta,.path-node-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px}
 .path-node-heading strong{font-size:15px}
+.path-target-badge{display:inline-flex;align-items:center;padding:2px 8px;color:var(--accent-strong);background:var(--accent-soft);border:1px solid var(--border-focus);border-radius:var(--radius-pill);font-size:11px;font-weight:600}
 .path-status{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;color:var(--text-muted);background:var(--surface-tint);border-radius:var(--radius-pill);font-size:12px}
 .path-target{background:var(--surface-soft);border-radius:var(--radius-sm);box-shadow:inset 2px 0 var(--accent)}
 .path-mastered .path-status{color:var(--accent-strong);background:var(--accent-soft)}
-.path-in_progress .path-status{color:var(--warning);background:var(--warning-soft)}
-.path-blocked .path-status{color:var(--danger);background:var(--danger-soft)}
+.path-in_progress .path-status,.path-in-progress .path-status{color:var(--warning-strong, #8a5300);background:var(--warning-soft)}
+.path-up_next .path-status,.path-up-next .path-status{color:var(--info-strong, #125b82);background:var(--info-soft)}
+.path-blocked .path-status{color:var(--danger-strong, #9e2a2b);background:var(--danger-soft)}
 .path-node-meta{margin-top:4px;color:var(--text-muted);font-size:12px;font-variant-numeric:tabular-nums}
 .path-node-actions{margin-top:8px}
 .path-node-actions a{color:var(--accent-strong);font-size:13px;text-decoration:none}

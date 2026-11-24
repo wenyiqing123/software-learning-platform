@@ -74,4 +74,27 @@ describe('prerequisite learning path', () => {
     expect(wrapper.text()).toContain('先修关系存在循环')
     wrapper.unmount()
   })
+
+  it('renders all four semantic statuses and displays non-color indicator for current target', async () => {
+    api.learningPath.mockResolvedValueOnce({
+      targetId: 4,
+      courseId: 1,
+      cycleDetected: false,
+      nodes: [
+        { id: 1, courseId: 1, chapterId: 10, name: '需求分析', graphEntity: '需求分析', mastery: 100, prerequisiteIds: [], status: 'MASTERED' },
+        { id: 2, courseId: 1, chapterId: 10, name: '数据流图', graphEntity: '数据流图DFD', mastery: 50, prerequisiteIds: [1], status: 'IN_PROGRESS' },
+        { id: 3, courseId: 1, chapterId: 11, name: '用例建模', graphEntity: '用例图', mastery: 0, prerequisiteIds: [2], status: 'UP_NEXT' },
+        { id: 4, courseId: 1, chapterId: 11, name: '系统设计', graphEntity: '系统设计', mastery: 0, prerequisiteIds: [3], status: 'BLOCKED' },
+      ],
+    })
+    const wrapper = await renderPanel()
+    expect(wrapper.text()).toContain('已掌握')
+    expect(wrapper.text()).toContain('学习中')
+    expect(wrapper.text()).toContain('下一步')
+    expect(wrapper.text()).toContain('先修未完成')
+    expect(wrapper.find('.path-target-badge').exists()).toBe(true)
+    expect(wrapper.find('.path-target-badge').text()).toContain('当前目标')
+    expect(wrapper.find('.path-target').classes()).toContain('path-blocked')
+    wrapper.unmount()
+  })
 })

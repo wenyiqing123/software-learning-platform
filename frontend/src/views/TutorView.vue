@@ -173,7 +173,22 @@ function selectQuickPrompt(prompt: string) {
     <section class="tutor-chat-workspace">
       <aside class="tutor-rail">
         <TutorConversationList :sessions="sessions" :active-id="sessionId" :disabled="loading" :error="historyError" @select="selectSessionById" @create="newSession" @rename="renameSession" @remove="removeSessionById"></TutorConversationList>
-        <section class="tutor-aside" aria-label="回答策略"><div class="tutor-aside-icon"><Sparkles :size="18" /></div><p class="eyebrow">回答策略</p><h3>{{ compareAll ? '控制变量，对照观察' : modes.find((item) => item.key === mode)?.title }}</h3><p v-if="mode === 'DIRECT' && !compareAll">直接将问题交给大模型，适合作为不使用课程图谱的对照基线。</p><p v-else-if="mode === 'TRIPLES' && !compareAll">检索相关三元组作为上下文，不提供相关性分数，观察结构化知识的作用。</p><p v-else>使用 Python 返回的相关性排序与原始提示词，帮助模型聚焦关键证据。</p><div class="strategy-steps"><span><i>1</i>识别问题实体</span><span><i>2</i>检索图谱邻居</span><span><i>3</i>生成有依据的回答</span></div><div class="aside-footnote">回答可能有误，请结合课程材料核对。</div></section>
+        <details class="tutor-aside" aria-label="回答策略">
+          <summary class="tutor-aside-summary">
+            <div class="tutor-aside-header">
+              <div class="tutor-aside-icon"><Sparkles :size="15" /></div>
+              <span class="tutor-aside-title">回答策略说明</span>
+            </div>
+            <span class="tutor-aside-badge">{{ compareAll ? '对照观察' : modes.find((item) => item.key === mode)?.title }}</span>
+          </summary>
+          <div class="tutor-aside-body">
+            <p v-if="mode === 'DIRECT' && !compareAll">直接将问题交给大模型，适合作为不使用课程图谱的对照基线。</p>
+            <p v-else-if="mode === 'TRIPLES' && !compareAll">检索相关三元组作为上下文，不提供相关性分数，观察结构化知识的作用。</p>
+            <p v-else>使用 Python 返回的相关性排序与原始提示词，帮助模型聚焦关键证据。</p>
+            <div class="strategy-steps"><span><i>1</i>识别问题实体</span><span><i>2</i>检索图谱邻居</span><span><i>3</i>生成有依据的回答</span></div>
+            <div class="aside-footnote">回答可能有误，请结合课程材料核对。</div>
+          </div>
+        </details>
       </aside>
       <div class="tutor-chat-main">
         <TutorMessageList :messages="messages" :streaming-answer="streamingAnswer" :streaming-evidence="streamingEvidence" :loading="loading" :error="error" :retry-question="failedQuestion" :retry-mode="failedMode" @retry="retryQuestion" @copy="copyAnswer"></TutorMessageList>
@@ -194,10 +209,15 @@ function selectQuickPrompt(prompt: string) {
 <style scoped>
 .tutor-chat-workspace{display:grid;grid-template-columns:minmax(215px,246px) minmax(0,1fr);gap:20px;align-items:start;min-width:0}
 .tutor-chat-main,.tutor-rail{display:grid;gap:16px;min-width:0}
-.tutor-aside{padding:16px;color:var(--text-muted);background:var(--surface-tint);border-radius:var(--radius-md);font-size:13px}
-.tutor-aside-icon{float:right;display:grid;place-items:center;width:30px;height:30px;color:var(--accent);background:var(--accent-soft);border-radius:var(--radius-sm)}
-.tutor-aside h3{margin:0;font-size:14px;color:var(--text)}
-.tutor-aside>p:not(.eyebrow){margin:8px 0;line-height:1.65}
+.tutor-aside{padding:12px 14px;color:var(--text-muted);background:var(--surface-tint);border-radius:var(--radius-md);font-size:13px}
+.tutor-aside-summary{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;list-style:none}
+.tutor-aside-summary::-webkit-details-marker{display:none}
+.tutor-aside-header{display:flex;align-items:center;gap:8px}
+.tutor-aside-title{color:var(--text);font-size:13px;font-weight:600}
+.tutor-aside-badge{padding:2px 8px;color:var(--accent-strong);background:var(--accent-soft);border-radius:var(--radius-pill);font-size:11px}
+.tutor-aside-body{padding-top:10px}
+.tutor-aside-body>p{margin:8px 0;line-height:1.65}
+.tutor-aside-icon{display:grid;place-items:center;width:24px;height:24px;color:var(--accent);background:var(--accent-soft);border-radius:var(--radius-sm)}
 .strategy-steps{display:grid;gap:6px;margin-block:12px}
 .strategy-steps span{display:flex;align-items:center;gap:8px;font-size:12px}
 .strategy-steps i{display:grid;place-items:center;width:22px;height:22px;color:var(--accent-strong);background:var(--accent-soft);border-radius:50%;font-size:12px;font-style:normal;font-weight:650}

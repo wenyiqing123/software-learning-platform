@@ -36,7 +36,7 @@ const emit = defineEmits<{ copy: [value: string] }>()
 .evidence-title{min-height:40px;cursor:pointer;font-size:13px}
 .evidence-title svg{flex:none;color:var(--accent)}
 .evidence-title span,.evidence-triple small{color:var(--text-muted);font-size:12px}
-.evidence-triple{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto;gap:8px;padding:8px 0;border-top:1px solid var(--border-default);font-size:13px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
-.evidence-triple i{color:var(--accent-strong);font-style:normal}
+.evidence-triple{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(64px,auto) minmax(0,1.2fr) auto;gap:8px;align-items:baseline;padding:8px 0;border-top:1px solid var(--border-default);font-size:13px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.evidence-triple i{color:var(--accent-strong);font-style:normal;text-align:center}
 @media(max-width:520px){.evidence-triple small{grid-column:1/-1}}
 </style>

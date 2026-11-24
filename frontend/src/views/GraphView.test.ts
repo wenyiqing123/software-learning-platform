@@ -86,4 +86,13 @@ describe('knowledge graph view modes', () => {
     expect(wrapper.text()).toContain('平均证据分')
     wrapper.unmount()
   })
+
+  it('honestly displays offline/error state without fabricating mock nodes or triples', async () => {
+    graphApi.graph.mockRejectedValueOnce(new Error('Network error'))
+    const wrapper = await renderGraphMode()
+    expect(wrapper.text()).toContain('知识服务暂时不可用，请确认 Python Bridge 与 NebulaGraph 已启动。')
+    expect(wrapper.text()).toContain('0 个实体')
+    expect(wrapper.text()).toContain('0 条关系')
+    wrapper.unmount()
+  })
 })
