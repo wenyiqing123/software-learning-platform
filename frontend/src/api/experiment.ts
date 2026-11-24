@@ -1,5 +1,5 @@
 import { api } from './http'
-import type { ExperimentAssignment } from './types'
+import type { ExperimentAssignment, FixedExperimentSuite } from './types'
 
 export const compare = (question: string) => api.post('/ai/compare', { question }, { timeout: 180_000 }).then((r) => r.data)
 export const listExperiments = () => api.get('/experiments').then((r) => r.data)
@@ -10,3 +10,4 @@ export const startExperimentTask = (assignmentId: number) => api.post<Experiment
 export const rateExperiment = (id: string, ratings: Record<string, number>) => api.put('/experiments/' + id + '/ratings', { ratings }).then((r) => r.data)
 export const exportExperimentsCsv = () => api.get('/experiments/export', { responseType: 'blob' }).then((r) => r.data)
 export const exportExperimentsJson = () => api.get('/experiments/export/json').then((r) => r.data)
+export const getFixedExperimentSuite = () => api.get<FixedExperimentSuite>('/admin/experiments/fixed-suite').then((r) => r.data)

@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowDownToLine, CircleHelp, FlaskConical, Play, Plus, Timer, X } from '@lucide/vue'
-import { apiError, learningApi, type ExperimentAssignment } from '../api/client'
+import { apiError, learningApi, type ExperimentAssignment, type FixedExperimentCase, type FixedExperimentSuite } from '../api/client'
 import SectionHeading from '../components/SectionHeading.vue'
 import { experimentCsv, experimentJson, type ExperimentExportRun } from '../domain/experimentExport'
 import ExperimentResultGrid from '../components/ExperimentResultGrid.vue'
@@ -71,6 +71,32 @@ const executionPhase = ref<'idle' | 'running' | 'complete'>('idle')
 const executionStartedAt = ref<number | null>(null)
 const executionElapsed = ref(0)
 let executionTimer: ReturnType<typeof setInterval> | null = null
+
+interface BatchRunItem {
+  caseId: string
+  question: string
+  sourceSection: string
+  knowledgePoint: string
+  status: 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED'
+  error?: string
+  runId?: string
+}
+
+const fixedSuite = ref<FixedExperimentSuite | null>(null)
+const fixedSuiteLoading = ref(false)
+const fixedSuiteError = ref('')
+const selectedCaseIds = ref<string[]>([])
+
+const batchRunning = ref(false)
+const batchCanceled = ref(false)
+const batchItems = ref<BatchRunItem[]>([])
+const batchStartTime = ref<number | null>(null)
+const batchElapsedSeconds = ref(0)
+let batchTimer: ReturnType<typeof setInterval> | null = null
+const currentBatchIndex = ref<number>(-1)
+
+const batchSuccessCount = computed(() => batchItems.value.filter(i => i.status === 'SUCCESS').length)
+const batchFailedCount = computed(() => batchItems.value.filter(i => i.status === 'FAILED').length)
 
 // Tab 分段支持：run（实验与结果）、summary（个人统计）、history（实验历史）
 type ExperimentTab = 'run' | 'summary' | 'history'
@@ -170,12 +196,145 @@ onMounted(async () => {
     } catch (e) {
       error.value = apiError(e)
     }
+    void loadFixedSuite()
   }
 })
 
 onBeforeUnmount(() => {
   if (executionTimer) clearInterval(executionTimer)
+  if (batchTimer) clearInterval(batchTimer)
 })
+
+async function loadFixedSuite() {
+  if (isStudentMode.value) return
+  fixedSuiteLoading.value = true
+  fixedSuiteError.value = ''
+  try {
+    const suite = await learningApi.getFixedExperimentSuite()
+    fixedSuite.value = suite
+    selectedCaseIds.value = suite.cases.map(c => c.caseId)
+  } catch (e) {
+    fixedSuiteError.value = apiError(e, '加载固定实验案例目录失败')
+  } finally {
+    fixedSuiteLoading.value = false
+  }
+}
+
+function isCaseSelected(caseId: string) {
+  return selectedCaseIds.value.includes(caseId)
+}
+
+function toggleCaseSelection(caseId: string) {
+  if (batchRunning.value) return
+  const idx = selectedCaseIds.value.indexOf(caseId)
+  if (idx >= 0) {
+    selectedCaseIds.value.splice(idx, 1)
+  } else {
+    selectedCaseIds.value.push(caseId)
+  }
+}
+
+function selectAllCases() {
+  if (batchRunning.value || !fixedSuite.value) return
+  selectedCaseIds.value = fixedSuite.value.cases.map(c => c.caseId)
+}
+
+function deselectAllCases() {
+  if (batchRunning.value) return
+  selectedCaseIds.value = []
+}
+
+function fillSingleRun(item: FixedExperimentCase) {
+  question.value = item.question
+  referenceAnswer.value = ''
+  expectedEntityInputs.value = ['', '', '']
+  setTab('run')
+}
+
+async function runBatchItems(itemsToRun: BatchRunItem[]) {
+  batchRunning.value = true
+  batchCanceled.value = false
+  batchStartTime.value = Date.now()
+  batchElapsedSeconds.value = 0
+  if (batchTimer) clearInterval(batchTimer)
+  batchTimer = setInterval(() => {
+    if (batchStartTime.value) {
+      batchElapsedSeconds.value = Math.floor((Date.now() - batchStartTime.value) / 1000)
+    }
+  }, 1000)
+
+  try {
+    for (let i = 0; i < itemsToRun.length; i++) {
+      if (batchCanceled.value) break
+      const item = itemsToRun[i]
+      if (item.status === 'SUCCESS') continue
+
+      currentBatchIndex.value = batchItems.value.findIndex(b => b.caseId === item.caseId)
+      item.status = 'RUNNING'
+      item.error = undefined
+
+      try {
+        const saved = await learningApi.runExperiment({
+          question: item.question,
+          experimentType: experimentType.value,
+          includeAblations: experimentType.value === 'METHODS' && includeAblations.value,
+          referenceAnswer: '',
+          expectedEntities: []
+        }) as Run
+        item.status = 'SUCCESS'
+        item.runId = saved.id
+        latest.value = saved
+        history.value = [saved, ...history.value.filter(h => h.id !== saved.id)].slice(0, 100)
+      } catch (err) {
+        item.status = 'FAILED'
+        item.error = apiError(err, '运行异常')
+      }
+    }
+  } finally {
+    batchRunning.value = false
+    currentBatchIndex.value = -1
+    if (batchTimer) {
+      clearInterval(batchTimer)
+      batchTimer = null
+    }
+  }
+}
+
+function startBatchRun() {
+  if (batchRunning.value || !fixedSuite.value) return
+  const selectedCases = fixedSuite.value.cases.filter(c => selectedCaseIds.value.includes(c.caseId))
+  if (!selectedCases.length) return
+
+  batchItems.value = selectedCases.map(c => ({
+    caseId: c.caseId,
+    question: c.question,
+    sourceSection: c.sourceSection,
+    knowledgePoint: c.knowledgePoint,
+    status: 'PENDING'
+  }))
+  void runBatchItems(batchItems.value)
+}
+
+function cancelBatchRun() {
+  batchCanceled.value = true
+}
+
+function retryFailedBatch() {
+  if (batchRunning.value) return
+  const failed = batchItems.value.filter(b => b.status === 'FAILED')
+  for (const item of failed) {
+    item.status = 'PENDING'
+    item.error = undefined
+  }
+  void runBatchItems(failed)
+}
+
+function retrySingleBatchItem(item: BatchRunItem) {
+  if (batchRunning.value) return
+  item.status = 'PENDING'
+  item.error = undefined
+  void runBatchItems([item])
+}
 
 function addExpectedEntity() {
   if (expectedEntityInputs.value.length < 40) expectedEntityInputs.value.push('')
@@ -260,7 +419,13 @@ async function exportResults() {
   try {
     download(JSON.stringify(await learningApi.exportExperimentsJson(), null, 2), 'software-engineering-experiments.json', 'application/json')
   } catch {
-    download(JSON.stringify(experimentJson(history.value as unknown as ExperimentExportRun[]), null, 2), 'software-engineering-experiments.json', 'application/json')
+    const batchMeta = batchItems.value.length ? {
+      suiteVersion: fixedSuite.value?.suiteVersion || '2026.1',
+      total: batchItems.value.length,
+      successCount: batchSuccessCount.value,
+      failedCount: batchFailedCount.value
+    } : undefined
+    download(JSON.stringify(experimentJson(history.value as unknown as ExperimentExportRun[], batchMeta), null, 2), 'software-engineering-experiments.json', 'application/json')
   }
 }
 
@@ -281,6 +446,10 @@ async function exportCsv() {
 function score(value?: number) {
   return value == null ? '未测评' : (value * 100).toFixed(1) + '%'
 }
+
+defineExpose({
+  cancelBatchRun
+})
 </script>
 
 <template>
@@ -337,6 +506,117 @@ function score(value?: number) {
           <div><dt>排序评分 + 原始提示词</dt><dd>先从排序评分证据中选择依据，再生成回答。</dd></div>
         </dl>
       </details>
+      <!-- 固定实验案例目录与串行评测面板（仅管理端全功能模式渲染，学生模式严格隐藏） -->
+      <section v-if="!isStudentMode" class="content-section fixed-suite-section" aria-label="固定实验案例目录">
+        <div class="section-title-row">
+          <div>
+            <p class="eyebrow">基准数据集 · 8 个案例</p>
+            <h2>固定实验案例目录 <span v-if="fixedSuite" class="suite-version-tag">版本 {{ fixedSuite.suiteVersion }}</span></h2>
+          </div>
+          <div class="suite-header-actions">
+            <button type="button" class="text-button" :disabled="batchRunning" @click="selectAllCases">全选</button>
+            <button type="button" class="text-button" :disabled="batchRunning" @click="deselectAllCases">取消选择</button>
+          </div>
+        </div>
+
+        <div v-if="fixedSuiteLoading" class="suite-loading">正在加载固定实验案例目录…</div>
+        <div v-else-if="fixedSuiteError" class="inline-notice" role="alert">
+          <CircleHelp :size="16" />
+          <span>{{ fixedSuiteError }}</span>
+          <button type="button" class="text-button retry-btn" @click="loadFixedSuite">重试加载</button>
+        </div>
+        <div v-else-if="fixedSuite && fixedSuite.cases.length" class="fixed-cases-grid">
+          <div
+            v-for="item in fixedSuite.cases"
+            :key="item.caseId"
+            class="fixed-case-card"
+            :class="{ selected: isCaseSelected(item.caseId) }"
+          >
+            <div class="case-card-header">
+              <label class="case-select-label">
+                <input
+                  type="checkbox"
+                  v-model="selectedCaseIds"
+                  :value="item.caseId"
+                  :disabled="batchRunning"
+                />
+                <span class="case-id">{{ item.caseId }}</span>
+              </label>
+              <span class="case-meta-tag">{{ item.sourceSection }} · {{ item.knowledgePoint }}</span>
+            </div>
+            <p class="case-question">{{ item.question }}</p>
+            <div class="case-card-actions">
+              <button
+                type="button"
+                class="text-button fill-btn"
+                title="将该题目填入单题实验输入框"
+                @click="fillSingleRun(item)"
+              >
+                填入单题输入
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 批量运行控制条与结果进度 -->
+        <div class="batch-runner-toolbar">
+          <div class="batch-runner-info">
+            <span>已选中 <strong>{{ selectedCaseIds.length }}</strong> / {{ fixedSuite?.cases.length || 0 }} 个基准案例</span>
+            <span v-if="batchRunning">正在串行评测第 {{ currentBatchIndex + 1 }} 项，已运行 {{ batchElapsedSeconds }}s</span>
+            <span v-else-if="batchItems.length">批次运行完成：成功 {{ batchSuccessCount }} / 失败 {{ batchFailedCount }}</span>
+          </div>
+          <div class="batch-runner-buttons">
+            <button
+              v-if="batchRunning"
+              type="button"
+              class="button button-outline"
+              @click="cancelBatchRun"
+            >
+              停止批量运行
+            </button>
+            <button
+              v-else
+              type="button"
+              class="button button-outline batch-run-btn"
+              :disabled="!selectedCaseIds.length"
+              @click="startBatchRun"
+            >
+              <Play :size="15" /> 串行批量运行 ({{ selectedCaseIds.length }})
+            </button>
+            <button
+              v-if="!batchRunning && batchFailedCount > 0"
+              type="button"
+              class="button button-outline retry-failed-btn"
+              @click="retryFailedBatch"
+            >
+              重试失败项 ({{ batchFailedCount }})
+            </button>
+          </div>
+        </div>
+
+        <!-- 批次运行列表状态（如有运行记录） -->
+        <div v-if="batchItems.length" class="batch-items-list">
+          <div
+            v-for="b in batchItems"
+            :key="b.caseId"
+            class="batch-item-row"
+            :class="b.status.toLowerCase()"
+          >
+            <span class="batch-status-badge">{{ b.status }}</span>
+            <span class="batch-case-id">{{ b.caseId }}</span>
+            <span class="batch-item-question">{{ b.question }}</span>
+            <span v-if="b.error" class="batch-item-error">{{ b.error }}</span>
+            <button
+              v-if="!batchRunning && b.status === 'FAILED'"
+              type="button"
+              class="text-button"
+              @click="retrySingleBatchItem(b)"
+            >
+              重试
+            </button>
+          </div>
+        </div>
+      </section>
       <section class="content-section experiment-run-form" aria-label="配置对照实验">
         <template v-if="!isStudentMode">
           <label for="experiment-type">实验方案</label>
@@ -737,232 +1017,212 @@ function score(value?: number) {
   text-align: right;
 }
 
-@media (max-width: 700px) {
-  .experiment-methods dl,
-  .experiment-input-pair,
-  .expected-entity-list {
-    grid-template-columns: 1fr;
-  }
-  .experiment-run-form {
-    padding: 16px;
-  }
-}
-</style>
-
-<style scoped>
-.experiment-page {
-  font-variant-numeric: tabular-nums;
-}
-
-.experiment-tabs-nav {
-  display: flex;
-  gap: 8px;
-  border-bottom: 1px solid var(--border-soft);
-  padding-bottom: 8px;
-  margin-bottom: 16px;
-}
-
-.exp-tab-button {
-  padding: 8px 16px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  color: var(--text-muted);
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  transition: all var(--motion);
-}
-
-.exp-tab-button:hover {
-  color: var(--text);
-  background: var(--surface-soft);
-}
-
-.exp-tab-button.active {
-  color: var(--accent-strong);
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  font-weight: 600;
-}
-
-.tab-panel-container {
-  display: grid;
-  gap: 16px;
-}
-
-.experiment-export-actions,
-.experiment-actions,
-.experiment-execution-status,
-.execution-status-meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-}
-
-.experiment-methods,
-.experiment-execution-status,
-.matrix-notice {
-  padding: 10px 14px;
-  border-radius: var(--radius-sm);
-  background: var(--surface-tint);
-}
-
-.experiment-methods summary {
-  width: fit-content;
-  color: var(--accent-strong);
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.experiment-methods dl,
-.experiment-input-pair,
-.expected-entity-list {
+.fixed-suite-section {
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.experiment-methods dt {
-  font-weight: 650;
+.suite-version-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  color: var(--accent-strong);
+  vertical-align: middle;
+  margin-left: 8px;
 }
 
-.experiment-methods dd {
-  margin: 4px 0 0;
+.suite-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.suite-loading {
   color: var(--text-muted);
   font-size: 13px;
+  padding: 12px 0;
 }
 
-.experiment-run-form {
+.retry-btn {
+  margin-left: 12px;
+  color: var(--accent-strong);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.fixed-cases-grid {
   display: grid;
-  gap: 10px;
-  min-width: 0;
-}
-
-.experiment-input-pair {
+  gap: 12px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.experiment-run-form label,
-.expected-entities legend {
-  display: grid;
-  gap: 5px;
-  color: var(--text);
+.fixed-case-card {
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color var(--motion);
+}
+
+.fixed-case-card.selected {
+  border-color: var(--accent);
+  background: var(--surface-tint);
+}
+
+.case-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.case-select-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
   font-weight: 600;
   font-size: 13px;
 }
 
-.experiment-run-form > select {
-  justify-self: start;
+.case-id {
+  font-family: var(--font-mono);
+  color: var(--text);
 }
 
-.experiment-run-form textarea,
-.expected-entity-row input {
-  width: 100%;
-  font-size: 14px;
-  font-weight: 400;
-}
-
-.expected-entities {
-  min-width: 0;
-  margin: 4px 0 0;
-  padding: 0;
-  border: 0;
-}
-
-.expected-entities legend {
-  margin-bottom: 8px;
-  padding: 0;
-}
-
-.expected-entity-row {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
-}
-
-.expected-entity-row .icon-button {
-  flex: none;
-}
-
-.expected-entities .text-button {
-  margin-top: 6px;
-}
-
-.expected-entities p,
-.experiment-run-form > small,
-.matrix-notice {
-  margin: 0;
+.case-meta-tag {
+  font-size: 11px;
   color: var(--text-muted);
-  font-size: 12px;
-  line-height: 1.65;
+  background: var(--surface-soft);
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
-.matrix-notice {
-  color: var(--warning);
-  background: var(--warning-soft);
+.case-question {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+  flex: 1;
 }
 
-.experiment-actions {
-  justify-content: space-between;
-  padding-top: 8px;
-  border-top: 1px solid var(--border-soft);
-}
-
-.experiment-actions .ablation-control {
+.case-card-actions {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  justify-content: flex-end;
+}
+
+.fill-btn {
+  font-size: 12px;
+  color: var(--accent-strong);
   cursor: pointer;
 }
 
-.experiment-actions > span,
-.execution-status-meta,
-.experiment-execution-status small {
-  color: var(--text-muted);
-  font-size: 12px;
-}
-
-.experiment-execution-status {
+.batch-runner-toolbar {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-}
-
-.experiment-execution-status .eyebrow {
-  margin: 0;
-}
-
-.experiment-execution-status small {
-  flex-basis: 100%;
-}
-
-.experiment-history .section-title-row {
+  gap: 12px;
   flex-wrap: wrap;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  margin-top: 4px;
 }
 
-.table-scroll {
-  margin-top: 12px;
-  overflow: auto;
+.batch-runner-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--text);
 }
 
-.compact-empty {
-  padding: 18px;
+.batch-runner-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.experiment-table {
-  min-width: 520px;
+.batch-run-btn {
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+
+.retry-failed-btn {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.batch-items-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.batch-item-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-soft);
+  font-size: 13px;
+  background: var(--surface);
+}
+
+.batch-item-row.success {
+  border-color: var(--success);
+  background: var(--success-soft);
+}
+
+.batch-item-row.failed {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.batch-item-row.running {
+  border-color: var(--accent);
+  background: var(--surface-tint);
+}
+
+.batch-status-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--surface-soft);
+}
+
+.batch-case-id {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  min-width: 120px;
+}
+
+.batch-item-question {
+  flex: 1;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.experiment-table :is(th, td):not(:first-child) {
-  text-align: right;
+.batch-item-error {
+  color: var(--danger);
+  font-size: 12px;
 }
 
 @media (max-width: 700px) {
   .experiment-methods dl,
   .experiment-input-pair,
-  .expected-entity-list {
+  .expected-entity-list,
+  .fixed-cases-grid {
     grid-template-columns: 1fr;
   }
   .experiment-run-form {

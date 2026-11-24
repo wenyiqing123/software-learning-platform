@@ -283,5 +283,18 @@
   - 样式与代码规范：`git diff --check` 通过；全仓 CSS/Vue 中 `!important` 扫描严格为 0；
   - 任务书勾选状态：`M3-T7` ~ `M3-T10` 全部勾选为 `[x]`。
 
+## 里程碑 M3 第四批推进记录（M3-T11 ~ M3-T14，2026-11-24）
 
+- 完成施工任务书【里程碑 M3】第四批共 4 项原子任务落地与定向验证：
+  - `M3-T11`：服务端固定实验案例目录。新建 `FixedExperimentSuite.java` 静态内置 V4 seed 8 个基准测试案例（逐字匹配题干、来源小节与知识点），绝不包含答案/解析/rubric/prompt 等敏感属性；新建 `FixedExperimentSuiteController.java` 暴露 ADMIN-only `GET /api/admin/experiments/fixed-suite`；新建 `FixedExperimentSuiteTest.java` 覆盖 8 个 case 逐字校验、非敏感属性断言、ADMIN 200 与 STUDENT 403 权限边界校验（10 项测试全绿）；
+  - `M3-T12`：前端加载并选择固定实验案例。`frontend/src/api/types.ts` 新增 `FixedExperimentCase` 与 `FixedExperimentSuite` 类型，`frontend/src/api/experiment.ts` 导出 `getFixedExperimentSuite`；`ExperimentsView.vue` 管理端挂载时载入 8 个 manifest cases，默认全选，支持全选/清空/单选，展示 caseId、sourceSection、knowledgePoint 与 question（纯只读文本，绝无答案/参考答案框），支持将题目填入单题输入框；接口异常时给出明确错误提示与“重试加载”按钮；学生受限模式（`studentTaskMode`）严格隐藏案例目录；
+  - `M3-T13`：固定案例串行批量运行。`ExperimentsView.vue` 支持对选中的固定案例进行串行批量运行，依次调用 `/api/experiments/run`，请求仅发 question，referenceAnswer 与 expectedEntities 留空，未生成 reference 指标；提供实时进度指示（当前索引、耗时、成功数、失败数）；失败项诚实标记并保留错误信息，失败继续执行不阻塞后续案例；支持中途安全取消（保留已完成项）与仅重试失败项；已成功项不重复执行；
+  - `M3-T14`：批量结果 UTF-8 CSV/JSON 导出。`frontend/src/domain/experimentExport.ts` 为导出结果增加 `suiteVersion`、`caseId`、`sourceSection`、`batchId`、`batchStatus` 扩展字段；CSV 导出严格带 UTF-8 BOM（`\uFEFF`）与 CRLF 换行；JSON 导出支持白名单字段重建和可选 `batch` 汇总元数据，彻底剥离学生 PII、参考答案与后台系统提示词正文；扩展 `experimentExport.test.ts` 覆盖 BOM、白名单脱敏、失败行空值处理等测试。
+- 门禁实测结果：
+  - 后端全量测试：`mvn -f backend/pom.xml -pl learning-service -am test` 172 项测试全部通过（172 passed，0 failures，0 errors）；
+  - 前端全量测试：`npx vitest run` 53 个测试文件、156 项测试全部通过（156 passed，0 failures）；
+  - 前端 AST 类名检查：`node scripts/scan-vue-classes.mjs --check` 扫描 48 个 SFC 模板（1119 处类名使用），0 missing classes；
+  - 前端生产构建：`npm run build` 成功完成，0 error，0 chunk warning；清理了 `ExperimentsView.vue` 中重复的 `<style scoped>` 块，文件体积减少近半；
+  - 样式与代码规范：`git diff --check` 通过，0 处空白错误；全仓 CSS/Vue 中 `!important` 严格为 0；
+  - 任务书勾选状态：`M3-T11` ~ `M3-T14` 全部勾选为 `[x]`。
 

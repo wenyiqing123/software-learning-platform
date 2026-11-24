@@ -450,7 +450,7 @@ M2 提交信息：`style: unify visual system across student and admin views`
 - **受影响既有测试与更新指引**：扩展 `EvaluationServiceTest` 覆盖 unassigned compatibility、assignment 缺 PRE/POST/run、non-owner、completedPhases restore 和完成。创建 `EvaluationMapperProgressIntegrationTest` 使用 H2 MySQL mode、最小 session/measurement schema、两个 user，断言 query 只返回 owner 行并正确聚合 3 phase；已有 `ExperimentTaskServiceTest` owner guard 只运行不修改。
 - **单任务验证命令**：`mvn -f backend/pom.xml -pl learning-service -am -Dtest=EvaluationServiceTest,EvaluationMapperProgressIntegrationTest -Dsurefire.failIfNoSpecifiedTests=false test`。
 
-### - [ ] M3-T11 服务端固定实验案例目录
+### - [x] M3-T11 服务端固定实验案例目录
 - **涉及文件**：`backend/learning-service/src/main/java/edu/wfust/learning/platform/experiment/FixedExperimentSuite.java`（Create）；`backend/learning-service/src/main/java/edu/wfust/learning/platform/experiment/FixedExperimentSuiteController.java`（Create）；`backend/learning-service/src/test/java/edu/wfust/learning/platform/experiment/FixedExperimentSuiteTest.java`（Create）
 - **前置依赖**：M2-T21。
 - **精确改造指令**：新增 ADMIN-only `GET /api/admin/experiments/fixed-suite`，仅返回 `{suiteVersion,cases:[{caseId,question,sourceSection,knowledgePoint}]}`；不要包含 `answer/correctAnswer/explanation/referenceAnswer/expectedEntities/prompt/model output/credentials`。8 个 case 必须逐字复用 `V4__course_content_question_bank.sql` 当前 seed：
@@ -470,21 +470,21 @@ M2 提交信息：`style: unify visual system across student and admin views`
 - **受影响既有测试与更新指引**：新增固定目录测试检查 8 个唯一 ID 与 V4 seed 的题干/section/knowledgePoint 一致、ADMIN 200/STUDENT 403、没有任一答案/解析/rubric/prompt 字段。保留 `ExperimentRequestTest`、`AiExperimentResponseGuardTest`。
 - **单任务验证命令**：`mvn -f backend/pom.xml -pl learning-service -am -Dtest=FixedExperimentSuiteTest,ExperimentRequestTest,AiExperimentResponseGuardTest -Dsurefire.failIfNoSpecifiedTests=false test`。
 
-### - [ ] M3-T12 前端加载并选择固定实验案例
+### - [x] M3-T12 前端加载并选择固定实验案例
 - **涉及文件**：`frontend/src/api/experiment.ts`；`frontend/src/api/types.ts`；`frontend/src/views/ExperimentsView.vue`；`frontend/src/views/ExperimentsView.test.ts`
 - **前置依赖**：M3-T11、M3-T5。
 - **精确改造指令**：新增 typed `FixedExperimentSuite/Case` 与 `getFixedExperimentSuite()` helper；ADMIN `ExperimentsView` 载入 8 个 manifest cases，默认全选、可取消选择，展示 question/source/section/name。固定 case 不可编辑 question，不显示答案/reference 文字框；若允许 admin 对批次单独填写评价 target，应另标为“运行后人工对照数据”并不能成为服务端审核证据，本任务不实现。studentTaskMode 隐藏案例目录与选择器。加载失败保留明确 error/retry，不能回落到虚构案例。
 - **受影响既有测试与更新指引**：保留现有单题实验输入与历史 tests；新增 manifest 8 项显示、默认 selected、deselect、API error retry、无 answer 字段、student hidden。
 - **单任务验证命令**：`cd frontend; npx vitest run src/views/ExperimentsView.test.ts`。
 
-### - [ ] M3-T13 固定案例串行批量运行
+### - [x] M3-T13 固定案例串行批量运行
 - **涉及文件**：`frontend/src/views/ExperimentsView.vue`；`frontend/src/views/ExperimentsView.test.ts`
 - **前置依赖**：M3-T12。
 - **精确改造指令**：将所选 snapshot 按顺序串行调用既有 `/api/experiments/run`，request 只发 case question 与已存在接口所需普通参数；reference/expectedEntities 留空，未生成 reference 指标。状态 `PENDING/RUNNING/SUCCESS/FAILED`；失败继续、单项可 retry、已成功不可重复运行。显示 done/selected/failed/current。停止或离页只取消未发项，已经 server-save 的 run 保留。进度是 browser in-memory，不声称 server queue/跨 refresh 恢复；不把 failed 条件伪装成有效 answer。
 - **受影响既有测试与更新指引**：保留 current single run/history/error/rating tests；新测 queue order/count/error continue/retry-only-failed/success-once/cancel-unsent/student mode hidden。
 - **单任务验证命令**：`cd frontend; npx vitest run src/views/ExperimentsView.test.ts`。
 
-### - [ ] M3-T14 批量结果 UTF-8 CSV/JSON 导出
+### - [x] M3-T14 批量结果 UTF-8 CSV/JSON 导出
 - **涉及文件**：`frontend/src/domain/experimentExport.ts`；`frontend/src/domain/experimentExport.test.ts`；`frontend/src/views/ExperimentsView.vue`；`frontend/src/views/ExperimentsView.test.ts`
 - **前置依赖**：M3-T13。
 - **精确改造指令**：CSV 保持 UTF-8 BOM/CRLF/RFC4180 quoting/既有列顺序，可在末尾追加 `suiteVersion,caseId,sourceSection,batchId,batchStatus`；JSON 保持 `experiment-export-v2` 并增加可选 `batch{suiteVersion,batchId,total,successCount,failedCount}`。失败行 answer/metrics/rating 空、error 保留。JSON 必须按字段白名单重建，不得 spread server run/response；不导出答案 key、reference/rubric、student PII 或 system prompt body；RANKED 只保留既有安全 version/hash metadata。无 teacher-reviewed reference 的指标须为空值，不是 0。
