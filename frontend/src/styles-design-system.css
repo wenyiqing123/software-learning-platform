@@ -300,6 +300,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .feedback-state .feedback-icon{color:var(--accent)}
 .feedback-error{color:var(--danger);background:var(--danger-soft);border-color:#efd5cc}
 .feedback-error .feedback-icon{color:var(--danger)}
+.feedback-loading .feedback-icon{color:var(--accent)}
 .feedback-empty .feedback-icon{color:var(--info)}
 .feedback-spin{animation:wave2-spin 900ms linear infinite}
 @keyframes wave2-spin{to{transform:rotate(360deg)}

@@ -90,6 +90,7 @@ onMounted(() => void load())
 .notes-editor .button{justify-self:end}
 .notes-empty{display:flex;align-items:center;gap:8px;margin-top:12px}
 .notes-empty svg{flex:0 0 auto;color:var(--accent)}
+.notes-list{display:grid;gap:0}
 .note-item{padding-top:12px;margin-top:12px;border-top:1px solid var(--border-default);overflow-wrap:anywhere}
 .note-item-heading>div,.note-tags{display:flex;gap:4px}
 .note-item p{margin:6px 0 8px;white-space:pre-wrap;line-height:1.7}

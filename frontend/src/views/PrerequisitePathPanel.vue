@@ -127,6 +127,7 @@ onMounted(async () => { await loadPoints(); await loadPath() })
 .path-node{position:relative;display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:12px;align-items:start;padding:12px}
 .path-node:not(:last-child)::after{content:"";position:absolute;left:25px;top:44px;bottom:-10px;width:1px;background:var(--border-soft)}
 .path-node-index{display:grid;place-items:center;width:28px;height:28px;color:var(--accent-strong);background:var(--accent-soft);border-radius:50%;font-size:12px;font-weight:650;font-variant-numeric:tabular-nums}
+.path-node-main{min-width:0}
 .path-node-heading,.path-node-meta,.path-node-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px}
 .path-node-heading strong{font-size:15px}
 .path-target-badge{display:inline-flex;align-items:center;padding:2px 8px;color:var(--accent-strong);background:var(--accent-soft);border:1px solid var(--border-focus);border-radius:var(--radius-pill);font-size:11px;font-weight:600}

@@ -339,28 +339,28 @@ Element Plus CSS 只通过实际消费的变量覆盖；不得给不存在的变
 - **受影响既有测试与更新指引**：保留“不采集任何生理信号”、Paas anchors、consent, assignment query, DELAYED measure tests；M3 再加 wizard progression tests。
 - **单任务验证命令**：`cd frontend; npx vitest run src/views/EvaluationView.test.ts src/views/ExperimentTasksView.test.ts`。
 
-### - [ ] M2-T20 管理统计表与匿名导出视图
+### - [x] M2-T20 管理统计表与匿名导出视图
 - **涉及文件**：`frontend/src/views/EvaluationAdminView.vue`；`frontend/src/views/EvaluationAdminView.test.ts`；`frontend/src/styles-learning.css`
 - **前置依赖**：M2-T2、M2-T19。
 - **精确改造指令**：描述统计用原生语义 table，桌面不横滚，小屏仅 table region 横滚；表头含准确列名/单位并使用 `scope=col` 与 caption。所有指标 tabular-nums。`EvaluationAdminView` 接收 `embedded` 并使用 SectionHeading H2，Admin 页只展示匿名汇总/匿名 CSV，不输出 userId/name/原始回答，不写因果结论。
 - **受影响既有测试与更新指引**：保留匿名聚合、SD/IQR、筛选、blob download tests；增加 table caption/scope 和不含 identity 的 DOM/export tests。
 - **单任务验证命令**：`cd frontend; npx vitest run src/views/EvaluationAdminView.test.ts src/views/AdminCentersView.test.ts`。
 
-### - [ ] M2-T21 实验结果网格和结果历史
+### - [x] M2-T21 实验结果网格和结果历史
 - **涉及文件**：`frontend/src/views/ExperimentsView.vue`；`frontend/src/components/ExperimentResultGrid.vue`；`frontend/src/components/ExperimentResultGrid.test.ts`；`frontend/src/views/ExperimentsView.test.ts`
 - **前置依赖**：M2-T2、M2-T19。
 - **精确改造指令**：将实验输入、结果、统计、历史分为 query/tab 分段，默认输入/最近结果，不删除个人汇总与历史；七条件可见状态但不占用全部视口高度。结果卡用 `subgrid` 或等价稳定 grid rows，失败卡不显示指标/人工评分；成功答复、证据、评分分别分段。CSV/JSON 按既有按钮导出，RANKED prompt 继续隐藏，布局新状态不创建虚假的进度结论。
 - **受影响既有测试与更新指引**：保留 failed mode, RANKED prompt guard, manual rating, history, evaluation metrics tests；增加 tabs aria/query, failed no rating, 7 conditions single scroll owner。
 - **单任务验证命令**：`cd frontend; npx vitest run src/components/ExperimentResultGrid.test.ts src/views/ExperimentsView.test.ts`；保留现有单次运行与 server save 语义，不改 backend API。截图/metrics 验证历史和统计移出首屏主阅读区。
 
-### - [ ] M2-T22 两个管理员工作台密度与可访问性
+### - [x] M2-T22 两个管理员工作台密度与可访问性
 - **涉及文件**：`frontend/src/views/AdminContentCenterView.vue`；`frontend/src/views/AdminExperimentCenterView.vue`；`frontend/src/views/AdminCentersView.test.ts`；`frontend/src/components/SectionHeading.vue`
 - **前置依赖**：M2-T16、M2-T17、M2-T18、M2-T20、M2-T21。
 - **精确改造指令**：每个中心一个 H1 和一句描述，tablist 无额外重复 banner；子内容嵌入标题为 H2/H3；active tab 与 route query 保持同步并在 viewport 可见。内容中心四 Tab、实验中心三 Tab 的 tab 数量和 query key 不变。用浅底分隔，不新增白卡套白卡框。
 - **受影响既有测试与更新指引**：扩展 `AdminCentersView.test.ts` 检查 heading level、tab ARIA、导航后深链刷新。另保留 admin role redirect tests。
 - **单任务验证命令**：`cd frontend; npx vitest run src/views/AdminCentersView.test.ts src/AppRoleNavigation.test.ts`。
 
-### - [ ] M2-T23 AST 级幽灵类名验收工具
+### - [x] M2-T23 AST 级幽灵类名验收工具
 - **涉及文件**：`frontend/package.json`；`frontend/package-lock.json`；`frontend/scripts/scan-vue-classes.mjs`（Create）；`frontend/tests/design-system-contract.test.ts`
 - **前置依赖**：M2-T4、M2-T22。
 - **精确改造指令**：将锁文件现有版本直接提升为根 `devDependencies`：`@babel/parser@7.29.13`、`css-tree@3.2.1`、`postcss@8.5.32`，并同步 package-lock，不升级任何其他依赖。scanner 用 Vue SFC `parse/compileTemplate` 读取 App/views/components；用 Babel `parseExpression` 识别 `:class` 的静态对象 key 和数组 literal，其他表达式列入 dynamicUnknown；用 PostCSS 读取 scoped+4 全局 CSS，用 css-tree AST 解析 selector 和 `:deep`，正确处理逗号 selector、class/attribute/pseudo。输出 JSON `{missingClasses,dynamicUnknown,allowlisted}`，只有用户元素真实缺样式规则计 missing；semantic marker/data-testid/test hook 必须在源码 allowlist 中附 file/class/reason，不用空规则消音。`--check` 在 missingClasses 非空时 exit 1；不报告 dynamicUnknown 为 failure。Contract test 通过 `spawnSync(process.execPath,['scripts/scan-vue-classes.mjs','--check'])` 执行，不把 scanner 逻辑重复写进测试。

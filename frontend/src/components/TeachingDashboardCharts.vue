@@ -25,14 +25,14 @@ onBeforeUnmount(() => { window.removeEventListener('resize', resizeCharts); acti
 
 <template>
   <section class="teaching-chart-grid" aria-label="教学数据可视化">
-    <article class="teaching-panel teaching-chart-card">
+    <article class="teaching-chart-card">
       <div class="teaching-panel-heading"><div><p class="eyebrow">LEARNING ACTIVITY</p><h2>学习活动趋势</h2></div><small>答题、答对与阅读完成</small></div>
-      <div v-if="dailyActivity.length" ref="activityHost" class="teaching-chart teaching-chart-activity" role="img" aria-label="每日学习活动趋势图"></div>
+      <div v-if="dailyActivity.length" ref="activityHost" class="teaching-chart" role="img" aria-label="每日学习活动趋势图"></div>
       <div v-else class="teaching-chart-empty">当前范围内暂无学习活动数据。</div>
     </article>
-    <article class="teaching-panel teaching-chart-card">
+    <article class="teaching-chart-card">
       <div class="teaching-panel-heading"><div><p class="eyebrow">MASTERY DISTRIBUTION</p><h2>薄弱知识点掌握度</h2></div><small>按平均掌握度升序</small></div>
-      <div v-if="weakPoints.length" ref="weakHost" class="teaching-chart teaching-chart-weak" role="img" aria-label="薄弱知识点掌握度排行图"></div>
+      <div v-if="weakPoints.length" ref="weakHost" class="teaching-chart" role="img" aria-label="薄弱知识点掌握度排行图"></div>
       <div v-else class="teaching-chart-empty">当前范围内暂无薄弱知识点数据。</div>
     </article>
   </section>

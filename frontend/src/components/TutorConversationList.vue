@@ -105,6 +105,7 @@ function submitRename(id: number) {
 .active .tutor-session-dot{background:var(--accent)}
 .tutor-session-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
 .active .tutor-session-title{font-weight:650}
+.icon-button-small{width:26px;height:28px;padding:0;flex:none}
 .tutor-session-actions .icon-button,.tutor-session-rename .icon-button{width:26px;height:28px;padding:0;flex:none}
 .tutor-session-actions .danger:hover{color:var(--danger);background:var(--danger-soft)}
 .tutor-session-rename{width:100%;padding-block:4px}

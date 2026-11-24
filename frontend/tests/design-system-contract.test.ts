@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { spawnSync } from 'node:child_process'
 
 const style = (name: string) => readFileSync(resolve(process.cwd(), 'src', name), 'utf8')
 
@@ -72,5 +73,15 @@ describe('design system source contracts', () => {
     expect(learning).not.toContain('@media (prefers-reduced-motion:reduce)')
     expect(learning).toContain('.quiz-layout')
     expect(learning).toContain('.answer-option')
+  })
+
+  it('validates all template class usages against defined CSS AST rules without genuine missing classes', () => {
+    const result = spawnSync(process.execPath, ['scripts/scan-vue-classes.mjs', '--check'], {
+      cwd: resolve(process.cwd()),
+      encoding: 'utf8'
+    })
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('[PASS] All')
+    expect(result.stdout).toContain('0 missing classes')
   })
 })

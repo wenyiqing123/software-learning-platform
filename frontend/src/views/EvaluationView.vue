@@ -584,6 +584,10 @@ onBeforeUnmount(() => {
   margin: 0;
 }
 
+.effort-num {
+  line-height: 1;
+}
+
 .effort-selection-guide {
   font-size: 13px;
   color: var(--accent-strong);
@@ -598,6 +602,11 @@ onBeforeUnmount(() => {
   grid-template-columns: minmax(0, 1fr) minmax(140px, 210px) auto;
   align-items: end;
   gap: 12px;
+}
+
+.evaluation-history {
+  display: grid;
+  gap: 8px;
 }
 
 .evaluation-history-row {

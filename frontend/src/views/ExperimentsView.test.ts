@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { createMemoryHistory, createRouter } from 'vue-router'
 import ExperimentsView from './ExperimentsView.vue'
 
 const experimentApi = vi.hoisted(() => ({
@@ -24,8 +25,14 @@ function savedRun() {
   }
 }
 
-async function renderExperiments() {
-  const wrapper = mount(ExperimentsView)
+async function renderExperiments(path = '/experiments') {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [{ path: '/experiments', component: ExperimentsView }]
+  })
+  await router.push(path)
+  await router.isReady()
+  const wrapper = mount(ExperimentsView, { global: { plugins: [router] } })
   await flushPromises()
   return wrapper
 }
@@ -106,5 +113,47 @@ describe('experiment expected entities', () => {
 
     expect(rankedRow?.text()).toContain('1')
     expect(rankedRow?.text()).toContain('200 ms')
+  })
+
+  it('provides accessible query/tabs to isolate run, summary and history without losing data', async () => {
+    experimentApi.listExperiments.mockResolvedValue([
+      {
+        ...savedRun(),
+        id: 'run-history-1',
+        question: '什么是加工？',
+        createdAt: '2026-11-20T10:00:00Z',
+        results: [{ mode: 'DIRECT', answer: '加工是变换数据流的操作', latencyMs: 30 }],
+        ratings: {},
+        evaluation: { source: 'SERVER_AI_SERVICE', experimentType: 'METHODS', metricsByMode: {} }
+      }
+    ])
+    const wrapper = await renderExperiments()
+
+    // 检查 tablist 与 tabs
+    const tablist = wrapper.find('[role="tablist"]')
+    expect(tablist.exists()).toBe(true)
+    const tabs = tablist.findAll('[role="tab"]')
+    expect(tabs).toHaveLength(3)
+    expect(tabs[0].attributes('aria-selected')).toBe('true')
+    expect(tabs[0].text()).toContain('对比实验与本次结果')
+
+    // 切换到个人实验统计
+    await tabs[1].trigger('click')
+    await flushPromises()
+    expect(tabs[1].attributes('aria-selected')).toBe('true')
+    expect(wrapper.text()).toContain('个人实验统计')
+
+    // 切换到实验历史
+    await tabs[2].trigger('click')
+    await flushPromises()
+    expect(tabs[2].attributes('aria-selected')).toBe('true')
+    expect(wrapper.text()).toContain('什么是加工？')
+
+    // 点击历史记录项，切回 run 且展示该记录
+    await wrapper.find('.saved-experiment-list button').trigger('click')
+    await flushPromises()
+    expect(tabs[0].attributes('aria-selected')).toBe('true')
+    expect(wrapper.text()).toContain('本次结果')
+    expect(wrapper.text()).toContain('加工是变换数据流的操作')
   })
 })

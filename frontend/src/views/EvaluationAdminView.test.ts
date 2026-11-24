@@ -25,18 +25,34 @@ beforeEach(() => {
 })
 
 describe('EvaluationAdminView', () => {
-  it('renders grouped descriptive statistics without real participant identity', async () => {
+  it('renders grouped descriptive statistics with semantic table caption and scope without identity', async () => {
     const wrapper = mount(EvaluationAdminView)
     await flushPromises()
     expect(wrapper.text()).toContain('METHODS')
     expect(wrapper.text()).toContain('12')
     expect(wrapper.text()).toContain('3.5 / 4')
     expect(wrapper.text()).toContain('SD 1.1 · IQR 2')
+
+    // 验证原生语义表格、caption 与 scope
+    const table = wrapper.find('table')
+    expect(table.exists()).toBe(true)
+    const caption = wrapper.find('caption')
+    expect(caption.exists()).toBe(true)
+    expect(caption.text()).toContain('描述性统计')
+
+    const thCols = wrapper.findAll('th[scope="col"]')
+    expect(thCols.length).toBeGreaterThanOrEqual(8)
+    expect(wrapper.find('th[scope="row"]').text()).toBe('METHODS')
+
+    // 严禁输出用户身份或原始回答
     expect(wrapper.text()).not.toContain('userId')
+    expect(wrapper.text()).not.toContain('userName')
+    expect(wrapper.text()).not.toContain('学生姓名')
+    expect(wrapper.text()).not.toContain('原始回答')
     wrapper.unmount()
   })
 
-  it('requests the anonymized export from the admin API', async () => {
+  it('requests the anonymized export from the admin API without leaking identity', async () => {
     const wrapper = mount(EvaluationAdminView)
     await flushPromises()
     await wrapper.get('button.button-dark').trigger('click')

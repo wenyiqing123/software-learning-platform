@@ -228,6 +228,18 @@
   - 代码规范：`git diff --check` 通过；全仓 CSS/Vue 中 `!important` 扫描结果为 0；四份全局 CSS 字节数完全保持稳定（总计 57,983 B）；
   - 任务书勾选状态：`M2-T16` ~ `M2-T19` 全部勾选为 `[x]`。
 
+## 里程碑 M2 终局收口记录（M2-T20 ~ M2-T23 与 M2 完整收口门禁，2026-11-24）
 
-
+- 完成施工任务书【里程碑 M2】终局批次 4 项原子任务落地与全量门禁验收：
+  - `M2-T20`：管理统计表与匿名导出视图。`EvaluationAdminView.vue` 添加语义 `<caption>`、表头 `scope="col"`、数据行 `scope="row"`，所有统计指标启用 tabular-nums；小屏横向滚动区域添加 `tabindex="0"` 和 `aria-label`；严格保持去标识化展示与匿名 CSV 导出，绝不泄露学生姓名、学号或网络标识；扩展 `EvaluationAdminView.test.ts`；
+  - `M2-T21`：实验结果网格和结果历史。`ExperimentResultGrid.vue` 保持 CSS Subgrid 4 直接子元素结构，严格保持 `result.mode !== 'RANKED' && result.resultKey !== 'RANKED'` 隐藏后台提示词正文，失败实验卡片诚实展示错误原因与耗时，严禁渲染虚假评分；`ExperimentsView.vue` 采用 run/summary/history 语义选项卡与首屏流式布局；扩展 `ExperimentResultGrid.test.ts` 与 `ExperimentsView.test.ts`；
+  - `M2-T22`：两个管理员工作台密度与可访问性。`AdminContentCenterView.vue` 与 `AdminExperimentCenterView.vue` 统一标题层级（单个 H1，子视图 H2），采用浅底分组表面消除白卡套白卡，Active Tab 与路由保持同步并在视口内居中；扩展 `AdminCentersView.test.ts` 与 `AppRoleNavigation.test.ts`；
+  - `M2-T23`：AST 级幽灵类名验收工具。新增 `frontend/scripts/scan-vue-classes.mjs`，依赖 `@vue/compiler-sfc`、`@babel/parser`、`postcss` 与 `css-tree` 提取全仓 41 个 Vue SFC 模板类名并与全局/局部 CSS 选择器比对；排查并修复全仓 14 处真实缺失类名与冗余幽灵类，达到 **0 missing classes**；`tests/design-system-contract.test.ts` 扩展 AST 检查集成断言。
+- 【里程碑 M2 完整收口门禁】实测结果：
+  - AST 幽灵类名扫描：`node scripts/scan-vue-classes.mjs --check` 检查 41 个 SFC，0 missing classes，0 dynamicUnknown，0 allowlisted，通过；
+  - 全量前端测试：`npm test`（53 个测试文件，137 项测试全绿，137 passed），通过；
+  - 生产构建：`npm run build` 成功完成，0 error，0 chunk warning，分包清晰；
+  - 真实运行态视觉巡检：`node scripts/authenticated-ui-smoke.mjs` 覆盖双角色/访客 24 条路由共 158 个场景，158/158 零失败，巡检临时目录已彻底清理；
+  - 样式质量与规范：`git diff --check` 通过；全仓 CSS/Vue 中 `!important` 严格为 0；四份全局 CSS 最终大小为 58,263 B（`styles-design-system.css` 28,734 B、`styles.css` 14,843 B、`styles-graph.css` 3,297 B、`styles-learning.css` 11,389 B）；
+  - 任务书勾选状态：【里程碑 M2】全量 23 项原子任务（`M2-T1` ~ `M2-T23`）已全部标记为 `[x]`！
 

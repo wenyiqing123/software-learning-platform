@@ -8,7 +8,7 @@ const emit = defineEmits<{ copy: [value: string] }>()
 </script>
 
 <template>
-  <article class="answer-result tutor-answer-card" :class="{ 'answer-result-failed': item.error }">
+  <article class="tutor-answer-card" :class="{ 'answer-result-failed': item.error }">
     <div v-if="label" class="result-mode-label">{{ label }}</div>
     <div class="answer-card-meta"><span :class="['answer-state', item.error ? 'is-error' : 'is-ready']">{{ item.error ? '失败' : '已生成' }}</span><span v-if="item.latencyMs">{{ item.latencyMs }} ms</span><button v-if="!item.error && (item.answer || item.content)" class="text-button" type="button" @click="emit('copy', item.answer || item.content || '')">复制回答</button></div>
     <p v-if="item.error" class="compare-error">{{ item.error }}</p>
@@ -20,6 +20,8 @@ const emit = defineEmits<{ copy: [value: string] }>()
 </template>
 
 <style scoped>
+.tutor-answer-card{min-width:0}
+.answer-result-failed{border-left:3px solid var(--danger)}
 .answer-card-meta,.evidence-title,.entity-tags{display:flex;align-items:center;gap:8px}
 .answer-card-meta{flex-wrap:wrap;margin-bottom:10px;color:var(--text-muted);font-size:12px;font-variant-numeric:tabular-nums}
 .answer-card-meta .text-button,.evidence-title span{margin-left:auto}

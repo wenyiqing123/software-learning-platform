@@ -138,3 +138,18 @@
 - `main.ts` 的 CSS 顺序为 Element Plus → `styles.css` → `styles-graph.css` → `styles-learning.css` → `styles-design-system.css`；没有发现四份全局 CSS 的同名选择器交叉覆盖。新增基础兜底集中在设计系统中，避免次级页面出现浏览器原生控件。
 - `authenticated-ui-smoke.mjs` 现覆盖 router 的 24 条页面路由，在 1440×900 与 1280×800 共执行 48 次已登录态访问；控制台错误、未捕获异常、空挂载、横向溢出、顶部遮挡、按钮文本溢出、默认未美化控件和未样式化表格均为 0。
 - 视觉指标同时记录最大卡片嵌套深度、页头存在性、页头说明存在性、主按钮/控件数量和标题字号；截图只写入临时 `.ui-audit/`，验收后清理。
+
+## 里程碑 M2 最终收口与 AST 幽灵类名治理（2026-11-24）
+
+- **管理统计表与匿名导出（`M2-T20`）**：`EvaluationAdminView.vue` 完善表格无障碍语义，添加 `<caption>`、表头 `scope="col"` 与首列数据行 `scope="row"`；统计指标数值全量启用 `tabular-nums` 对齐；小屏 table region 横向滚动容器标注 `tabindex="0"` 和 `aria-label`；只呈现去标识化后的实验条件分组描述统计与 CSV 导出，严禁暴露学生账号、学号或网络标识。
+- **实验对照结果网格（`M2-T21`）**：`ExperimentResultGrid.vue` 保持 CSS Subgrid 4 直接子元素结构（标题、回答/错误、评分/耗时指标、可折叠三元组与参数），实现相邻实验卡片跨行高度对齐；严格保持 `result.mode !== 'RANKED' && result.resultKey !== 'RANKED'` 隔离后台系统提示词正文；失败实验卡片诚实展示错误原因与耗时，严禁渲染虚假评分。`ExperimentsView.vue` 结构优化为 run/summary/history 语义选项卡与首屏流式布局。
+- **双中心工作台无障碍与层级（`M2-T22`）**：`AdminContentCenterView.vue` 与 `AdminExperimentCenterView.vue` 统一标题层级规范，工作台容器维持单一 H1，嵌入子视图动态切换为 H2/H3；采用统一浅底分组表面消除“白卡套白卡”现象；Active Tab 与路由 URL 状态严格双向同步并在桌面/窄屏视口居中可见。
+- **AST 级幽灵类名自动化工具与治理（`M2-T23`）**：
+  - 新增 `scripts/scan-vue-classes.mjs`，利用 `@vue/compiler-sfc`、`@babel/parser` 提取全仓 41 个 Vue SFC 模板中静态与动态类名，结合 `postcss` 和 `css-tree` 提取四份全局 CSS 以及各组件 `<style scoped>` 中的 CSS 选择器，对比找出模板引用的未定义类名（missing）与无引用规则。
+  - 成功定位并彻底修复全仓 14 处真实缺失类名与冗余幽灵类（包含 `App.vue`、`AdminCoursePanel.vue`、`FeedbackState.vue`、`LearningNotesPanel.vue`、`TeachingDashboardCharts.vue`、`TutorAnswerCard.vue`、`TutorConversationList.vue`、`TutorModeSelector.vue`、`CourseView.vue`、`EvaluationView.vue`、`ExperimentsView.vue`、`MasteryMapView.vue`、`PrerequisitePathPanel.vue` 及根容器类），实现全仓 **0 missing classes**、0 dynamicUnknown、0 allowlisted。
+  - `tests/design-system-contract.test.ts` 扩展 AST 检查集成断言，保障 CI/CD 构建阶段持续防退化。
+- **运行态视觉巡检与门禁实测**：
+  - 真实双角色（学生/管理员）+ 访客无头浏览器巡检 `authenticated-ui-smoke.mjs`：158/158 场景全部通过，0 控制台异常、0 未捕获 JS 错误、0 布局溢出、0 默认原生控件；验收后临时巡检截图完全清理。
+  - 前端全量单元测试与组件契约：53 个测试文件，137 项测试 100% 通过（`npm test`）。
+  - 生产构建：`npm run build` 0 error，0 chunk warning。
+  - 全局样式体积收敛：四份全局 CSS 最终大小为 58,263 B（`styles-design-system.css` 28,734 B、`styles.css` 14,843 B、`styles-graph.css` 3,297 B、`styles-learning.css` 11,389 B），全仓 `!important` 命中数严格为 0。

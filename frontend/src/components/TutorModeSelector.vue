@@ -8,7 +8,7 @@ const emit = defineEmits<{ select: [mode: string] }>()
 </script>
 
 <template>
-  <div class="mode-selector tutor-mode-selector" :class="{ 'is-compare-mode': compareAll }" role="group" aria-label="问答模式">
+  <div class="tutor-mode-selector" :class="{ 'is-compare-mode': compareAll }" role="group" aria-label="问答模式">
     <button
       v-for="item in modes"
       :key="item.key"

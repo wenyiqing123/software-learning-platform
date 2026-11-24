@@ -105,7 +105,7 @@ onBeforeUnmount(destroyGraph)
 .mastery-canvas{min-height:390px}
 .mastery-legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:12px}
 .legend-dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
-.legend-in-progress{background:var(--warning)}.legend-blocked{background:var(--danger)}
+.legend-mastered{background:var(--accent)}.legend-in-progress{background:var(--warning)}.legend-blocked{background:var(--danger)}
 .mastery-node-list{background:var(--surface);border:1px solid var(--border-default);overflow:hidden}
 .mastery-node{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:16px;border-top:1px solid var(--border-soft);font-variant-numeric:tabular-nums}
 .mastery-node:first-child{border-top:0}
