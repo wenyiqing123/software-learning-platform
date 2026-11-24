@@ -380,21 +380,21 @@ M2 提交信息：`style: unify visual system across student and admin views`
 
 ## M3：批量实验、向导、上下文与账号安全
 
-### - [ ] M3-T1 V16 为实验组持久化顺序
+### - [x] M3-T1 V16 为实验组持久化顺序
 - **涉及文件**：`backend/learning-service/src/main/resources/db/migration/V16__experiment_group_task_order.sql`（Create）；`backend/learning-service/src/main/java/edu/wfust/learning/platform/entity/ExperimentGroupEntity.java`；`backend/learning-service/src/test/java/edu/wfust/learning/platform/experimenttask/ExperimentTaskOrderMigrationTest.java`（Create）
 - **前置依赖**：M1 全部门禁通过。
 - **精确改造指令**：追加 V16 为 `experiment_group` 加 nullable `task_order VARCHAR(3)` 保存 wire values `A→B`/`B→A`。迁移后所有旧 group 继续 NULL，不回填默认顺序、不声称随机化；不新增索引除非 query 实际需要，不写个人或图数据。M3-T3 才校验新的非空 group order。
 - **受影响既有测试与更新指引**：新 `ExperimentTaskOrderMigrationTest` 从 V14 schema 开始、加载 V15/V16 Flyway migrations，断言旧 group 顺序为 NULL，新列可读写；不要改 `AdminStudyWorkflowTest` 作为迁移验证，那个 fixture 自己关闭 Flyway。
 - **单任务验证命令**：`mvn -f backend/pom.xml -pl learning-service -am -Dtest=ExperimentTaskOrderMigrationTest -Dsurefire.failIfNoSpecifiedTests=false test`；预期从 V14 开始的 MySQL-compatible H2 迁移通过并保留旧行。
 
-### - [ ] M3-T2 Assignment DTO 返回服务器顺序
+### - [x] M3-T2 Assignment DTO 返回服务器顺序
 - **涉及文件**：`backend/learning-service/src/main/java/edu/wfust/learning/platform/mapper/ExperimentAssignmentMapper.java`；`backend/learning-service/src/main/java/edu/wfust/learning/platform/experimenttask/ExperimentTaskService.java`；`backend/learning-service/src/test/java/edu/wfust/learning/platform/experimenttask/ExperimentTaskServiceTest.java`
 - **前置依赖**：M3-T1。
 - **精确改造指令**：`ExperimentAssignmentMapper.findForUser` join `experiment_group` select `g.task_order AS taskOrder`；`AssignmentRow/StudentAssignmentView` 带 nullable `taskOrder`。学生 public DTO 和 SQL projection 删除 `userId/referenceAnswer`，只保留题干、状态、group/condition 和时间；admin export header 不变。
 - **受影响既有测试与更新指引**：保留 `studentAssignmentProjectionDoesNotExposeAnotherIdentity`、`bindingARealRunStartsAssignmentAndCompletionRequiresServerRun`；扩展 projection 断言无 `userId/referenceAnswer` 并包含 server `taskOrder`。
 - **单任务验证命令**：`mvn -f backend/pom.xml -pl learning-service -am -Dtest=ExperimentTaskServiceTest -Dsurefire.failIfNoSpecifiedTests=false test`。
 
-### - [ ] M3-T3 管理端组读取与派发原子性
+### - [x] M3-T3 管理端组读取与派发原子性
 - **涉及文件**：`backend/learning-service/src/main/java/edu/wfust/learning/platform/experimenttask/ExperimentTaskController.java`；`backend/learning-service/src/main/java/edu/wfust/learning/platform/experimenttask/ExperimentTaskService.java`；`backend/learning-service/src/test/java/edu/wfust/learning/platform/experimenttask/ExperimentTaskServiceTest.java`
 - **前置依赖**：M3-T1、M3-T2。
 - **精确改造指令**：新增 ADMIN-only `GET /api/admin/experiment-tasks/{id}/groups`；保留既有 `POST /{id}/groups`，新 group request 必须含 `taskOrder: 'A→B'|'B→A'`，空/其他值 400；既有 NULL group 不改。`POST /{id}/assign` 校验 1–500 个正整数 ID、无重复；先验证 task/group 归属和全部用户存在且 role=STUDENT，再写；任一 invalid 则整批 0 insert；valid users 用同一 transaction + `INSERT IGNORE` 幂等派发。禁止新增学生名册/PII endpoint，不称随机化。

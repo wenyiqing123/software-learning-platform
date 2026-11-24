@@ -7,6 +7,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.nio.charset.StandardCharsets;
@@ -14,11 +15,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/experiment-tasks")
+@PreAuthorize("hasRole('ADMIN')")
 public class ExperimentTaskController {
     private final ExperimentTaskService service;
     public ExperimentTaskController(ExperimentTaskService service){this.service=service;}
     @GetMapping public List<ExperimentTaskService.TaskView> list(){return service.listTasks();}
     @PostMapping @ResponseStatus(HttpStatus.CREATED) public ExperimentTaskService.TaskView create(Authentication auth,@Valid @RequestBody ExperimentTaskService.CreateTaskRequest request){return service.createTask(Long.parseLong(auth.getName()),request);}
+    @GetMapping("/{id}/groups") public List<ExperimentTaskService.GroupView> groups(@PathVariable Long id){return service.listGroups(id);}
     @PostMapping("/{id}/groups") @ResponseStatus(HttpStatus.CREATED) public ExperimentTaskService.GroupView group(@PathVariable Long id,@Valid @RequestBody ExperimentTaskService.GroupRequest request){return service.addGroup(id,request);}
     @PostMapping("/{id}/assign") @ResponseStatus(HttpStatus.NO_CONTENT) public void assign(@PathVariable Long id,@Valid @RequestBody AssignRequest request){service.assign(id,request.groupId(),request.userIds());}
     @PutMapping("/{id}/status") public ExperimentTaskService.TaskView status(@PathVariable Long id,@Valid @RequestBody StatusRequest request){return service.setStatus(id,request.status());}

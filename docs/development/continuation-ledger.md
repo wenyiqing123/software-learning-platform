@@ -243,3 +243,15 @@
   - 样式质量与规范：`git diff --check` 通过；全仓 CSS/Vue 中 `!important` 严格为 0；四份全局 CSS 最终大小为 58,263 B（`styles-design-system.css` 28,734 B、`styles.css` 14,843 B、`styles-graph.css` 3,297 B、`styles-learning.css` 11,389 B）；
   - 任务书勾选状态：【里程碑 M2】全量 23 项原子任务（`M2-T1` ~ `M2-T23`）已全部标记为 `[x]`！
 
+## 里程碑 M3 第一批推进记录（M3-T1 ~ M3-T3，2026-11-24）
+
+- 完成施工任务书【里程碑 M3】第一批共 3 项原子任务落地与定向验证：
+  - `M3-T1`：V16 为实验组持久化顺序。新增 `V16__experiment_group_task_order.sql` 为 `experiment_group` 添加 nullable `task_order VARCHAR(3)` 字段；更新 `ExperimentGroupEntity.java` 实体；新建 `ExperimentTaskOrderMigrationTest.java` 验证从 V14 基线经由 V15/V16 迁移后旧组数据保持 NULL、新列可读写 `A→B`/`B→A`；
+  - `M3-T2`：Assignment DTO 返回服务器顺序。`ExperimentAssignmentMapper.findForUser` 联查 `experiment_group` 并提取 `g.task_order AS taskOrder`；从学生 DTO `StudentAssignmentView` 和 SQL projection 中彻底删除 `userId` 与 `referenceAnswer`，断言学生投影绝不暴露真实答案或他人身份；扩展 `ExperimentTaskServiceTest.java`；
+  - `M3-T3`：管理端组读取与派发原子性。`ExperimentTaskController.java` 新增 ADMIN-only `GET /api/admin/experiment-tasks/{id}/groups`；`addGroup` 严格校验 `taskOrder` 必须为 `'A→B'` 或 `'B→A'`（非法或空返回 400）；`assign` 实现 1–500 正整数校验、重复 ID 拦截、task/group 归属校验及全部用户存在且为 STUDENT 的预校验，任一非法整批 0 写入，全量合法使用 `INSERT IGNORE` 幂等派发；扩展 `ExperimentTaskServiceTest.java` 覆盖 10 项单元测试场景。
+- 门禁实测结果：
+  - 后端定向与全量测试：`mvn -f backend/pom.xml -pl learning-service test` 152 项测试全绿通过（152 passed）；
+  - 前端契约与合规测试：`tests/design-system-contract.test.ts` 与 `tests/compliance-guard.test.ts` 全部通过（11 passed）；
+  - 样式与代码规范：`scan-vue-classes.mjs --check` 0 missing classes；`!important` 扫描结果为 0；`git diff --check` 通过；
+  - 任务书勾选状态：`M3-T1` ~ `M3-T3` 已全部标记为 `[x]`。
+

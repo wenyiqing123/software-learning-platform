@@ -14,9 +14,9 @@ import java.util.List;
     @Insert("INSERT IGNORE INTO experiment_assignment(task_id,group_id,user_id,status) VALUES(#{taskId},#{groupId},#{userId},'ASSIGNED')")
     int assign(@Param("taskId") Long taskId,@Param("groupId") Long groupId,@Param("userId") Long userId);
     @Select("""
-        SELECT a.id,a.task_id AS taskId,a.group_id AS groupId,a.user_id AS userId,a.status,a.assigned_at AS assignedAt,a.started_at AS startedAt,a.completed_at AS completedAt,
-               t.title,t.description,t.experiment_type AS experimentType,t.question,t.reference_answer AS referenceAnswer,t.status AS taskStatus,
-               g.name AS groupName,g.condition_key AS conditionKey
+        SELECT a.id,a.task_id AS taskId,a.group_id AS groupId,a.status,a.assigned_at AS assignedAt,a.started_at AS startedAt,a.completed_at AS completedAt,
+               t.title,t.description,t.experiment_type AS experimentType,t.question,t.status AS taskStatus,
+               g.name AS groupName,g.condition_key AS conditionKey,g.task_order AS taskOrder
         FROM experiment_assignment a JOIN experiment_task t ON t.id=a.task_id JOIN experiment_group g ON g.id=a.group_id
         WHERE a.user_id=#{userId} ORDER BY a.assigned_at DESC
         """)
@@ -29,6 +29,6 @@ import java.util.List;
         WHERE #{taskId} IS NULL OR a.task_id=#{taskId} ORDER BY a.id
         """)
     List<ExportRow> exportRows(@Param("taskId") Long taskId);
-    record AssignmentRow(Long id,Long taskId,Long groupId,Long userId,String status,LocalDateTime assignedAt,LocalDateTime startedAt,LocalDateTime completedAt,String title,String description,String experimentType,String question,String referenceAnswer,String taskStatus,String groupName,String conditionKey) { }
+    record AssignmentRow(Long id,Long taskId,Long groupId,String status,LocalDateTime assignedAt,LocalDateTime startedAt,LocalDateTime completedAt,String title,String description,String experimentType,String question,String taskStatus,String groupName,String conditionKey,String taskOrder) { }
     record ExportRow(Long id,Long taskId,Long groupId,Long userId,String status,LocalDateTime assignedAt,LocalDateTime startedAt,LocalDateTime completedAt,String title,String taskStatus,String groupName,String conditionKey,Long runCount) { }
 }
