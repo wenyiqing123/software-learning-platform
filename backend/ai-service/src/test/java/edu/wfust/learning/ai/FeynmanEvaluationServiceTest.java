@@ -6,11 +6,13 @@ import edu.wfust.learning.ai.client.PythonKnowledgeClient;
 import edu.wfust.learning.ai.client.PythonKnowledgeResponse;
 import edu.wfust.learning.ai.client.PythonTriple;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Duration;
@@ -22,6 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -168,5 +171,55 @@ class FeynmanEvaluationServiceTest {
         assertThat(result.missingTriples()).isEmpty();
         assertThat(result.misconceptions()).singleElement().asString().contains("暂未检索到");
         verifyNoInteractions(chatModel);
+    }
+
+    @Test
+    void passesRaisedMaxTokensBudgetAndSanitizesTruncatedJsonFallback() {
+        PythonKnowledgeClient knowledge = mock(PythonKnowledgeClient.class);
+        PythonTriple realOne = new PythonTriple("需求分析", "交付文档", "软件需求规格说明书", 0.90);
+        PythonTriple realTwo = new PythonTriple("需求分析", "方法", "结构化分析SA", 0.85);
+        when(knowledge.retrieve(anyString(), anyList(), anyList(), anyList()))
+                .thenReturn(new PythonKnowledgeResponse(
+                        "需求分析",
+                        List.of(new PythonEntity("需求分析", "需求分析", "DICT", 1.0)),
+                        List.of(realOne, realTwo),
+                        "raw-prompt",
+                        true,
+                        "template"
+                ));
+
+        ChatModel chatModel = mock(ChatModel.class);
+        String truncatedJson = "{\"coveredPoints\":[\"要点1\"],\"missingTriples\":[{\"subject\":\"需求分析\",\"object";
+        when(chatModel.call(any(Prompt.class)))
+                .thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage(truncatedJson)))));
+
+        // 刻意将默认 settings.maxTokens 设为 512，验证费曼调用显式抬升至 4096
+        ModelSettings settings = new ModelSettings(
+                "https://provider.example/v1", "test-key", "deepseek-flash", 0.2, 512, Duration.ofSeconds(5));
+        FeynmanEvaluationService service = new FeynmanEvaluationService(
+                knowledge, new AiModelClient(settings, chatModel), json);
+
+        FeynmanEvaluateResponse result = service.evaluate(new FeynmanEvaluateRequest(
+                "需求分析",
+                "需求分析阶段主要确定软件系统需要具备哪些功能与业务约束条件。",
+                1L
+        ));
+
+        ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+        verify(chatModel).call(promptCaptor.capture());
+        OpenAiChatOptions capturedOptions = (OpenAiChatOptions) promptCaptor.getValue().getOptions();
+        assertThat(capturedOptions).isNotNull();
+        assertThat(capturedOptions.getMaxTokens()).isEqualTo(4096);
+
+        assertThat(result.evidenceTriples()).hasSize(2);
+        assertThat(result.followUpQuestion()).isNotBlank();
+        assertThat(result.misconceptions())
+                .singleElement()
+                .asString()
+                .contains("结构化诊断结果未完整生成")
+                .doesNotContain("{")
+                .doesNotContain("\"coveredPoints\"")
+                .doesNotContain("\"missingTriples\"")
+                .doesNotContain("\"subject\"");
     }
 }

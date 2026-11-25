@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class FeynmanEvaluationService {
+    static final int FEYNMAN_EVALUATE_MAX_TOKENS = 4096;
     private static final int MAX_EVIDENCE = 8;
     private static final int MAX_LIST_ITEMS = 8;
     private static final Pattern FENCE_PATTERN = Pattern.compile("^```(?:json)?\\s*([\\s\\S]*?)\\s*```$", Pattern.CASE_INSENSITIVE);
@@ -70,7 +71,7 @@ public class FeynmanEvaluationService {
 
         String systemPrompt = buildEvaluationSystemPrompt();
         String userPrompt = buildEvaluationUserPrompt(topic, explanation, evidenceTriples);
-        var modelResponse = model.call(userPrompt, systemPrompt);
+        var modelResponse = model.call(userPrompt, systemPrompt, FEYNMAN_EVALUATE_MAX_TOKENS);
         String rawText = modelResponse.getResult().getOutput().getText();
 
         return parseAndGroundResponse(topic, explanation, rawText, evidenceTriples);
@@ -79,8 +80,8 @@ public class FeynmanEvaluationService {
     private String buildEvaluationSystemPrompt() {
         return """
                 你是软件工程课程的费曼“以教促学”辅导助手。请严格对照给定的课程知识图谱三元组，诊断学生用自己语言讲述的概念理解。
-                只输出一个合法的 JSON 对象，不要附加额外解释或前后缀，包含且仅包含以下字段：
-                - "coveredPoints": 字符串数组，总结学生解释中准确覆盖的知识点要点（不超过 6 条）。
+                只输出一个合法的紧凑 JSON 对象，不要输出思考过程、分析草稿或任何额外前后缀解释文本，每项要点务必简明扼要，包含且仅包含以下字段：
+                - "coveredPoints": 字符串数组，简明总结学生解释中准确覆盖的知识点要点（不超过 6 条）。
                 - "missingTriples": 对象数组，仅从给定图谱证据中挑选学生讲解遗漏的关键三元组，每项格式为 {"subject":"...","predicate":"...","object":"..."}；严禁编造给定列表之外的三元组。
                 - "misconceptions": 字符串数组，指出概念混淆、片面理解或术语误用之处；没有明显误区时返回空数组 []。
                 - "followUpQuestion": 字符串，围绕遗漏或薄弱处提出 1 个简洁的启发式追问，引导学习者进一步补充讲解。
@@ -133,9 +134,14 @@ public class FeynmanEvaluationService {
             }
         }
         String cleanedFeedback = rawText == null ? "" : rawText.trim();
-        List<String> fallbackFeedback = cleanedFeedback.isBlank()
-                ? List.of("本次已完成图谱要点比对，建议对照遗漏关联继续补充说明。")
-                : List.of(cleanedFeedback);
+        List<String> fallbackFeedback;
+        if (cleanedFeedback.isBlank()) {
+            fallbackFeedback = List.of("本次已完成图谱要点比对，建议对照遗漏关联继续补充说明。");
+        } else if (isLikelyRawOrTruncatedJson(cleanedFeedback)) {
+            fallbackFeedback = List.of("本次结构化诊断结果未完整生成，请稍后重试，或先对照下方课程图谱证据核对遗漏要点。");
+        } else {
+            fallbackFeedback = List.of(cleanedFeedback);
+        }
 
         return new FeynmanEvaluateResponse(
                 topic,
@@ -292,5 +298,18 @@ public class FeynmanEvaluationService {
     private static String normalizeForMatch(String value) {
         if (value == null) return "";
         return value.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
+    }
+
+    private static boolean isLikelyRawOrTruncatedJson(String text) {
+        String trimmed = text.stripLeading();
+        String lower = trimmed.toLowerCase(Locale.ROOT);
+        if (trimmed.startsWith("{") || trimmed.startsWith("[")
+                || lower.startsWith("```json") || lower.startsWith("```")) {
+            return true;
+        }
+        return trimmed.contains("\"coveredPoints\"")
+                || trimmed.contains("\"missingTriples\"")
+                || trimmed.contains("\"misconceptions\"")
+                || trimmed.contains("\"followUpQuestion\"");
     }
 }
