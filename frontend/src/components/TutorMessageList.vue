@@ -6,10 +6,10 @@ import TutorAnswerCard from './TutorAnswerCard.vue'
 import { stripLegacyModePrefix, type TutorAnswerResult, type TutorChatMessage, type TutorQuickPrompt } from '../domain/tutorChat'
 
 const DEFAULT_PROMPTS: TutorQuickPrompt[] = [
-  { tag: '核心概念', title: '加工如何规范命名', prompt: '数据流图中的加工应该如何规范命名？' },
-  { tag: '需求规格', title: '需求说明书核心结构', prompt: '软件需求规格说明书通常包含哪些核心内容？' },
-  { tag: '方法对比', title: 'SA 与 OOA 方法区别', prompt: '对比结构化分析（SA）与面向对象分析（OOA）的核心思路' },
-  { tag: '自测辨析', title: '黑盒测试与白盒测试', prompt: '黑盒测试与白盒测试的核心区别与适用场景是什么？' },
+  { tag: '核心概念', title: '加工规范命名', prompt: '数据流图中的加工应该如何规范命名？' },
+  { tag: '需求规格', title: '需求说明书结构', prompt: '软件需求规格说明书包含哪些核心内容？' },
+  { tag: '方法对比', title: 'SA 与 OOA', prompt: '结构化分析（SA）与面向对象分析（OOA）有何区别？' },
+  { tag: '自测辨析', title: '黑盒与白盒测试', prompt: '黑盒测试与白盒测试的核心区别与适用场景是什么？' },
 ]
 
 const props = withDefaults(defineProps<{
@@ -110,7 +110,7 @@ defineExpose({ scrollToBottom })
             <GraduationCap :size="24" />
           </div>
           <h2>软件工程智能学习助教</h2>
-          <p class="tutor-welcome-subtitle">结合课程知识图谱检索与推理，为你提供可溯源问答与分步引导。</p>
+          <p class="tutor-welcome-subtitle">基于课程知识图谱进行可溯源问答与分步思考引导</p>
           <div class="tutor-quick-grid" aria-label="推荐学习提问">
             <button
               v-for="item in activePrompts"
@@ -124,7 +124,6 @@ defineExpose({ scrollToBottom })
                 <BookOpen :size="12" aria-hidden="true" />
                 {{ item.tag }}
               </span>
-              <strong class="tutor-quick-title">{{ item.title }}</strong>
               <span class="tutor-quick-preview">{{ item.prompt }}</span>
             </button>
           </div>
@@ -288,7 +287,7 @@ defineExpose({ scrollToBottom })
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 16px 20px 10px;
+  padding: 24px 24px 28px;
   scrollbar-width: thin;
   scrollbar-color: var(--border-default) transparent;
 }
@@ -296,8 +295,8 @@ defineExpose({ scrollToBottom })
 .tutor-thread-container {
   display: flex;
   flex-direction: column;
-  gap: 22px;
-  max-width: 780px;
+  gap: 24px;
+  max-width: 760px;
   width: 100%;
   margin: 0 auto;
   min-height: 100%;
@@ -307,53 +306,53 @@ defineExpose({ scrollToBottom })
   display: grid;
   justify-items: center;
   align-content: center;
-  gap: 6px;
+  gap: 8px;
   flex: 1;
   margin: auto 0;
-  padding: 8px 0 4px;
+  padding: 12px 0;
   text-align: center;
 }
 
 .tutor-welcome-badge {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   color: var(--accent-strong);
   background: var(--accent-soft);
   border-radius: var(--radius-md);
 }
 
 .tutor-welcome h2 {
-  margin: 2px 0 0;
+  margin: 4px 0 0;
   color: var(--text);
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 700;
 }
 
 .tutor-welcome-subtitle {
-  max-width: 54ch;
+  max-width: 52ch;
   margin: 0;
   color: var(--text-muted);
   font-size: 13px;
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
 .tutor-quick-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  margin-top: 8px;
+  margin-top: 14px;
 }
 
 .tutor-quick-card {
   display: grid;
   justify-items: start;
   align-content: start;
-  gap: 3px;
+  gap: 5px;
   min-width: 0;
-  padding: 10px 13px;
+  padding: 12px 14px;
   color: var(--text);
   background: var(--surface-soft);
   border: 1px solid var(--border-soft);
@@ -379,16 +378,10 @@ defineExpose({ scrollToBottom })
   font-weight: 650;
 }
 
-.tutor-quick-title {
-  color: var(--text);
-  font-size: 13.5px;
-  font-weight: 650;
-  line-height: 1.4;
-}
-
 .tutor-quick-preview {
-  color: var(--text-muted);
-  font-size: 12px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
   line-height: 1.5;
   overflow-wrap: anywhere;
 }

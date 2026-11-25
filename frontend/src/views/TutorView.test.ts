@@ -37,6 +37,7 @@ async function mountPage(path = '/tutor') {
 describe('TutorView', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    Object.defineProperty(window, 'innerWidth', { configurable: true, writable: true, value: 1440 })
     learning.sessions.mockResolvedValue([])
     learning.createSession.mockResolvedValue({ id: 1, title: '学习会话' })
     learning.renameSession.mockResolvedValue({ id: 1, title: '重命名会话' })
@@ -189,7 +190,8 @@ describe('TutorView', () => {
 
     expect(wrapper.text()).toContain('初次会话')
 
-    // 侧栏收起与展开
+    // 1440px 无上下文时默认展开，支持收起与展开
+    expect(wrapper.find('.tutor-sidebar-pane.is-collapsed').exists()).toBe(false)
     await wrapper.get('[data-testid="tutor-collapse-sidebar"]').trigger('click')
     expect(wrapper.find('.tutor-sidebar-pane.is-collapsed').exists()).toBe(true)
     await wrapper.get('[data-testid="tutor-expand-sidebar"]').trigger('click')
@@ -275,5 +277,23 @@ describe('TutorView', () => {
     expect(input.value).toContain('白盒测试')
     expect(input.value).not.toContain('软件架构风格')
     wrapper.unmount()
+  })
+
+  it('auto-collapses session sidebar by default on narrower screens or context-driven entry', async () => {
+    // 1280px 便携视口下默认折叠以保留宽敞对话空间
+    window.innerWidth = 1280
+    const narrowWrapper = await mountPage('/tutor')
+    await flushPromises()
+    expect(narrowWrapper.find('.tutor-sidebar-pane.is-collapsed').exists()).toBe(true)
+    await narrowWrapper.get('[data-testid="tutor-expand-sidebar"]').trigger('click')
+    expect(narrowWrapper.find('.tutor-sidebar-pane.is-collapsed').exists()).toBe(false)
+    narrowWrapper.unmount()
+
+    // 1440px 大屏但带课程/实体上下文跳转时默认折叠聚焦问答
+    window.innerWidth = 1440
+    const contextWrapper = await mountPage('/tutor?entity=需求分析')
+    await flushPromises()
+    expect(contextWrapper.find('.tutor-sidebar-pane.is-collapsed').exists()).toBe(true)
+    contextWrapper.unmount()
   })
 })

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { PanelLeftOpen, Plus } from '@lucide/vue'
 import { useRoute, useRouter } from 'vue-router'
 import { apiError, learningApi } from '../api/client'
@@ -13,7 +13,6 @@ import {
   type TutorQuickPrompt,
 } from '../domain/tutorChat'
 import { contextFromQuery, graphHref, type LearningContext } from '../domain/learningContext'
-import SectionHeading from '../components/SectionHeading.vue'
 import LearningContextActions from '../components/LearningContextActions.vue'
 import TutorConversationList from '../components/TutorConversationList.vue'
 import TutorMessageList from '../components/TutorMessageList.vue'
@@ -24,6 +23,20 @@ const router = useRouter()
 
 const queryValue = (value: unknown) => typeof value === 'string' ? value : Array.isArray(value) ? String(value[0] || '') : ''
 const initialEntity = queryValue(route.query.entity)
+
+function hasRouteLearningContext(): boolean {
+  return Boolean(
+    queryValue(route.query.entity) ||
+    queryValue(route.query.knowledgePointId) ||
+    queryValue(route.query.courseId) ||
+    queryValue(route.query.sectionId)
+  )
+}
+
+function shouldCollapseSidebarByDefault(): boolean {
+  const narrowDesktopOrSmaller = typeof window !== 'undefined' && window.innerWidth < 1360
+  return narrowDesktopOrSmaller || hasRouteLearningContext()
+}
 
 const question = ref(initialEntity ? '请解释「' + initialEntity + '」的核心概念及相关知识。' : '')
 const resolvedPointName = ref('')
@@ -40,7 +53,7 @@ const messages = ref<TutorChatMessage[]>([])
 const historyError = ref('')
 const hintLoading = ref(false)
 
-const sidebarCollapsed = ref(false)
+const sidebarCollapsed = ref(shouldCollapseSidebarByDefault())
 const mobileDrawerOpen = ref(false)
 const composerRef = ref<InstanceType<typeof TutorComposer> | null>(null)
 const messageListRef = ref<InstanceType<typeof TutorMessageList> | null>(null)
@@ -84,8 +97,8 @@ const learningContext = computed<LearningContext>(() => {
 })
 
 const activeSessionTitle = computed(() => {
-  if (!sessionId.value) return '新对话'
-  return sessions.value.find(s => s.id === sessionId.value)?.title || '学习对话'
+  if (!sessionId.value) return ''
+  return sessions.value.find(s => s.id === sessionId.value)?.title || ''
 })
 
 async function resolvePointContext() {
@@ -118,6 +131,16 @@ async function resolvePointContext() {
 }
 
 let abortController: AbortController | null = null
+
+watch(
+  () => [route.query.entity, route.query.knowledgePointId, route.query.courseId, route.query.sectionId],
+  () => {
+    contextDismissed.value = false
+    if (hasRouteLearningContext()) {
+      sidebarCollapsed.value = true
+    }
+  }
+)
 
 onMounted(async () => {
   void resolvePointContext()
@@ -379,12 +402,6 @@ function toggleSidebarDesktop() {
 
 <template>
   <div class="tutor-page">
-    <header class="tutor-page-bar">
-      <SectionHeading title="AI 学习助教" description="基于课程知识图谱进行连续学习问答与分步思考引导。">
-        <LearningContextActions :context="learningContext" current-view="tutor" compact />
-      </SectionHeading>
-    </header>
-
     <section class="tutor-workspace" aria-label="AI 学习助教工作台">
       <div
         v-if="mobileDrawerOpen"
@@ -411,8 +428,9 @@ function toggleSidebarDesktop() {
       </div>
 
       <div class="tutor-main-pane">
-        <div class="tutor-chat-topbar">
-          <div class="tutor-chat-topbar-left">
+        <!-- 紧凑二合一工作台顶栏：同时承载页面语义标题、当前会话及上下文回链入口 -->
+        <header class="tutor-topbar">
+          <div class="tutor-topbar-left">
             <button
               type="button"
               class="icon-button tutor-expand-btn"
@@ -424,20 +442,31 @@ function toggleSidebarDesktop() {
             >
               <PanelLeftOpen :size="16" />
             </button>
-            <h2 class="tutor-current-title">{{ activeSessionTitle }}</h2>
+            <button
+              v-if="sidebarCollapsed"
+              type="button"
+              class="tutor-topbar-new-btn"
+              title="新建学习对话"
+              :disabled="loading"
+              @click="newSession"
+            >
+              <Plus :size="14" />
+              <span>新对话</span>
+            </button>
+            <div class="tutor-topbar-titles">
+              <h1 class="tutor-heading-title">
+                {{ activeSessionTitle || 'AI 学习助教' }}
+              </h1>
+              <p class="section-description tutor-heading-subtitle">
+                {{ activeSessionTitle ? '课程知识图谱增强问答' : '基于课程知识图谱进行可溯源问答与分步引导' }}
+              </p>
+            </div>
           </div>
-          <button
-            v-if="sidebarCollapsed"
-            type="button"
-            class="tutor-topbar-new-btn"
-            title="新建学习对话"
-            :disabled="loading"
-            @click="newSession"
-          >
-            <Plus :size="14" />
-            <span>新对话</span>
-          </button>
-        </div>
+
+          <div class="tutor-topbar-right">
+            <LearningContextActions :context="learningContext" current-view="tutor" compact />
+          </div>
+        </header>
 
         <TutorMessageList
           ref="messageListRef"
@@ -482,15 +511,8 @@ function toggleSidebarDesktop() {
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  gap: 12px;
-}
-
-.tutor-page-bar {
-  flex-shrink: 0;
-}
-
-.tutor-page-bar :deep(.section-heading) {
-  gap: 8px 16px;
+  min-width: 0;
+  background: var(--surface);
 }
 
 .tutor-workspace {
@@ -500,14 +522,11 @@ function toggleSidebarDesktop() {
   min-height: 0;
   min-width: 0;
   background: var(--surface);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-xs);
   overflow: hidden;
 }
 
 .tutor-sidebar-pane {
-  width: 256px;
+  width: 228px;
   flex-shrink: 0;
   height: 100%;
   border-right: 1px solid var(--border-soft);
@@ -532,23 +551,61 @@ function toggleSidebarDesktop() {
   background: var(--surface);
 }
 
-.tutor-chat-topbar {
+.tutor-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 46px;
-  padding: 6px 16px;
+  min-height: 50px;
+  padding: 6px 20px;
   border-bottom: 1px solid var(--border-soft);
   flex-shrink: 0;
 }
 
-.tutor-chat-topbar-left {
+.tutor-topbar-left {
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
   flex: 1;
+}
+
+.tutor-topbar-titles {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.tutor-heading-title {
+  margin: 0;
+  color: var(--text);
+  font-size: 15.5px;
+  font-weight: 650;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 0;
+  max-width: 24ch;
+}
+
+.tutor-heading-subtitle {
+  margin: 0;
+  color: var(--text-subtle);
+  font-size: 12px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.tutor-topbar-right {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .tutor-expand-btn {
@@ -558,20 +615,11 @@ function toggleSidebarDesktop() {
   min-height: 32px;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
+  flex-shrink: 0;
 }
 
 .tutor-expand-btn.is-desktop-visible {
   display: grid;
-}
-
-.tutor-current-title {
-  margin: 0;
-  color: var(--text);
-  font-size: 14px;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .tutor-topbar-new-btn {
@@ -580,33 +628,49 @@ function toggleSidebarDesktop() {
   gap: 5px;
   min-height: 30px;
   padding: 4px 10px;
-  color: var(--text-muted);
-  background: var(--surface-soft);
-  border: 1px solid var(--border-soft);
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
   border-radius: var(--radius-sm);
   font-size: 12px;
-  font-weight: 550;
+  font-weight: 600;
   cursor: pointer;
   flex-shrink: 0;
 }
 
 .tutor-topbar-new-btn:hover:not(:disabled) {
-  color: var(--accent-strong);
-  background: var(--accent-soft);
-  border-color: var(--border-default);
+  border-color: var(--border-focus);
 }
 
 .tutor-composer-dock {
+  position: relative;
   flex-shrink: 0;
-  padding: 4px 20px 10px;
+  padding: 4px 24px 14px;
   background: var(--surface);
+}
+
+.tutor-composer-dock::before {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: 20px;
+  background: linear-gradient(to bottom, transparent, var(--surface));
+  pointer-events: none;
+  content: "";
 }
 
 .tutor-drawer-backdrop {
   display: none;
 }
 
-@media (max-width: 820px) {
+@media (max-width: 1120px) {
+  .tutor-heading-subtitle {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
   .tutor-expand-btn {
     display: grid;
   }
@@ -617,14 +681,14 @@ function toggleSidebarDesktop() {
     bottom: 0;
     left: 0;
     z-index: 20;
-    width: min(272px, 85%);
+    width: min(268px, 85%);
     box-shadow: var(--shadow-md);
     transform: translateX(-100%);
     transition: transform var(--motion);
   }
 
   .tutor-sidebar-pane.is-collapsed {
-    width: min(272px, 85%);
+    width: min(268px, 85%);
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
@@ -643,8 +707,16 @@ function toggleSidebarDesktop() {
     background: var(--el-overlay-color-light);
   }
 
+  .tutor-topbar {
+    padding: 6px 14px;
+  }
+
+  .tutor-topbar-right {
+    display: none;
+  }
+
   .tutor-composer-dock {
-    padding: 8px 14px 10px;
+    padding: 4px 14px 10px;
   }
 }
 </style>

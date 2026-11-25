@@ -156,15 +156,15 @@ function submitRename(id: number) {
 .tutor-conversation-list {
   display: flex;
   flex-direction: column;
-  width: 256px;
+  width: 228px;
   height: 100%;
-  min-width: 256px;
+  min-width: 228px;
   min-height: 0;
-  padding: 12px;
+  padding: 12px 10px;
   background: var(--surface-soft);
 }
 
-@media (max-width: 820px) {
+@media (max-width: 900px) {
   .tutor-conversation-list {
     width: 100%;
     min-width: 0;

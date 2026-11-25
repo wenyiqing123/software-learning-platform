@@ -225,19 +225,18 @@ const visualScenarios = {
     } },
     { route: '/tutor?courseId=3&sectionId=32&entity=数据流图', name: 'tutor-history', async check(page) {
       if (await page.locator('.tutor-mode-selector, .compare-toggle, .tutor-aside').count()) throw new Error('Legacy mode selector or strategy aside leaked in tutor view')
+      if (!await page.locator('.tutor-sidebar-pane.is-collapsed').count()) throw new Error('Context-driven tutor entry should auto-collapse the sidebar')
+      await page.getByTestId('tutor-expand-sidebar').click()
+      await page.waitForFunction(() => {
+        const pane = document.querySelector('.tutor-sidebar-pane')
+        return pane && pane.getBoundingClientRect().width >= 220
+      })
       await page.getByRole('button', { name: '需求规格说明书练习', exact: true }).click()
       await page.locator('.tutor-assistant-body pre').waitFor()
       const evidenceDetails = page.locator('.tutor-assistant-body details.evidence-block')
       if (await evidenceDetails.evaluate(el => el.open)) throw new Error('Tutor graph evidence should be collapsed by default')
       await evidenceDetails.locator('summary').click()
       await page.getByText('需求规格说明书').first().waitFor()
-      await page.getByTestId('tutor-collapse-sidebar').click()
-      await page.getByTestId('tutor-expand-sidebar').waitFor()
-      await page.getByTestId('tutor-expand-sidebar').click()
-      await page.waitForFunction(() => {
-        const pane = document.querySelector('.tutor-sidebar-pane')
-        return pane && pane.getBoundingClientRect().width >= 250
-      })
     } },
     { route: '/practice', name: 'practice-selected', check: page => page.locator('.answer-option').nth(1).click() },
     { route: '/practice', name: 'practice-diagnosis', async check(page) {

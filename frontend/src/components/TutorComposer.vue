@@ -149,7 +149,7 @@ defineExpose({
 
 <style scoped>
 .tutor-composer {
-  max-width: 780px;
+  max-width: 760px;
   width: 100%;
   margin: 0 auto;
   min-width: 0;
@@ -158,7 +158,7 @@ defineExpose({
 .tutor-composer-capsule {
   display: grid;
   gap: 6px;
-  padding: 10px 14px 9px;
+  padding: 10px 14px 8px;
   background: var(--surface);
   border: 1px solid var(--border-default);
   border-radius: 18px;

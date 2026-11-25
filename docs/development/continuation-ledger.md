@@ -393,13 +393,13 @@
   - 严格保持服务异常时的诚实降级展示与重试入口，绝不伪造图谱证据或虚构回答。
 - **核心界面与交互重构**：
   - **组件清理与更新**：确认全仓无其他页面引用后干净删除 `TutorModeSelector.vue`；重构 `TutorView.vue`、`TutorConversationList.vue`、`TutorMessageList.vue`、`TutorAnswerCard.vue`、`TutorComposer.vue` 及领域辅助工具 `domain/tutorChat.ts`；
-  - **全视口双栏壳层**：通过 `styles.css` 中的 `.app-shell:has(.tutor-page)` 锁定 `100dvh` 视口高度避免页面内外双滚动条；左侧为 `256px` 可收起会话侧栏（桌面端一键折叠/展开、移动端抽屉收纳），会话行采用单行省略标题与 hover/聚焦浮现的重命名/删除按钮，固定列表内宽避免动画折叠过程挤压文案；
-  - **现代对话流与引用胶囊**：无消息时居中展示简洁标题与 2×2 上下文动态推荐卡片（`1280×800` 及桌面视口完整一屏落位，点击填入不自动发送）；消息区居中限宽 `780px`，用户提问右对齐轻量气泡，助教回复采用去外框的纯净 Markdown 编辑排版；三元组证据默认折叠为“已参考 N 条课程图谱证据”引用来源胶囊，支持展开与一键跳转知识图谱；支持智能吸底滚动与圆形“回到底部”按钮；底层分层学习提示（1/2/3 级）平滑融合进对话流与输入胶囊中；
+  - **全视口双栏壳层与呼吸感精雕**：通过 `styles.css` 中的 `.app-shell:has(.tutor-page)` 锁定 `100dvh` 全画布贴合（去除工作台外框与多余边距）、将大页头与对话顶栏二合一为单一 `50px` 紧凑顶栏，并引入 `228px` 智能折叠侧栏策略（视口 `< 1360px` 或带上下文跳入默认折叠以释放宽阔对话画布，宽屏无参默认展开）；会话行采用单行省略标题与 hover/聚焦浮现的重命名/删除按钮；
+  - **现代对话流、轻量欢迎卡片与引用胶囊**：无消息时居中展示简洁标题与去密度的 2×2 推荐卡片（点击填入不自动发送）；消息区居中限宽 `760px`，用户提问右对齐轻量气泡，助教回复采用去外框的纯净 Markdown 编辑排版；三元组证据默认折叠为“已参考 N 条课程图谱证据”引用来源胶囊，支持展开与一键跳转知识图谱；输入胶囊上方配备 20px 柔光渐隐遮罩与圆形“回到底部”按钮；分层学习提示平滑融合进对话流与输入胶囊中；
   - **底部悬浮胶囊输入区**：采用居中单层圆角胶囊、自动增高多行 `<textarea>`（`Enter` 发送、`Shift+Enter` 换行，严格检查 `event.isComposing`、`compositionstart/end` 与 `keyCode === 229` 防止中文输入法组合态误发送）、支持关闭的上下文标签与停止生成控制。
 - **门禁与全量验收结果**：
-  - **前端全量测试**（Vitest）：**56 个测试文件、195 项测试全部通过**（`TutorView.test.ts`、`TutorAnswerCard.test.ts`、`TutorComposer.test.ts`、`TutorConversationList.test.ts`、`TutorMessageList.test.ts`、`TutorHints.test.ts` 及 `compliance-guard.test.ts`、`design-system-contract.test.ts` 全绿）；
-  - **AST 幽灵类名扫描**：`node scripts/scan-vue-classes.mjs --check` 扫描 48 个 Vue SFC、1,173 处模板类名引用，**0 missing classes（100% 匹配）**；
-  - **全仓样式与代码规范**：全仓 CSS/Vue `!important` 扫描命中 **0**；`git diff --check` 零空白错误；四份全局 CSS 字节数：`styles-design-system.css` 28,734 B、`styles.css` 15,829 B（+294 B 视口锁规则）、`styles-learning.css` 11,389 B、`styles-graph.css` 3,297 B，合计 **59,249 B**；
-  - **前端生产构建**：`npm run build` 耗时 `1.52s`，**0 error、0 chunk warning**；
-  - **Playwright 全路由视觉巡检**：`node scripts/authenticated-ui-smoke.mjs` 在 `1440×900` 与 `1280×800` 双桌面视口覆盖全路由与助教无模式、证据折叠、侧栏折叠展开交互，实测 **170/170 场景全部通过**；巡检生成的临时目录 `.ui-visual-review` 已彻底清理。
+  - **前端全量测试**（Vitest）：**56 个测试文件、196 项测试全部通过**（含 `TutorView.test.ts` 新增的 B1 智能折叠默认行为测试，以及 `TutorAnswerCard.test.ts`、`TutorComposer.test.ts`、`TutorConversationList.test.ts`、`TutorMessageList.test.ts`、`TutorHints.test.ts`、`compliance-guard.test.ts`、`design-system-contract.test.ts` 全绿）；
+  - **AST 幽灵类名扫描**：`node scripts/scan-vue-classes.mjs --check` 扫描 48 个 Vue SFC、1,175 处模板类名引用，**0 missing classes（100% 匹配）**；
+  - **全仓样式与代码规范**：全仓 CSS/Vue `!important` 扫描命中 **0**；`git diff --check` 零空白错误；四份全局 CSS 字节数：`styles-design-system.css` 28,734 B、`styles.css` 15,854 B（+319 B 视口锁及全画布贴合规则）、`styles-learning.css` 11,389 B、`styles-graph.css` 3,297 B，合计 **59,274 B**；
+  - **前端生产构建**：`npm run build` 耗时 `2.11s`，**0 error、0 chunk warning**；
+  - **Playwright 全路由视觉巡检**：`node scripts/authenticated-ui-smoke.mjs` 在 `1440×900` 与 `1280×800` 双桌面视口覆盖全路由与助教无模式、上下文跳入默认折叠、侧栏展开交互及默认折叠证据胶囊展开，实测 **170/170 场景全部通过**；巡检生成的临时目录 `.ui-visual-review` 已彻底清理。
 
