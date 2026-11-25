@@ -486,3 +486,17 @@
   - 前端生产构建（`npm run build`）：**1.66s** 完成构建。
   - Playwright 真实鉴权 UI 冒烟（`node scripts/authenticated-ui-smoke.mjs`）：**170/170** 全部通过，已清理 `frontend/.ui-visual-review` 临时目录。
   - 真实网关联动实测（`POST http://127.0.0.1:8080/api/ai/tutor/hint`，`level=3` 提问“数据流图中的加工应该如何规范命名？”）：基于重启后的 `ai-service`（`8082` 端口）返回规范 Markdown（包含 `### 核心结论`、术语加粗、`- ` 列表与 `> 示例：...` 引用块）。
+
+### 全屏图谱沉浸布局与图谱视口重适配记录（2026-11-25）
+
+- **问题现象**：全屏图谱模式下顶部白栏（`.visualization-toolbar`）和底部白栏（`.visualization-footer`）在缺省 Grid 行分配下占用多余空白带并将点阵区夹在中间，产生上下白色/透明裁切边界，导致靠近顶边/底边的图谱节点被直接切半，且全屏后“个人掌握关系”标题说明栏与“掌握程度”图例未能融入点阵背景内部布局。
+- **核心改动**：
+  - `frontend/src/components/VisualizationViewport.vue`：强化常态与全屏双向切换（兼容浏览器 `:fullscreen` 与页内 `.is-fullscreen` fixed 兜底、`Escape` 退出、卸载自动安全退出全屏，tooltip 全屏态切换为 `:teleported="false"` + `placement="bottom"`）；全屏下 `.visualization-stage` 及内置画布通过绝对定位与 `height: 100%` 完整铺满 `100vw × 100dvh`，`.visualization-toolbar`（含标题说明卡片、搜索框、右侧 2D/3D/重置/居中/退出全屏工具条）与 `.visualization-footer`（含掌握程度图例与图谱快捷查看）改为半透明磨砂悬浮卡片直接布局在点阵背景内部；新增全屏 `#overlay` 插槽。
+  - `frontend/src/domain/graphViewport.ts` *(新增)* & `frontend/src/views/MasteryMapView.vue` & `frontend/src/views/GraphView.vue`：抽离 `bindGraphViewportSync` 与 `graphViewportPadding`，结合 G6 `afterlayout`、容器 `ResizeObserver`、全屏状态回调（`@fullscreen-change`）和 `gravity: 14` 抑制离散子图过度扩散，自动执行 `resize()` + `fitView()`；在 `MasteryMapView` 图例中明确标出 `掌握程度` 标题，并在全屏 `#overlay` 提供选中节点悬浮学习卡片（课程阅读/专项练习/围绕此知识提问）。
+  - `frontend/src/components/ThreeGraphCanvas.vue` & `frontend/src/styles-graph.css`：补全 3D/2D 画布容器 `height: 100%` 高度撑满、全屏悬浮卡共享样式 `.fullscreen-node-card`，优化 3D 提示条磨砂边框及窄屏防碰撞规则；四份全局 CSS 合计 **66,159 B**（`styles-design-system.css` 30,169 B、`styles.css` 20,374 B、`styles-learning.css` 11,389 B、`styles-graph.css` 4,227 B），全仓 `!important` 为 **0**。
+  - `frontend/src/components/VisualizationViewport.test.ts`、`frontend/src/views/MasteryMapView.test.ts` & `frontend/scripts/authenticated-ui-smoke.mjs`：补充全屏进入/退出、`#overlay`、键盘 `Escape` 退出单测，以及 1440×900 / 1280×800 下全屏点阵全铺、canvas 100% 高度、标题与掌握程度图例位于画布内的真实浏览器断言。
+- **实测验证结果（最终改动后）**：
+  - 前端单测（`npx vitest run --maxWorkers=2`）：**56 passed (56)** 个测试文件、**207 passed (207)** 条用例全部通过。
+  - 模板类名 AST 扫描（`node scripts/scan-vue-classes.mjs --check`）：共检查 **1243** 处模板类用法，**0** 缺失。
+  - 生产构建（`npm run build`）：**1.69s** 完成构建，零 `!important`。
+  - Playwright 真实鉴权 UI 冒烟（`node scripts/authenticated-ui-smoke.mjs`）：**170/170** 全部通过（已目视复核 1440×900 与 1280×800 全屏图谱截图并清理 `frontend/.ui-visual-review` 临时目录）。

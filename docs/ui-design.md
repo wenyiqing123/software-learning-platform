@@ -181,7 +181,7 @@
   - 右侧对话流限宽 `760px` 居中阅读：用户提问为右对齐浅底紧凑气泡，助教回复采用去外框的纯净编辑排版；2×2 欢迎卡片精简为“标签 + 问句”双层轻结构，底部输入胶囊上方配备柔光渐隐遮罩；知识图谱三元组默认折叠收纳为“已参考 N 条课程图谱证据”引用来源胶囊并支持一键跳转图谱；
   - 支持智能吸底滚动、用户上滑暂停抢滚与圆形“回到底部”按钮、以及复制全文、重新生成、分步学习引导、前往图谱等轻量操作；原底部独立的分层提示大面板平滑融入消息流与输入胶囊；
   - 底部为圆角悬浮胶囊输入框，支持多行自动增高、`Enter` 发送 / `Shift+Enter` 换行、严格 IME 中文组合态防误发送保护、可关闭的学习上下文胶囊标签及停止生成按钮；
-  - 四份全局 CSS 当前字节数：`styles-design-system.css`（30,169 B）、`styles.css`（20,374 B）、`styles-learning.css`（11,389 B）、`styles-graph.css`（3,297 B），合计 **65,229 B**，全仓 `!important` 严格为 0。
+  - 四份全局 CSS 当前字节数：`styles-design-system.css`（30,169 B）、`styles.css`（20,374 B）、`styles-learning.css`（11,389 B）、`styles-graph.css`（4,227 B），合计 **66,159 B**，全仓 `!important` 严格为 0。
 
 ### 导航精简与 `/tutor` 沉浸态自动收起补充（2026-11-25）
 
@@ -192,3 +192,9 @@
   - **第 1 级（思考方向）**：只呈现方向提示与“展开第 2 级提示”入口，不再提前附带完整三元组折叠面板，避免剧透答案；
   - **第 2 级（课程图谱证据）**：抽出独立组件 `HintEvidenceTable.vue` 将三元组渲染为三列表格（`核心实体` 可点按钮 `.hint-entity-link`、`图谱关系` 标签 `.hint-relation-pill`、`关联结论 / 对象`），配合 `.hint-evidence-direct` 直接展示与“在图谱中查看”跳转，取代原本“纯文本清单 + 外挂重复折叠面板”的双重冗余结构；
   - **第 3 级（完整解析）及助教正文 Markdown 排版升级**：后端 `TutorHintService` 提示第 3 级按 `### 核心结论`、加粗术语、`### 要点解析`、列表与引用块结构化生成 Markdown；前端 `domain/markdown.ts` 与 `MarkdownContent.vue` 通过安全 AST 解析统一支持三四级标题、`strong`/`em`/`code`、有序与无序列表、引用块（`.markdown-quote`）、分割线（`.markdown-hr`）与管道表格（`.markdown-table-wrap` / `.markdown-table`），并由 `styles-design-system.css` 提供 `.markdown-content` 令牌化排版样式；同一轮上方已展示第 2 级时第 3 级自动隐藏重复折叠面板，无前序第 2 级的独立历史记录折叠面板同步复用 `<HintEvidenceTable>`。
+
+### 全屏知识与掌握图谱沉浸画布升级（2026-11-25）
+
+- **真正 100% 铺满全屏点阵背景（消灭白边/裁切边界）**：为 `VisualizationViewport` 补充原生 Fullscreen API 监听与页内固定全屏兜底（`.visualization-viewport:fullscreen` / `.visualization-viewport.is-fullscreen`，支持按钮双向切换与 `Escape` 退出）；全屏时 `.visualization-stage` 通过 `position: absolute; inset: 0; width: 100%; height: 100%` 将点阵网格和内部 G6 2D / Three.js 3D `<canvas>` 铺满整张 `100vw × 100dvh` 视口，修复原三行 Grid 未显式划分高度导致的上下白带裁切与透明边界问题。
+- **背景内悬浮 HUD 与图例布局**：全屏态下将左上标题说明卡（“.visualization-heading”：如“个人掌握关系 G6 2D / 颜色表示当前掌握状态；可切换 2D/3D 视图并从节点继续学习。”）、可选搜索框、右上工具胶囊（工具栏提示全屏态自动设为 `:teleported="false"` + `placement="bottom"` 保证停留在浏览器 Top Layer 内且不溢屏外）以及左下“掌握程度”图例卡片（`.visualization-footer`）均采用半透明磨砂玻璃样式直接悬浮布局在点阵背景内部。
+- **全屏自适应缩放与节点学习直达**：抽离 `frontend/src/domain/graphViewport.ts`（`bindGraphViewportSync`、`graphViewportPadding`），在 `MasteryMapView` 与 `GraphView` 中统一监听 `ResizeObserver`、G6 `afterlayout` 与全屏切换，动态设置兼顾悬浮控件安全区的内边距（全屏 `[92, 56, 76, 56]`、常态 `[56, 48, 60, 48]`）并适时执行 `resize()` + `fitView()`，配合适度增加的力导向中心引力（`gravity: 14`），彻底防止多连通图谱边缘节点裁切；新增全屏 `#overlay` 悬浮节点卡片（共享 `.fullscreen-node-card` 样式），支持直接在全屏态从选中节点跳转“课程阅读 / 专项练习 / 围绕此知识提问”。

@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { Graph } from '@antv/g6'
 import { ArrowUpRight, CircleHelp, Network, Sparkles } from '@lucide/vue'
 import { learningApi, type GraphResponse } from '../api/client'
+import { bindGraphViewportSync, graphViewportPadding, type GraphViewportInstance } from '../domain/graphViewport'
 import SectionHeading from '../components/SectionHeading.vue'
 import PrerequisitePathPanel from './PrerequisitePathPanel.vue'
 import VisualizationViewport from '../components/VisualizationViewport.vue'
@@ -22,6 +23,7 @@ const loading = ref(false)
 const error = ref('')
 const graphUnavailable = computed(() => !loading.value && !error.value && !graphData.value.available)
 const renderMode = ref<'2d' | '3d'>('2d')
+const isFullscreen = ref(false)
 const relationFilter = ref('ALL')
 const relationOptions = computed(() => Array.from(new Set(graphData.value.edges.map(edge => edge.label))).sort())
 const visibleEdges = computed(() => relationFilter.value === 'ALL' ? graphData.value.edges : graphData.value.edges.filter(edge => edge.label === relationFilter.value))
@@ -32,9 +34,12 @@ const selectedEvidence = computed<EvidenceTriple[]>(() => graphData.value.eviden
   const triple = value as Partial<EvidenceTriple>
   return typeof triple.subject === 'string' && typeof triple.predicate === 'string' && typeof triple.object === 'string' && (triple.subject === selectedNode.value || triple.object === selectedNode.value)
 }))
-let graph: Graph | null = null
+let graph: GraphViewportInstance | null = null
+let viewportSync: ReturnType<typeof bindGraphViewportSync> | null = null
 
 function destroyGraph() {
+  viewportSync?.destroy()
+  viewportSync = null
   graph?.destroy()
   graph = null
 }
@@ -45,11 +50,11 @@ async function drawGraph() {
   destroyGraph()
   if (!graphData.value.nodes.length || !graphData.value.edges.length) return
 
-  graph = new Graph({
+  const instance = new Graph({
     container: graphHost.value,
     autoResize: true,
     autoFit: 'view',
-    padding: 52,
+    padding: graphViewportPadding(isFullscreen.value),
     data: {
       nodes: graphData.value.nodes.map((node) => ({
         id: node.id,
@@ -64,14 +69,18 @@ async function drawGraph() {
         style: { stroke: '#849b95', lineWidth: 1.4, endArrow: true, labelText: edge.label, labelFill: '#475b56', labelFontSize: 12, labelBackground: true, labelBackgroundFill: '#f7f8fa' },
       })),
     },
-    layout: { type: 'force', preventOverlap: true, linkDistance: 160, nodeSize: 48 },
+    layout: { type: 'force', preventOverlap: true, linkDistance: 160, nodeSize: 56, gravity: 14 },
     behaviors: ['drag-canvas', 'zoom-canvas', 'drag-element', 'click-select'],
-  })
-  graph.on('node:click', (event) => {
+  }) as GraphViewportInstance
+  graph = instance
+  viewportSync = bindGraphViewportSync(graphHost.value, () => graph, () => isFullscreen.value)
+  instance.on('afterlayout', () => { viewportSync?.syncFit(false) })
+  instance.on('node:click', (event) => {
     const nodeId = (event as { target?: { id?: string } }).target?.id
     if (typeof nodeId === 'string') { selectedNode.value = nodeId; evidenceOpen.value = true }
   })
-  await graph.render()
+  await instance.render()
+  viewportSync.syncFit(false)
 }
 
 async function searchEntity(value = entity.value) {
@@ -93,9 +102,12 @@ async function searchEntity(value = entity.value) {
   }
 }
 function focusGraph() {
-  const instance = graph as (Graph & { focusElement?: (id: string, options?: Record<string, unknown>) => void; fitView?: (options?: Record<string, unknown>) => void }) | null
-  if (instance?.focusElement && selectedNode.value) instance.focusElement(selectedNode.value, { duration: 350 })
-  else instance?.fitView?.({ duration: 350 })
+  if (graph?.focusElement && selectedNode.value) graph.focusElement(selectedNode.value, { duration: 350 })
+  else graph?.fitView?.({ when: 'always' }, { duration: 350 })
+}
+function onFullscreenChange(fullscreen: boolean) {
+  isFullscreen.value = fullscreen
+  if (renderMode.value === '2d') viewportSync?.syncFit(true)
 }
 
 const exampleEntities = ['需求分析', '数据流图DFD', '用例图', '机票预定系统']
@@ -161,11 +173,17 @@ onBeforeUnmount(() => {
     </section>
     <section class="graph-explore-layout">
       <div class="graph-panel">
-        <VisualizationViewport title="课程知识关系" description="拖动节点、缩放画布，或切换实体查看相邻关系。" :mode="renderMode" :status="renderMode === '3d' ? 'Three.js 3D' : 'G6 2D'" :loading="loading" :error="error" :unavailable="graphUnavailable" :empty="!graphData.nodes.length && graphData.available" searchable :search-value="entity" @search="searchEntity" @focus="focusGraph" @retry="searchEntity()" @reset="searchEntity('需求分析')" @mode-change="switchRenderMode">
+        <VisualizationViewport title="课程知识关系" description="拖动节点、缩放画布，或切换实体查看相邻关系。" :mode="renderMode" :status="renderMode === '3d' ? 'Three.js 3D' : 'G6 2D'" :loading="loading" :error="error" :unavailable="graphUnavailable" :empty="!graphData.nodes.length && graphData.available" searchable :search-value="entity" @search="searchEntity" @focus="focusGraph" @retry="searchEntity()" @reset="searchEntity('需求分析')" @mode-change="switchRenderMode" @fullscreen-change="onFullscreenChange">
           <ThreeGraphCanvas v-if="renderMode === '3d'" :nodes="graphData.nodes" :edges="visibleEdges" :selected-id="selectedNode" @select="selectedNode = $event" />
           <div v-else ref="graphHost" class="graph-canvas" data-testid="knowledge-graph"></div>
           <template #footer>
             <div class="graph-viewport-footer"><div class="graph-legend"><span><i class="legend-node"></i>课程知识点</span><span><i class="legend-line"></i>知识关系</span><span class="graph-hint"><CircleHelp :size="14" />拖动节点或画布探索</span></div><div class="graph-examples"><span>快速查看</span><button v-for="item in exampleEntities" :key="item" @click="searchEntity(item)">{{ item }}</button></div></div>
+          </template>
+          <template #overlay>
+            <article v-if="selectedNode" class="fullscreen-node-card">
+              <div class="fullscreen-node-head"><strong>{{ selectedNode }}</strong><span class="fullscreen-node-tag">{{ selectedRelations.length }} 条相邻关系</span></div>
+              <div class="fullscreen-node-actions"><button class="text-button" type="button" @click="emit('navigate', 'tutor', selectedNode)"><Sparkles :size="13" />围绕此知识提问</button></div>
+            </article>
           </template>
         </VisualizationViewport>
       </div>

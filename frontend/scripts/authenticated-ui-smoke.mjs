@@ -219,6 +219,28 @@ const visualScenarios = {
     { route: '/knowledge?view=path&knowledgePointId=13', name: 'prerequisite-path', check: page => page.getByTestId('path-node').first().waitFor() },
     { route: '/mastery-map', name: 'mastery-data', async check(page) {
       await page.locator('.mastery-canvas canvas').first().waitFor()
+      await page.getByRole('button', { name: '全屏图谱', exact: true }).click()
+      await page.waitForFunction(() => {
+        const vp = document.querySelector('.visualization-viewport')
+        const stage = document.querySelector('.visualization-stage')
+        const canvas = document.querySelector('.mastery-canvas canvas')
+        const heading = document.querySelector('.visualization-heading')
+        const legend = document.querySelector('.visualization-footer')
+        if (!vp || !stage || !canvas || !heading || !legend) return false
+        const s = stage.getBoundingClientRect()
+        const c = canvas.getBoundingClientRect()
+        const h = heading.getBoundingClientRect()
+        const l = legend.getBoundingClientRect()
+        return vp.classList.contains('is-fullscreen')
+          && Math.abs(s.width - window.innerWidth) <= 2
+          && Math.abs(s.height - window.innerHeight) <= 2
+          && Math.abs(c.height - s.height) <= 2
+          && h.top >= s.top && h.bottom <= s.bottom
+          && l.top >= s.top && l.bottom <= s.bottom
+      })
+      await page.screenshot({ path: path.join(auditDir, `mastery-fullscreen-${page.viewportSize().width}x${page.viewportSize().height}.png`) })
+      await page.getByRole('button', { name: '退出全屏', exact: true }).click()
+      await page.waitForFunction(() => !document.querySelector('.visualization-viewport')?.classList.contains('is-fullscreen'))
       await page.locator('.mastery-node h2').first().click()
       await page.locator('.evidence-drawer.open').getByText('当前节点：', { exact: false }).waitFor()
       if (await page.locator('.evidence-triple-card').count()) throw new Error('Mastery graph rendered synthetic triples')

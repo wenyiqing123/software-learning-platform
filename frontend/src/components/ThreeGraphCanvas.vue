@@ -86,9 +86,10 @@ onBeforeUnmount(() => { cancelAnimationFrame(frame); resizeObserver?.disconnect(
 <template><div ref="host" class="three-graph-canvas" data-testid="three-graph-canvas" aria-label="Three.js 三维知识图谱"><span class="three-graph-hint">拖拽旋转 · 滚轮缩放 · 点击节点查看证据</span></div></template>
 
 <style scoped>
-.three-graph-canvas{position:relative;min-width:0;min-height:390px;overflow:hidden;cursor:grab}
+.three-graph-canvas{position:relative;width:100%;height:100%;min-width:0;min-height:390px;overflow:hidden;cursor:grab}
 .three-graph-canvas:active{cursor:grabbing}
 .three-graph-canvas :deep(canvas){position:absolute;inset:0;display:block;width:100%;height:100%}
-.three-graph-hint{position:absolute;right:12px;bottom:12px;z-index:1;max-width:calc(100% - 24px);padding:5px 8px;color:var(--text-muted);background:var(--surface);border-radius:var(--radius-sm);font-size:12px;pointer-events:none}
+.three-graph-hint{position:absolute;right:16px;bottom:16px;z-index:2;max-width:calc(100% - 32px);padding:6px 10px;color:var(--text-muted);background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(10px);border:1px solid var(--border-default);border-radius:var(--radius-sm);box-shadow:var(--shadow-xs);font-size:12px;pointer-events:none}
+@media(max-width:960px){.three-graph-hint{display:none}}
 @media(max-width:700px){.three-graph-canvas{min-height:320px}}
 </style>
