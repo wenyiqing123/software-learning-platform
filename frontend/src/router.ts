@@ -29,6 +29,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/teaching-dashboard', component: () => import('./views/TeachingDashboardView.vue'), meta: { roles: ['ADMIN'] } },
   { path: '/admin/content', component: () => import('./views/AdminContentCenterView.vue'), meta: { roles: ['ADMIN'] } },
   { path: '/admin/experiments', component: () => import('./views/AdminExperimentCenterView.vue'), meta: { roles: ['ADMIN'] } },
+  { path: '/admin/users', component: () => import('./views/AdminUserManagementView.vue'), meta: { roles: ['ADMIN'] } },
   { path: '/experiments', component: () => import('./views/ExperimentsView.vue'), meta: { roles: ['ADMIN'] } },
   { path: '/admin', redirect: (to) => ({ path: '/teaching-dashboard', query: to.query }), meta: { roles: ['ADMIN'] } },
   { path: '/admin/teaching-dashboard', redirect: (to) => ({ path: '/teaching-dashboard', query: to.query }), meta: { roles: ['ADMIN'] } },

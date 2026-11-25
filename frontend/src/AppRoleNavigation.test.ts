@@ -29,11 +29,12 @@ describe('App role navigation', () => {
     await flushPromises()
     expect(wrapper.text()).toContain('管理工作台')
     expect(wrapper.text()).toContain('教学总览')
+    expect(wrapper.text()).toContain('用户管理')
     expect(wrapper.text()).not.toContain('学习闭环')
     expect(wrapper.text()).not.toContain('概览与课程')
     expect(wrapper.find('.student-sections-strip').exists()).toBe(false)
     const navItems = wrapper.findAll('.primary-nav .nav-item')
-    expect(navItems).toHaveLength(3)
+    expect(navItems).toHaveLength(4)
     wrapper.unmount()
   })
 

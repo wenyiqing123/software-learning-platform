@@ -198,3 +198,8 @@
 - **真正 100% 铺满全屏点阵背景（消灭白边/裁切边界）**：为 `VisualizationViewport` 补充原生 Fullscreen API 监听与页内固定全屏兜底（`.visualization-viewport:fullscreen` / `.visualization-viewport.is-fullscreen`，支持按钮双向切换与 `Escape` 退出）；全屏时 `.visualization-stage` 通过 `position: absolute; inset: 0; width: 100%; height: 100%` 将点阵网格和内部 G6 2D / Three.js 3D `<canvas>` 铺满整张 `100vw × 100dvh` 视口，修复原三行 Grid 未显式划分高度导致的上下白带裁切与透明边界问题。
 - **背景内悬浮 HUD 与图例布局**：全屏态下将左上标题说明卡（“.visualization-heading”：如“个人掌握关系 G6 2D / 颜色表示当前掌握状态；可切换 2D/3D 视图并从节点继续学习。”）、可选搜索框、右上工具胶囊（工具栏提示全屏态自动设为 `:teleported="false"` + `placement="bottom"` 保证停留在浏览器 Top Layer 内且不溢屏外）以及左下“掌握程度”图例卡片（`.visualization-footer`）均采用半透明磨砂玻璃样式直接悬浮布局在点阵背景内部。
 - **全屏自适应缩放与节点学习直达**：抽离 `frontend/src/domain/graphViewport.ts`（`bindGraphViewportSync`、`graphViewportPadding`），在 `MasteryMapView` 与 `GraphView` 中统一监听 `ResizeObserver`、G6 `afterlayout` 与全屏切换，动态设置兼顾悬浮控件安全区的内边距（全屏 `[92, 56, 76, 56]`、常态 `[56, 48, 60, 48]`）并适时执行 `resize()` + `fitView()`，配合适度增加的力导向中心引力（`gravity: 14`），彻底防止多连通图谱边缘节点裁切；新增全屏 `#overlay` 悬浮节点卡片（共享 `.fullscreen-node-card` 样式），支持直接在全屏态从选中节点跳转“课程阅读 / 专项练习 / 围绕此知识提问”。
+
+### 管理端用户管理与独立学情画像中心（2026-11-25）
+
+- **独立第 4 个管理员一级工作台（`/admin/users`）**：在 `App.vue` `adminItems` 与路由新增“用户管理”入口（对应 `AdminUserManagementView.vue` 与抽屉组件 `AdminUserProfileDrawer.vue`），支持关键词、角色、启停状态筛选，新建用户、编辑资料/角色、重置密码、启停及“强制下线”安全会话治理，并严格锁定操作防呆（管理员不能停用或降权当前登录账号自身，停用/改角色/重置密码均自动吊销目标账户有效刷新令牌）。
+- **白名单脱敏的单用户独立画像抽屉**：点击列表项右侧滑出 4 维独立学情抽屉（账号与实验、课程与掌握、错题与复习、助教活跃），明确屏蔽学生私人笔记（`learning_note`）、收藏与去标识化科研评估原始分数/反馈文本；在 `ExperimentTaskAdminView` 任务派发区联动增加按需勾选学生账号选择器，取代盲目手填数据库 ID。

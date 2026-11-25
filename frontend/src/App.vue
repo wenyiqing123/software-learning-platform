@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue'
 import { useRoute, useRouter, RouterLink, RouterView } from 'vue-router'
 import ElConfigProvider from 'element-plus/es/components/config-provider/index.mjs'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
-import { Activity, BarChart3, CalendarCheck, Check, ChevronDown, ChevronRight, CircleHelp, FlaskConical, GraduationCap, KeyRound, LayoutDashboard, LogOut, Network, PanelLeftClose, PanelLeftOpen, RefreshCw, BookOpenCheck } from '@lucide/vue'
+import { Activity, BarChart3, CalendarCheck, Check, ChevronDown, ChevronRight, CircleHelp, FlaskConical, GraduationCap, KeyRound, LayoutDashboard, LogOut, Network, PanelLeftClose, PanelLeftOpen, RefreshCw, BookOpenCheck, Users } from '@lucide/vue'
 import { learningApi } from './api/client'
 import { resetLearningMetrics, useLearningMetrics } from './composables/useLearningMetrics'
 import { useSystemStatus } from './composables/useSystemStatus'
@@ -107,7 +107,7 @@ const userName = computed(() => session.user.value?.displayName || session.user.
 const avatar = computed(() => Array.from(session.user.value?.displayName || session.user.value?.username || '')[0] || '·')
 const homePath = computed(() => isAdmin.value ? '/teaching-dashboard' : '/dashboard')
 const roleNotice = computed(() => route.query.notice === 'admin' ? '当前为管理员视图，不包含学生个人学习记录。' : route.query.notice === 'student' ? '当前为学生视图，管理功能仅对管理员开放。' : '')
-const titles: Record<string, string> = { '/': '学习空间', '/dashboard': '学习概览', '/courses': '课程阅读', '/knowledge': '知识图谱', '/mastery-map': '掌握图谱', '/tutor': 'AI 学习助教', '/practice': '课程练习', '/adaptive-practice': '专项练习', '/wrong-book': '错题整理', '/review': '到期复习', '/study-plan': '每日计划', '/micro-lessons': '证据微课', '/evaluation': '学习评估', '/learning-report': '学习报告', '/recommendations': '为我推荐', '/experiment-tasks': '实验任务', '/experiment-run': '实验运行', '/teaching-dashboard': '教学总览', '/admin/content': '内容与题库中心', '/admin/experiments': '实验与评价中心' }
+const titles: Record<string, string> = { '/': '学习空间', '/dashboard': '学习概览', '/courses': '课程阅读', '/knowledge': '知识图谱', '/mastery-map': '掌握图谱', '/tutor': 'AI 学习助教', '/practice': '课程练习', '/adaptive-practice': '专项练习', '/wrong-book': '错题整理', '/review': '到期复习', '/study-plan': '每日计划', '/micro-lessons': '证据微课', '/evaluation': '学习评估', '/learning-report': '学习报告', '/recommendations': '为我推荐', '/experiment-tasks': '实验任务', '/experiment-run': '实验运行', '/teaching-dashboard': '教学总览', '/admin/content': '内容与题库中心', '/admin/experiments': '实验与评价中心', '/admin/users': '用户管理' }
 
 interface StudentNavGroup {
   id: string
@@ -125,7 +125,7 @@ const studentNavGroups: StudentNavGroup[] = [
   { id: 'experiment', path: '/experiment-tasks', label: '实验与评估', icon: FlaskConical, subRoutes: ['/experiment-tasks', '/evaluation', '/learning-report'] },
 ]
 
-const adminItems = [{ path: '/teaching-dashboard', label: '教学总览', icon: BarChart3 }, { path: '/admin/content', label: '内容与题库中心', icon: BookOpenCheck }, { path: '/admin/experiments', label: '实验与评价中心', icon: FlaskConical }]
+const adminItems = [{ path: '/teaching-dashboard', label: '教学总览', icon: BarChart3 }, { path: '/admin/content', label: '内容与题库中心', icon: BookOpenCheck }, { path: '/admin/experiments', label: '实验与评价中心', icon: FlaskConical }, { path: '/admin/users', label: '用户管理', icon: Users }]
 
 // 顶栏面包屑与当前菜单项同步及快捷切页控制
 const breadcrumbMenuOpen = ref(false)

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { api, apiError, type ExperimentGroup, type ExperimentTask } from '../api/client'
+import { api, apiError, type AdminUserPage, type AdminUserSummary, type ExperimentGroup, type ExperimentTask } from '../api/client'
 import FeedbackState from '../components/FeedbackState.vue'
 import { useFormBaseline, useUnsavedChanges } from '../composables/useUnsavedChanges'
 
@@ -41,6 +41,57 @@ interface TaskActionState {
 }
 
 const actionState = reactive<Record<number, TaskActionState>>({})
+const pickerTaskId = ref<number | null>(null)
+const pickerKeyword = ref('')
+const pickerLoading = ref(false)
+const pickerUsers = ref<AdminUserSummary[]>([])
+const pickerSelectedIds = ref<number[]>([])
+
+const filteredPickerUsers = computed(() => {
+  const kw = pickerKeyword.value.trim().toLowerCase()
+  if (!kw) return pickerUsers.value
+  return pickerUsers.value.filter(u => u.username.toLowerCase().includes(kw) || u.displayName.toLowerCase().includes(kw) || String(u.id).includes(kw))
+})
+
+async function toggleStudentPicker(taskId: number) {
+  if (pickerTaskId.value === taskId) {
+    pickerTaskId.value = null
+    return
+  }
+  pickerTaskId.value = taskId
+  pickerSelectedIds.value = []
+  if (pickerUsers.value.length) return
+  pickerLoading.value = true
+  try {
+    const res = await api.get<AdminUserPage>('/admin/users', { params: { role: 'STUDENT', enabled: true, size: 100 } })
+    pickerUsers.value = res.data?.items || []
+  } catch (cause) {
+    error.value = apiError(cause, '加载学生名单失败，仍可手动输入学生 ID。')
+  } finally {
+    pickerLoading.value = false
+  }
+}
+
+function togglePickerUser(id: number) {
+  if (pickerSelectedIds.value.includes(id)) {
+    pickerSelectedIds.value = pickerSelectedIds.value.filter(item => item !== id)
+  } else {
+    pickerSelectedIds.value = [...pickerSelectedIds.value, id]
+  }
+}
+
+function applyPickedStudents(taskId: number) {
+  if (!pickerSelectedIds.value.length) return
+  const state = getActionState(taskId)
+  const existing = state.assignStudentIdsText
+    .split(/[\s,，\n]+/)
+    .map(s => Number(s.trim()))
+    .filter(n => Number.isInteger(n) && n > 0)
+  const merged = Array.from(new Set([...existing, ...pickerSelectedIds.value]))
+  state.assignStudentIdsText = merged.join(', ')
+  pickerTaskId.value = null
+  pickerSelectedIds.value = []
+}
 
 function getActionState(taskId: number): TaskActionState {
   if (!actionState[taskId]) {
@@ -327,6 +378,30 @@ onMounted(load)
                         {{ g.name }} ({{ g.taskOrder || '无顺序' }})
                       </option>
                     </select>
+                    <button
+                      type="button"
+                      class="secondary-button"
+                      :data-testid="`pick-students-${task.id}`"
+                      @click="toggleStudentPicker(task.id)"
+                    >
+                      {{ pickerTaskId === task.id ? '收起学生名单' : '挑选学生账号' }}
+                    </button>
+                  </div>
+                  <div v-if="pickerTaskId === task.id" class="student-picker-panel" :data-testid="`student-picker-${task.id}`">
+                    <div class="student-picker-bar">
+                      <input v-model="pickerKeyword" type="search" class="form-input" placeholder="按姓名、用户名或 ID 筛选学生" />
+                      <button type="button" class="secondary-button" :disabled="!pickerSelectedIds.length" @click="applyPickedStudents(task.id)">
+                        填入已选 ({{ pickerSelectedIds.length }})
+                      </button>
+                    </div>
+                    <p v-if="pickerLoading" class="help-text">正在加载启用中的学生账号...</p>
+                    <div v-else-if="filteredPickerUsers.length" class="student-picker-list">
+                      <label v-for="stu in filteredPickerUsers" :key="stu.id" class="student-picker-item">
+                        <input type="checkbox" :checked="pickerSelectedIds.includes(stu.id)" @change="togglePickerUser(stu.id)" />
+                        <span>{{ stu.displayName }} (@{{ stu.username }}) · #{{ stu.id }}</span>
+                      </label>
+                    </div>
+                    <p v-else class="help-text">未找到匹配的启用学生账号。</p>
                   </div>
                   <textarea
                     data-testid="assign-student-ids"
@@ -631,5 +706,43 @@ onMounted(load)
   padding: 16px;
   text-align: center;
   color: var(--muted);
+}
+
+.student-picker-panel {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+}
+
+.student-picker-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.student-picker-list {
+  max-height: 150px;
+  overflow-y: auto;
+  display: grid;
+  gap: 4px;
+}
+
+.student-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  font-size: 12px;
+  color: var(--text);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.student-picker-item:hover {
+  background: var(--surface-soft);
 }
 </style>

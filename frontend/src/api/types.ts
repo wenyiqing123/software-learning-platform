@@ -38,3 +38,96 @@ export interface TutorHintEvidence { subject: string; predicate: string; object:
 export interface FixedExperimentCase { caseId: string; question: string; sourceSection: string; knowledgePoint: string }
 export interface FixedExperimentSuite { suiteVersion: string; cases: FixedExperimentCase[] }
 export interface TutorHintResult { question: string; level: number; content: string; hasEvidence: boolean; evidence: TutorHintEvidence[]; nextLevelAvailable: boolean; source: string }
+export interface AdminUserSummary {
+  id: number
+  username: string
+  displayName: string
+  role: 'STUDENT' | 'ADMIN'
+  enabled: boolean
+  createdAt?: string
+  completedSections: number
+  attemptCount: number
+  correctCount: number
+  accuracy: number
+  averageMastery: number
+  openWrongCount: number
+  dueReviewCount: number
+  activeTokenCount: number
+  lastActiveAt?: string
+}
+export interface AdminUserPage {
+  items: AdminUserSummary[]
+  total: number
+  page: number
+  size: number
+}
+export interface AdminUserProfile {
+  account: {
+    id: number
+    username: string
+    displayName: string
+    role: 'STUDENT' | 'ADMIN'
+    enabled: boolean
+    createdAt?: string
+    updatedAt?: string
+    activeSessionCount: number
+  }
+  summary: {
+    completedSections: number
+    totalSections: number
+    attemptCount: number
+    correctCount: number
+    accuracy: number
+    averageMastery: number
+    openWrongCount: number
+    dueReviewCount: number
+    aiSessionCount: number
+    aiQuestionCount: number
+    lastStudiedAt?: string
+  }
+  courses: {
+    courseId: number
+    courseName: string
+    completedSections: number
+    totalSections: number
+    lastStudiedAt?: string
+  }[]
+  knowledgeMastery: {
+    pointId: number
+    pointName: string
+    courseId: number
+    courseName: string
+    masteryScore: number
+    attemptCount: number
+    correctCount: number
+    lastStudiedAt?: string
+  }[]
+  wrongQuestions: {
+    wrongQuestionId: number
+    questionId: number
+    courseName: string
+    pointName: string
+    stem: string
+    wrongCount: number
+    status: string
+    reviewStreak: number
+    dueAt?: string
+    lastWrongAt?: string
+  }[]
+  assignments: {
+    taskId: number
+    taskTitle: string
+    groupName: string
+    conditionKey: string
+    status: 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED'
+    assignedAt?: string
+    startedAt?: string
+    completedAt?: string
+  }[]
+  aiActivity: {
+    sessionId: number
+    title: string
+    userMessageCount: number
+    updatedAt?: string
+  }[]
+}

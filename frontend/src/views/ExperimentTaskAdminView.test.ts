@@ -291,4 +291,38 @@ describe('ExperimentTaskAdminView', () => {
     expect(router.currentRoute.value.path).toBe('/other')
     wrapper.unmount()
   })
+
+  it('picks enabled student accounts on demand and appends deduplicated IDs', async () => {
+    const baseGet = http.get.getMockImplementation()!
+    http.get.mockImplementation((url: string, config?: unknown) => {
+      if (url === '/admin/users') {
+        return Promise.resolve({
+          data: {
+            items: [
+              { id: 101, username: 'stu101', displayName: '赵同学', role: 'STUDENT', enabled: true },
+              { id: 205, username: 'stu205', displayName: '钱同学', role: 'STUDENT', enabled: true },
+            ],
+            total: 2,
+          },
+        })
+      }
+      return baseGet(url, config as never)
+    })
+
+    const wrapper = mount(ExperimentTaskAdminView)
+    await flushPromises()
+    await wrapper.get('[data-testid="assign-student-ids"]').setValue('101')
+    await wrapper.get('[data-testid="pick-students-9"]').trigger('click')
+    await flushPromises()
+
+    expect(http.get).toHaveBeenCalledWith('/admin/users', { params: { role: 'STUDENT', enabled: true, size: 100 } })
+    const checkboxes = wrapper.findAll('[data-testid="student-picker-9"] input[type="checkbox"]')
+    expect(checkboxes).toHaveLength(2)
+    await checkboxes[0].setValue(true)
+    await checkboxes[1].setValue(true)
+    await wrapper.get('[data-testid="student-picker-9"] button.secondary-button').trigger('click')
+
+    expect((wrapper.get('[data-testid="assign-student-ids"]').element as HTMLTextAreaElement).value).toBe('101, 205')
+    wrapper.unmount()
+  })
 })

@@ -31,9 +31,7 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (request.password().getBytes(StandardCharsets.UTF_8).length > 72) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "密码 UTF-8 字节长度不能超过 72");
-        }
+        PasswordPolicy.validate(request.password());
         if (userMapper.findByUsername(request.username()) != null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "用户名已被使用");
         }
@@ -80,17 +78,7 @@ public class AuthService {
 
     @Transactional
     public void changePassword(Long userId, String currentPassword, String newPassword) {
-        if (newPassword == null || newPassword.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "新密码不能为空或纯空白");
-        }
-        int codePoints = newPassword.codePointCount(0, newPassword.length());
-        if (codePoints < 8) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "新密码长度不能少于 8 个字符");
-        }
-        byte[] utf8Bytes = newPassword.getBytes(StandardCharsets.UTF_8);
-        if (utf8Bytes.length > 72) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "新密码 UTF-8 字节长度不能超过 72");
-        }
+        PasswordPolicy.validate(newPassword);
         SysUserEntity user = userMapper.selectById(userId);
         if (user == null || !Boolean.TRUE.equals(user.getEnabled())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "用户不存在或已停用");

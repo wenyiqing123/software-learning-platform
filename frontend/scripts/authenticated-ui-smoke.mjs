@@ -9,7 +9,7 @@ const runName = process.env.UI_REVIEW_RUN || 'latest'
 if (!/^[a-z0-9-]+$/.test(runName)) throw new Error('UI_REVIEW_RUN must be a lowercase label')
 const auditDir = path.join(root, '.ui-visual-review', runName)
 const routes = [
-  '/login', '/', '/dashboard', '/courses', '/admin', '/teaching-dashboard', '/admin/content', '/admin/experiments', '/admin/teaching-dashboard', '/admin/question-bank',
+  '/login', '/', '/dashboard', '/courses', '/admin', '/teaching-dashboard', '/admin/content', '/admin/experiments', '/admin/users', '/admin/teaching-dashboard', '/admin/question-bank',
   '/admin/micro-lessons', '/admin/diagnostics', '/knowledge?entity=%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90',
   '/mastery-map', '/tutor', '/practice', '/adaptive-practice', '/wrong-book', '/review', '/study-plan',
   '/micro-lessons', '/evaluation', '/learning-report', '/admin/evaluations', '/recommendations',
@@ -89,6 +89,22 @@ function apiResponse(url, role, scenario, method) {
   if (path === '/api/knowledge/points') return json(coursePoints)
   if (path === '/api/courses') return json([course])
   if (path === '/api/admin/courses') return json([{ id: 3, code: 'SE', name: '软件工程', term: '2026 秋季', description: '课程阅读与练习', graphSpaceId: 1, enabled: true }])
+  if (path === '/api/admin/users') return json({
+    items: [
+      { id: 2, username: 'smoke-student', displayName: '张同学', role: 'STUDENT', enabled: true, completedSections: 3, attemptCount: 10, correctCount: 8, accuracy: 80, averageMastery: 74.5, openWrongCount: 2, dueReviewCount: 1, activeTokenCount: 1, lastActiveAt: '2026-11-25T10:00:00Z' },
+      { id: 1, username: 'smoke-admin', displayName: '封版巡检管理员', role: 'ADMIN', enabled: true, completedSections: 0, attemptCount: 0, correctCount: 0, accuracy: 0, averageMastery: 0, openWrongCount: 0, dueReviewCount: 0, activeTokenCount: 1 },
+    ],
+    total: 2, page: 0, size: 20,
+  })
+  if (path === '/api/admin/users/2/profile') return json({
+    account: { id: 2, username: 'smoke-student', displayName: '张同学', role: 'STUDENT', enabled: true, createdAt: '2026-11-01T08:00:00Z', updatedAt: '2026-11-25T10:00:00Z', activeSessionCount: 1 },
+    summary: { completedSections: 3, totalSections: 8, attemptCount: 10, correctCount: 8, accuracy: 80, averageMastery: 74.5, openWrongCount: 2, dueReviewCount: 1, aiSessionCount: 2, aiQuestionCount: 5, lastStudiedAt: '2026-11-25T10:00:00Z' },
+    courses: [{ courseId: 3, courseName: '软件工程', completedSections: 3, totalSections: 8, lastStudiedAt: '2026-11-25T10:00:00Z' }],
+    knowledgeMastery: [{ pointId: 12, pointName: '数据流图 DFD', courseId: 3, courseName: '软件工程', masteryScore: 48, attemptCount: 4, correctCount: 2, lastStudiedAt: '2026-11-25T10:00:00Z' }],
+    wrongQuestions: [{ wrongQuestionId: 21, questionId: 101, courseName: '软件工程', pointName: '数据流图', stem: quiz.stem, wrongCount: 2, status: 'UNMASTERED', reviewStreak: 0, dueAt: '2026-11-26T08:00:00Z' }],
+    assignments: [{ taskId: 9, taskTitle: experimentTask.title, groupName: 'A 组', conditionKey: 'METHODS', status: 'IN_PROGRESS', assignedAt: '2026-11-20T08:00:00Z' }],
+    aiActivity: [{ sessionId: 7, title: '需求规格说明书练习', userMessageCount: 3, updatedAt: '2026-11-25T09:00:00Z' }],
+  })
   if (path === '/api/admin/teaching-dashboard') {
     const empty = scenario === 'teaching-empty'
     return json({
@@ -413,6 +429,17 @@ const visualScenarios = {
       await page.getByRole('combobox', { name: '微课课程' }).waitFor()
       await page.getByText('从业务问题到需求描述').waitFor()
       if (await page.getByRole('button', { name: '生成证据微课草稿' }).isDisabled()) throw new Error('Valid course data did not enable evidence draft authoring')
+    } },
+    { route: '/admin/users', name: 'admin-users-profile', async check(page) {
+      await page.getByTestId('user-row-2').waitFor()
+      await page.getByTestId('user-profile-btn-2').click()
+      const drawer = page.getByTestId('user-profile-drawer')
+      await drawer.waitFor({ state: 'visible' })
+      await drawer.getByText('白名单学情视图').waitFor()
+      await drawer.getByRole('tab', { name: '课程与掌握' }).click()
+      await drawer.getByText('数据流图 DFD').waitFor()
+      await drawer.getByRole('button', { name: '关闭用户画像' }).click()
+      await drawer.waitFor({ state: 'detached' })
     } },
   ],
   GUEST: [],

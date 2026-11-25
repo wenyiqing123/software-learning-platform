@@ -53,6 +53,7 @@ class GatewayRouteConfigurationTest {
                 "/api/admin/micro-lessons",
                 "/api/admin/questions/1/diagnostics",
                 "/api/admin/teaching-dashboard",
+                "/api/admin/users",
                 "/api/quizzes/1/submit",
                 "/api/spaced-reviews/due",
                 "/api/study-plans/today",

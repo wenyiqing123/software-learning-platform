@@ -508,3 +508,15 @@
   - `frontend/src/App.vue`：为 `.system-status-wrap` 与 `.user-menu-wrap` 绑定模板引用（`healthWrapRef`、`userMenuRef`），与 `breadcrumbSwitcherRef` 一并纳入捕获阶段 `window` `pointerdown` / `click` 全局外点关闭处理器，并在 `toggleHealthMenu`、`toggleUserMenu`、`toggleBreadcrumbMenu` 及路由切换监听中实现三者互斥收起与全关清理。
   - `frontend/src/AppRoleNavigation.test.ts` & `frontend/scripts/authenticated-ui-smoke.mjs`：补充外点关闭、弹窗内部点击防误关、双弹窗互斥切换的 Vitest 单测及真实 Chromium 浏览器交互断言。
 - **实测验证结果（最终改动后）**：Vitest **56** 文件 / **208** 用例全部通过，`scan-vue-classes.mjs --check` **1243** 处用法 **0** 缺失，`!important` 为 **0**，`npm run build` **1.79s** 成功，`authenticated-ui-smoke.mjs` **170/170** 通过并清理 `.ui-visual-review`。
+
+### 管理端用户管理与白名单学情画像落地记录（2026-11-25）
+
+- **需求背景**：管理端原有三大中心缺少账号列表与生命周期管理，实验任务派发仅能手填正整数学生 ID，且需要在不突破科研隐私与私有笔记隔离线的前提下支持管理员查看单用户独立学习情况。
+- **核心改动**：
+  - **后端用户治理与白名单接口**：抽出共享密码校验策略 `PasswordPolicy`（供 `AuthService` 与 `AdminUserService` 复用）；新增 `AdminUserMapper`、`AdminUserService` 与 `AdminUserController`（`/api/admin/users` 分页检索、创建、资料/角色更新、启停、重置密码、强制吊销 Refresh Token 令牌、`/api/admin/users/{id}/profile` 独立画像），拦截管理员停用/降权自己，确保不查询也不泄露 `learning_note`、评估打分或 `ai_message` 正文原文；同步更新 `GatewayRouteConfigurationTest` 与新增 `AdminUserWorkflowTest`。
+  - **前端用户与学情管理中心**：在 `App.vue` 新增第 4 个管理员一级入口“用户管理”（`/admin/users`）；新建 `AdminUserManagementView.vue` 与 `AdminUserProfileDrawer.vue` 呈现白名单 4 维画像（账号与实验履约、课程进度与知识点掌握、错题与艾宾浩斯待复习、助教活跃主题概况）；在 `ExperimentTaskAdminView.vue` 增设按需拉取勾选学生账号的选择器；扩充 `AdminUserManagementView.test.ts`、`ExperimentTaskAdminView.test.ts`、`AppRoleNavigation.test.ts` 与 `authenticated-ui-smoke.mjs`。
+- **实测验证结果（最终改动后）**：
+  - 后端构建与测试（JDK 21 `mvn -pl learning-gateway,learning-service -am package`）：`learning-service` **182** tests run、`learning-gateway` **5** tests run，0 failures，0 errors，0 skipped（含隐私脱敏、本人保护防呆与 MySQL/H2 兼容性测试）。
+  - 前端单测（`npx vitest run --maxWorkers=2`）：**57 passed (57)** 个文件、**212 passed (212)** 条用例全部通过。
+  - AST 类名扫描（`node scripts/scan-vue-classes.mjs --check`）：**1383** 处模板类用法 **0** 缺失；四份全局 CSS `!important` 为 **0**。
+  - 生产构建与 Playwright 冒烟：`npm run build` **1.84s** 完成；`authenticated-ui-smoke.mjs` **176/176** 通过（已目视确认 `/admin/users` 界面截图并清理 `.ui-visual-review`）。
