@@ -135,4 +135,80 @@ describe('TutorMessageList', () => {
     expect(expandButtons[0].text()).toContain('展开第 2 级提示')
     expect(wrapper.text()).not.toContain('展开第 3 级提示')
   })
+
+  it('presents evidence progressively across hint levels without duplicating blocks on level 1, 2, and 3', async () => {
+    const sampleEvidence = [{ subject: '加工', predicate: '命名', object: '动宾短语', score: 0.9 }]
+    const wrapper = mount(TutorMessageList, {
+      props: {
+        messages: [
+          { id: 1, role: 'USER', content: '加工如何命名？', mode: 'RANKED' },
+          {
+            id: 2,
+            role: 'ASSISTANT',
+            content: '第1级提示',
+            mode: 'TUTOR_HINT_1',
+            metadata: {
+              hint: { question: '加工如何命名？', level: 1, content: '先看加工实体方向', hasEvidence: true, evidence: sampleEvidence, nextLevelAvailable: true, source: 'GRAPH_DIRECTION' },
+            },
+          },
+          {
+            id: 3,
+            role: 'ASSISTANT',
+            content: '相关课程证据：\n- 加工 — 命名 — 动宾短语',
+            mode: 'TUTOR_HINT_2',
+            metadata: {
+              hint: { question: '加工如何命名？', level: 2, content: '相关课程证据：\n- 加工 — 命名 — 动宾短语', hasEvidence: true, evidence: sampleEvidence, nextLevelAvailable: true, source: 'GRAPH_EVIDENCE' },
+            },
+          },
+          {
+            id: 4,
+            role: 'ASSISTANT',
+            content: '完整回答正文',
+            mode: 'TUTOR_HINT_3',
+            metadata: {
+              hint: { question: '加工如何命名？', level: 3, content: '加工统一采用动宾短语。', hasEvidence: true, evidence: sampleEvidence, nextLevelAvailable: false, source: 'GRAPH_GROUNDED_MODEL' },
+            },
+          },
+        ],
+        streamingAnswer: '',
+        streamingEvidence: null,
+        loading: false,
+        error: '',
+      },
+    })
+
+    // 同轮已有第2级时：第1级不渲染折叠证据，第2级直出结构化卡片（非重复文本列表），第3级不重复渲染折叠证据
+    expect(wrapper.findAll('.evidence-block')).toHaveLength(0)
+    expect(wrapper.findAll('.hint-evidence-direct')).toHaveLength(1)
+    expect(wrapper.text()).not.toContain('相关课程证据：')
+    expect(wrapper.text()).toContain('已定位 1 条课程图谱证据')
+    expect(wrapper.text()).toContain('动宾短语')
+
+    await wrapper.get('.hint-graph-jump').trigger('click')
+    expect(wrapper.emitted('open-graph')?.[0]).toEqual(['加工'])
+
+    // 若独立存在第3级且本轮未曾展示第2级，保留默认折叠的来源胶囊
+    const standaloneLevel3 = mount(TutorMessageList, {
+      props: {
+        messages: [
+          { id: 10, role: 'USER', content: '什么是需求分析？', mode: 'RANKED' },
+          {
+            id: 11,
+            role: 'ASSISTANT',
+            content: '第3级独立历史',
+            mode: 'TUTOR_HINT_3',
+            metadata: {
+              hint: { question: '什么是需求分析？', level: 3, content: '完整解释', hasEvidence: true, evidence: sampleEvidence, nextLevelAvailable: false, source: 'GRAPH_GROUNDED_MODEL' },
+            },
+          },
+        ],
+        streamingAnswer: '',
+        streamingEvidence: null,
+        loading: false,
+        error: '',
+      },
+    })
+    expect(standaloneLevel3.findAll('.evidence-block')).toHaveLength(1)
+    expect((standaloneLevel3.get('.evidence-block').element as HTMLDetailsElement).open).toBe(false)
+  })
 })

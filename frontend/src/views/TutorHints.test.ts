@@ -57,7 +57,9 @@ describe('tutor layered hints', () => {
     expect(learning.tutorHint).toHaveBeenCalledWith('加工如何命名', 1, [], [])
     expect(wrapper.text()).toContain('分步学习提示 · 第 1 级')
     expect(wrapper.text()).toContain('思考方向')
-    expect(wrapper.text()).toContain('动宾短语')
+    // 第 1 级只给思考方向，不提前挂出完整三元组折叠证据避免剧透
+    expect(wrapper.find('.evidence-block').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('动宾短语')
     expect(wrapper.text()).toContain('展开第 2 级提示')
     expect(wrapper.text()).not.toContain('查看本次提示词')
     wrapper.unmount()
@@ -106,20 +108,25 @@ describe('tutor layered hints', () => {
     expect(expandBtns).toHaveLength(1)
     expect(expandBtns[0].text()).toContain('展开第 2 级提示')
 
-    // 点击展开第 2 级后，前序第 2 级触发按钮自动消失，仅剩“展开第 3 级提示”
+    // 点击展开第 2 级后，前序第 2 级触发按钮自动消失，直接渲染结构化三元组证据而不叠放重复折叠面板
     await expandBtns[0].trigger('click')
     await flushPromises()
     expandBtns = wrapper.findAll('.tutor-hint-next-row button')
     expect(expandBtns).toHaveLength(1)
     expect(expandBtns[0].text()).toContain('展开第 3 级提示')
     expect(wrapper.text()).not.toContain('展开第 2 级提示')
+    expect(wrapper.text()).toContain('动宾短语')
+    expect(wrapper.find('.evidence-block').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('查看本提示依据的')
 
-    // 点击展开第 3 级后，所有展开按钮均消失，无法再次点击追加
+    // 点击展开第 3 级后，所有展开按钮均消失且同轮已有第 2 级时不重复展开证据面板，保留轻量操作入口
     await expandBtns[0].trigger('click')
     await flushPromises()
     expect(wrapper.findAll('.tutor-hint-next-row button')).toHaveLength(0)
     expect(wrapper.text()).not.toContain('展开第 2 级提示')
     expect(wrapper.text()).not.toContain('展开第 3 级提示')
+    expect(wrapper.find('.evidence-block').exists()).toBe(false)
+    expect(wrapper.text()).toContain('前往图谱')
     expect(learning.tutorHint).toHaveBeenCalledTimes(3)
     wrapper.unmount()
   })

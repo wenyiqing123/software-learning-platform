@@ -437,3 +437,14 @@
 - **验证结果**：
   - `npx vitest run`：**56 个测试文件、201 个测试用例全部通过**（新增 `TutorMessageList.test.ts`、`TutorHints.test.ts` 与 `TutorView.test.ts` 1→2→3 级展开防重与幂等拦截回归测试）；
   - `node scripts/scan-vue-classes.mjs --check`：**1209** 处模板 class 全部匹配（`0 missing classes`）；`npm run build` 耗时 `1.60s` 通过；`node scripts/authenticated-ui-smoke.mjs` **170/170** 场景通过且 `.ui-visual-review` 已清理。
+
+### 分步提示三级差异化展示与证据去重优化记录（2026-11-25）
+
+- **方案一落地实现**：调整 `frontend/src/components/TutorMessageList.vue` 分步提示渲染逻辑与 scoped 样式（新增 `.hint-evidence-direct`、`.hint-evidence-header`、`.hint-evidence-count`、`.hint-graph-jump`）：
+  - **第 1 级**仅显示思考方向与 `展开第 2 级提示`，不附带剧透三元组的折叠面板；
+  - **第 2 级**（`evidence.length > 0`）直接渲染结构化图谱证据卡片与 `在图谱中查看` 按钮，消除“Markdown 文本清单 + 折叠胶囊”双重重复；无结构化证据时降级渲染正文；
+  - **第 3 级**展示完整解析与轻量 `复制 / 前往图谱` 操作条；当 `expandedLevelsAt(index).has(2)` 为真（同轮已显示第 2 级）时隐藏重复的折叠证据面板，独立历史记录兜底保留默认折叠的来源胶囊。
+- **验证结果**：
+  - `npx vitest run`：**56 个测试文件、202 个测试用例全部通过**（更新 `TutorHints.test.ts` 与 `TutorMessageList.test.ts` 分层证据渲染断言）；
+  - `node scripts/scan-vue-classes.mjs --check`：**1218** 处模板 class 全部匹配（`0 missing classes`），`frontend/src/` 全仓 `!important` 为 `0`；
+  - `npm run build` 耗时 `1.58s` 通过；`node scripts/authenticated-ui-smoke.mjs` **170/170** 场景通过且 `.ui-visual-review` 已彻底清理。

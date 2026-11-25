@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
-import { ArrowDown, ArrowRight, BookOpen, CircleAlert, Copy, Database, GraduationCap, Lightbulb, RefreshCw, Sparkles } from '@lucide/vue'
+import { ArrowDown, ArrowRight, BookOpen, CircleAlert, Copy, Database, GraduationCap, Lightbulb, Network, RefreshCw, Sparkles } from '@lucide/vue'
 import MarkdownContent from './MarkdownContent.vue'
 import TutorAnswerCard from './TutorAnswerCard.vue'
 import { expandedHintLevelsInTurn, stripLegacyModePrefix, type TutorAnswerResult, type TutorChatMessage, type TutorQuickPrompt } from '../domain/tutorChat'
@@ -150,16 +150,56 @@ defineExpose({ scrollToBottom })
               <Sparkles :size="15" />
             </div>
             <article class="tutor-assistant-body">
-              <!-- 分步引导提示消息 -->
+              <!-- 分步引导提示消息（第1级仅给方向不剧透，第2级直出结构化证据，第3级去重并保留轻量图谱入口） -->
               <template v-if="hintOf(message)">
                 <div class="tutor-hint-badge">
                   <Lightbulb :size="13" />
                   <span>分步学习提示 · 第 {{ hintOf(message)!.level }} 级</span>
                 </div>
-                <div class="tutor-assistant-prose">
+
+                <!-- 第 2 级有结构化图谱证据时直接展示卡片列表，避免重复正文与折叠块 -->
+                <div
+                  v-if="hintOf(message)!.level === 2 && hintOf(message)!.evidence?.length"
+                  class="hint-evidence-direct"
+                >
+                  <div class="hint-evidence-header">
+                    <span class="hint-evidence-count">
+                      <Database :size="13" aria-hidden="true" />
+                      <span>已定位 {{ hintOf(message)!.evidence.length }} 条课程图谱证据</span>
+                    </span>
+                    <button
+                      v-if="hintOf(message)!.evidence[0]?.subject"
+                      type="button"
+                      class="hint-graph-jump"
+                      @click="emit('open-graph', hintOf(message)!.evidence[0].subject)"
+                    >
+                      <Network :size="13" aria-hidden="true" />
+                      <span>在图谱中查看</span>
+                    </button>
+                  </div>
+                  <div class="hint-evidence-panel">
+                    <div
+                      v-for="ev in hintOf(message)!.evidence"
+                      :key="ev.subject + ev.predicate + ev.object"
+                      class="hint-evidence-item"
+                    >
+                      <span>{{ ev.subject }}</span>
+                      <i>— {{ ev.predicate }} —</i>
+                      <span>{{ ev.object }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 第 1 级 / 第 3 级（或无结构化证据降级时的第 2 级）显示正文 -->
+                <div v-else class="tutor-assistant-prose">
                   <MarkdownContent :content="hintOf(message)!.content || stripLegacyModePrefix(message.content)" />
                 </div>
-                <details v-if="hintOf(message)!.evidence?.length" class="evidence-block">
+
+                <!-- 仅当第 3 级所在轮次未展开第 2 级时，才保留可折叠来源胶囊；同轮已有第 2 级则不再重复 -->
+                <details
+                  v-if="hintOf(message)!.level >= 3 && hintOf(message)!.evidence?.length && !expandedLevelsAt(index).has(2)"
+                  class="evidence-block"
+                >
                   <summary class="evidence-capsule-summary">
                     <Database :size="14" class="evidence-capsule-icon" />
                     <span>查看本提示依据的 {{ hintOf(message)!.evidence.length }} 条图谱证据</span>
@@ -176,6 +216,29 @@ defineExpose({ scrollToBottom })
                     </div>
                   </div>
                 </details>
+
+                <!-- 第 3 级完整解析下方提供轻量复制与图谱入口 -->
+                <div v-if="hintOf(message)!.level >= 3" class="tutor-plain-actions">
+                  <button
+                    v-if="(hintOf(message)!.content || stripLegacyModePrefix(message.content)).trim()"
+                    type="button"
+                    class="tutor-plain-action-btn"
+                    @click="emit('copy', hintOf(message)!.content || stripLegacyModePrefix(message.content))"
+                  >
+                    <Copy :size="13" aria-hidden="true" />
+                    <span>复制</span>
+                  </button>
+                  <button
+                    v-if="hintOf(message)!.evidence?.[0]?.subject"
+                    type="button"
+                    class="tutor-plain-action-btn"
+                    @click="emit('open-graph', hintOf(message)!.evidence[0].subject)"
+                  >
+                    <Network :size="13" aria-hidden="true" />
+                    <span>前往图谱</span>
+                  </button>
+                </div>
+
                 <div
                   v-if="hintOf(message)!.nextLevelAvailable && !expandedLevelsAt(index).has(hintOf(message)!.level + 1)"
                   class="tutor-hint-next-row"
@@ -508,8 +571,48 @@ defineExpose({ scrollToBottom })
   color: var(--accent);
 }
 
+.hint-evidence-direct {
+  display: grid;
+  gap: 8px;
+}
+
+.hint-evidence-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hint-evidence-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.hint-graph-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 3px 9px;
+  color: var(--accent-strong);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hint-graph-jump:hover {
+  background: var(--accent-soft);
+}
+
 .hint-evidence-panel {
-  margin-top: 8px;
   padding: 10px 12px;
   background: var(--surface-soft);
   border: 1px solid var(--border-soft);
