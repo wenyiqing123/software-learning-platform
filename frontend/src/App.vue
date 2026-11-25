@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue'
 import { useRoute, useRouter, RouterLink, RouterView } from 'vue-router'
 import ElConfigProvider from 'element-plus/es/components/config-provider/index.mjs'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
@@ -17,6 +17,7 @@ const route = useRoute()
 const session = useSession()
 const loggingOut = ref(false)
 const userMenuOpen = ref(false)
+const userMenuRef = ref<HTMLElement | null>(null)
 const showChangePassword = ref(false)
 const isAdmin = computed(() => session.user.value?.role === 'ADMIN')
 const isStudent = computed(() => session.user.value?.role === 'STUDENT')
@@ -99,6 +100,7 @@ function onPrimaryItemClick(item: StudentNavGroup) {
 const { overview: _overview, reload } = useLearningMetrics(computed(() => session.user.value?.role))
 const { status: systemStatus, loading: statusLoading, error: statusError, reload: reloadStatus } = useSystemStatus()
 const healthOpen = ref(false)
+const healthWrapRef = ref<HTMLElement | null>(null)
 const primaryNav = ref<HTMLElement | null>(null)
 const navOpen = ref<Record<string, boolean>>({ admin: true })
 const userName = computed(() => session.user.value?.displayName || session.user.value?.username || (session.loading.value ? '正在确认账户' : '账户未确认'))
@@ -164,7 +166,28 @@ const breadcrumbCurrentLabel = computed(() => {
 })
 function toggleBreadcrumbMenu() {
   if (!breadcrumbSiblings.value.length) return
-  breadcrumbMenuOpen.value = !breadcrumbMenuOpen.value
+  const next = !breadcrumbMenuOpen.value
+  breadcrumbMenuOpen.value = next
+  if (next) {
+    healthOpen.value = false
+    userMenuOpen.value = false
+  }
+}
+function toggleHealthMenu() {
+  const next = !healthOpen.value
+  healthOpen.value = next
+  if (next) {
+    userMenuOpen.value = false
+    breadcrumbMenuOpen.value = false
+  }
+}
+function toggleUserMenu() {
+  const next = !userMenuOpen.value
+  userMenuOpen.value = next
+  if (next) {
+    healthOpen.value = false
+    breadcrumbMenuOpen.value = false
+  }
 }
 const healthTone = computed(() => statusTone(systemStatus.value?.overallStatus || 'NOT_CHECKED'))
 const healthLabel = computed(() => statusLabel(systemStatus.value?.overallStatus || 'NOT_CHECKED'))
@@ -218,6 +241,7 @@ watch(() => route.path, (newPath, oldPath) => {
 })
 watch(() => route.fullPath, () => {
   userMenuOpen.value = false
+  healthOpen.value = false
   breadcrumbMenuOpen.value = false
   refreshShell()
   ensureActiveSection()
@@ -243,21 +267,31 @@ function onEscapeKey(event: KeyboardEvent) {
     healthOpen.value = false
   }
 }
-function onGlobalClick(event: MouseEvent) {
-  if (breadcrumbMenuOpen.value && breadcrumbSwitcherRef.value && !breadcrumbSwitcherRef.value.contains(event.target as Node)) {
-    breadcrumbMenuOpen.value = false
+function onGlobalOutsideInteract(event: Event) {
+  const target = event.target as Node | null
+  const menus: Array<[Ref<boolean>, Ref<HTMLElement | null>]> = [
+    [breadcrumbMenuOpen, breadcrumbSwitcherRef],
+    [healthOpen, healthWrapRef],
+    [userMenuOpen, userMenuRef],
+  ]
+  for (const [open, container] of menus) {
+    if (open.value && (!container.value || !target || !container.value.contains(target))) {
+      open.value = false
+    }
   }
 }
 onMounted(() => {
   window.addEventListener('storage', onStorage)
   window.addEventListener('keydown', onEscapeKey)
-  window.addEventListener('click', onGlobalClick)
+  window.addEventListener('pointerdown', onGlobalOutsideInteract, true)
+  window.addEventListener('click', onGlobalOutsideInteract, true)
 })
 onBeforeUnmount(() => {
   cancelFlyoutClose()
   window.removeEventListener('storage', onStorage)
   window.removeEventListener('keydown', onEscapeKey)
-  window.removeEventListener('click', onGlobalClick)
+  window.removeEventListener('pointerdown', onGlobalOutsideInteract, true)
+  window.removeEventListener('click', onGlobalOutsideInteract, true)
 })
 const currentYear = new Date().getFullYear()
 </script>
@@ -318,7 +352,7 @@ const currentYear = new Date().getFullYear()
       </nav>
       <div class="sidebar-bottom"><div v-if="!isAdmin && activePath !== '/tutor'" class="help-box"><span class="help-icon"><CircleHelp :size="17" /></span><strong>需要学习帮助？</strong><small>让 AI 助教为你讲解知识点</small><button @click="navigate('tutor')">开始提问 <ChevronDown :size="14" /></button></div><small class="sidebar-version">知序学习平台 · {{ currentYear }}</small></div>
     </aside>
-    <main class="main-area"><header class="topbar"><div class="topbar-left"><button type="button" class="sidebar-toggle-btn" data-testid="sidebar-collapse-toggle" :title="isSidebarCollapsed ? '展开左侧主导航' : '收起左侧主导航'" :aria-label="isSidebarCollapsed ? '展开左侧主导航' : '收起左侧主导航'" @click="togglePlatformSidebar"><PanelLeftOpen v-if="isSidebarCollapsed" :size="16" /><PanelLeftClose v-else :size="16" /></button><span class="topbar-divider" aria-hidden="true"></span><nav class="breadcrumb" aria-label="页面导航路径"><RouterLink class="breadcrumb-link breadcrumb-root" :to="homePath">{{ isAdmin ? '管理空间' : '学习空间' }}</RouterLink><i v-if="breadcrumbGroup" class="breadcrumb-root-sep" aria-hidden="true">/</i><RouterLink v-if="breadcrumbGroup" class="breadcrumb-link" :to="breadcrumbGroup.to">{{ breadcrumbGroup.label }}</RouterLink><i aria-hidden="true">/</i><div v-if="breadcrumbSiblings.length" ref="breadcrumbSwitcherRef" class="breadcrumb-switcher"><button type="button" class="breadcrumb-current-btn" data-testid="breadcrumb-page-switcher" :aria-expanded="breadcrumbMenuOpen" aria-haspopup="menu" title="切换当前分组下的页面" @click="toggleBreadcrumbMenu"><span>{{ breadcrumbCurrentLabel }}</span><ChevronDown :size="13" aria-hidden="true" /></button><div v-if="breadcrumbMenuOpen" class="breadcrumb-menu" role="menu" data-testid="breadcrumb-menu" aria-label="切换页面"><RouterLink v-for="item in breadcrumbSiblings" :key="item.path" class="breadcrumb-menu-item" :class="{ active: activeNavPath === item.path }" role="menuitem" :to="item.to" @click="breadcrumbMenuOpen = false"><span>{{ item.label }}</span><Check v-if="activeNavPath === item.path" :size="13" aria-hidden="true" /></RouterLink></div></div><strong v-else>{{ breadcrumbCurrentLabel }}</strong></nav></div><div class="topbar-actions"><span class="course-status"><i></i>{{ session.user.value ? '已登录' : '账户待确认' }}</span><div class="system-status-wrap"><button class="system-status-button" :class="'tone-' + healthTone" :aria-expanded="healthOpen" aria-haspopup="dialog" title="查看系统依赖状态" @click="healthOpen = !healthOpen"><Activity :size="15" /><span>依赖 {{ healthLabel }}</span><ChevronDown :size="13" /></button><div v-if="healthOpen" class="system-status-panel" role="dialog" aria-label="系统依赖状态"><div class="system-status-heading"><strong>系统依赖状态</strong><button class="icon-button" title="重新检查依赖" :disabled="statusLoading" @click="reloadStatus"><RefreshCw :size="15" :class="{ spinning: statusLoading }" /></button></div><p v-if="statusError" class="system-status-error">{{ statusError }}</p><ul v-if="systemStatus" class="system-status-list"><li v-for="item in systemStatus.dependencies" :key="item.key"><span class="system-status-item-name"><i :class="'status-dot tone-' + statusTone(item.status)"></i>{{ item.label }}</span><strong :class="'tone-text-' + statusTone(item.status)">{{ statusLabel(item.status) }}</strong><small v-if="item.status !== 'UP'">{{ item.impact }}</small></li></ul><p v-if="systemStatus && !healthIssues.length" class="system-status-ok">课程、题库、错题和推荐依赖均可访问。</p><p class="system-status-foot">最近检查 {{ healthCheckedAt }} · 状态异常时不会影响已加载的本地学习内容。</p></div></div><button v-if="!isAdmin && activePath !== '/tutor'" class="help-quick" title="学习帮助" @click="navigate('tutor')"><CircleHelp :size="18" /></button><div class="user-menu-wrap"><button class="user-menu" :aria-expanded="userMenuOpen" aria-haspopup="menu" :title="loggingOut ? '正在退出' : '用户菜单'" :disabled="loggingOut" @click="userMenuOpen = !userMenuOpen"><span class="avatar">{{ avatar }}</span><span>{{ userName }}</span><ChevronDown :size="14" :class="{ rotated: userMenuOpen }" /></button><div v-if="userMenuOpen" class="user-menu-dropdown" role="menu"><button class="user-menu-item" role="menuitem" @click="userMenuOpen = false; showChangePassword = true"><KeyRound :size="15" /><span>修改密码</span></button><button class="user-menu-item" role="menuitem" :disabled="loggingOut" @click="userMenuOpen = false; logout()"><LogOut :size="15" /><span>{{ loggingOut ? '正在退出' : '退出登录' }}</span></button></div></div></div></header>
+    <main class="main-area"><header class="topbar"><div class="topbar-left"><button type="button" class="sidebar-toggle-btn" data-testid="sidebar-collapse-toggle" :title="isSidebarCollapsed ? '展开左侧主导航' : '收起左侧主导航'" :aria-label="isSidebarCollapsed ? '展开左侧主导航' : '收起左侧主导航'" @click="togglePlatformSidebar"><PanelLeftOpen v-if="isSidebarCollapsed" :size="16" /><PanelLeftClose v-else :size="16" /></button><span class="topbar-divider" aria-hidden="true"></span><nav class="breadcrumb" aria-label="页面导航路径"><RouterLink class="breadcrumb-link breadcrumb-root" :to="homePath">{{ isAdmin ? '管理空间' : '学习空间' }}</RouterLink><i v-if="breadcrumbGroup" class="breadcrumb-root-sep" aria-hidden="true">/</i><RouterLink v-if="breadcrumbGroup" class="breadcrumb-link" :to="breadcrumbGroup.to">{{ breadcrumbGroup.label }}</RouterLink><i aria-hidden="true">/</i><div v-if="breadcrumbSiblings.length" ref="breadcrumbSwitcherRef" class="breadcrumb-switcher"><button type="button" class="breadcrumb-current-btn" data-testid="breadcrumb-page-switcher" :aria-expanded="breadcrumbMenuOpen" aria-haspopup="menu" title="切换当前分组下的页面" @click="toggleBreadcrumbMenu"><span>{{ breadcrumbCurrentLabel }}</span><ChevronDown :size="13" aria-hidden="true" /></button><div v-if="breadcrumbMenuOpen" class="breadcrumb-menu" role="menu" data-testid="breadcrumb-menu" aria-label="切换页面"><RouterLink v-for="item in breadcrumbSiblings" :key="item.path" class="breadcrumb-menu-item" :class="{ active: activeNavPath === item.path }" role="menuitem" :to="item.to" @click="breadcrumbMenuOpen = false"><span>{{ item.label }}</span><Check v-if="activeNavPath === item.path" :size="13" aria-hidden="true" /></RouterLink></div></div><strong v-else>{{ breadcrumbCurrentLabel }}</strong></nav></div><div class="topbar-actions"><span class="course-status"><i></i>{{ session.user.value ? '已登录' : '账户待确认' }}</span><div ref="healthWrapRef" class="system-status-wrap"><button class="system-status-button" :class="'tone-' + healthTone" :aria-expanded="healthOpen" aria-haspopup="dialog" title="查看系统依赖状态" @click="toggleHealthMenu"><Activity :size="15" /><span>依赖 {{ healthLabel }}</span><ChevronDown :size="13" /></button><div v-if="healthOpen" class="system-status-panel" role="dialog" aria-label="系统依赖状态"><div class="system-status-heading"><strong>系统依赖状态</strong><button class="icon-button" title="重新检查依赖" :disabled="statusLoading" @click="reloadStatus"><RefreshCw :size="15" :class="{ spinning: statusLoading }" /></button></div><p v-if="statusError" class="system-status-error">{{ statusError }}</p><ul v-if="systemStatus" class="system-status-list"><li v-for="item in systemStatus.dependencies" :key="item.key"><span class="system-status-item-name"><i :class="'status-dot tone-' + statusTone(item.status)"></i>{{ item.label }}</span><strong :class="'tone-text-' + statusTone(item.status)">{{ statusLabel(item.status) }}</strong><small v-if="item.status !== 'UP'">{{ item.impact }}</small></li></ul><p v-if="systemStatus && !healthIssues.length" class="system-status-ok">课程、题库、错题和推荐依赖均可访问。</p><p class="system-status-foot">最近检查 {{ healthCheckedAt }} · 状态异常时不会影响已加载的本地学习内容。</p></div></div><button v-if="!isAdmin && activePath !== '/tutor'" class="help-quick" title="学习帮助" @click="navigate('tutor')"><CircleHelp :size="18" /></button><div ref="userMenuRef" class="user-menu-wrap"><button class="user-menu" :aria-expanded="userMenuOpen" aria-haspopup="menu" :title="loggingOut ? '正在退出' : '用户菜单'" :disabled="loggingOut" @click="toggleUserMenu"><span class="avatar">{{ avatar }}</span><span>{{ userName }}</span><ChevronDown :size="14" :class="{ rotated: userMenuOpen }" /></button><div v-if="userMenuOpen" class="user-menu-dropdown" role="menu"><button class="user-menu-item" role="menuitem" @click="userMenuOpen = false; showChangePassword = true"><KeyRound :size="15" /><span>修改密码</span></button><button class="user-menu-item" role="menuitem" :disabled="loggingOut" @click="userMenuOpen = false; logout()"><LogOut :size="15" /><span>{{ loggingOut ? '正在退出' : '退出登录' }}</span></button></div></div></div></header>
 <div class="page-content"><div v-if="roleNotice" class="inline-notice role-notice" role="status">{{ roleNotice }}</div><div v-if="session.error.value" class="inline-notice" role="alert">{{ session.error.value }}<button class="text-button" @click="session.refresh()">重试</button></div><RouterView v-slot="{ Component }"><component :is="Component" @navigate="navigate" /></RouterView></div><ChangePasswordDialog v-model="showChangePassword" /></main>
   </div>
   <RouterView v-else />

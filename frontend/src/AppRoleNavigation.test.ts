@@ -211,4 +211,38 @@ describe('App role navigation', () => {
       wrapper.unmount()
     }
   })
+
+  it('closes topbar status and user menus when clicking outside or switching between them', async () => {
+    session.user.value = { id: 1, username: 'admin', displayName: '课程管理员', role: 'ADMIN' }
+    const routes = [{ path: '/teaching-dashboard', component: { template: '<div data-testid="outside-area" />' } }]
+    const router = createRouter({ history: createMemoryHistory(), routes })
+    await router.push('/teaching-dashboard')
+    await router.isReady()
+    const wrapper = mount(App, { attachTo: document.body, global: { plugins: [router] } })
+    await flushPromises()
+
+    await wrapper.get('.system-status-button').trigger('click')
+    expect(wrapper.find('.system-status-panel').exists()).toBe(true)
+
+    // 点击面板内部不会误关闭
+    await wrapper.get('.system-status-panel .system-status-heading').trigger('click')
+    expect(wrapper.find('.system-status-panel').exists()).toBe(true)
+
+    // 点击页面其他区域立刻关闭系统依赖状态弹窗
+    await wrapper.get('[data-testid="outside-area"]').trigger('click')
+    expect(wrapper.find('.system-status-panel').exists()).toBe(false)
+
+    // 再次打开依赖弹窗，再点击用户菜单，两者应互斥关闭并切为用户菜单
+    await wrapper.get('.system-status-button').trigger('click')
+    expect(wrapper.find('.system-status-panel').exists()).toBe(true)
+    await wrapper.get('.user-menu').trigger('click')
+    expect(wrapper.find('.system-status-panel').exists()).toBe(false)
+    expect(wrapper.find('.user-menu-dropdown').exists()).toBe(true)
+
+    // 点击用户菜单外页面区域立刻关闭用户菜单弹窗
+    await wrapper.get('[data-testid="outside-area"]').trigger('click')
+    expect(wrapper.find('.user-menu-dropdown').exists()).toBe(false)
+
+    wrapper.unmount()
+  })
 })

@@ -500,3 +500,11 @@
   - 模板类名 AST 扫描（`node scripts/scan-vue-classes.mjs --check`）：共检查 **1243** 处模板类用法，**0** 缺失。
   - 生产构建（`npm run build`）：**1.69s** 完成构建，零 `!important`。
   - Playwright 真实鉴权 UI 冒烟（`node scripts/authenticated-ui-smoke.mjs`）：**170/170** 全部通过（已目视复核 1440×900 与 1280×800 全屏图谱截图并清理 `frontend/.ui-visual-review` 临时目录）。
+
+### 顶栏系统依赖与用户菜单弹窗外点关闭修复记录（2026-11-25）
+
+- **问题现象**：顶栏系统依赖状态弹窗（`.system-status-panel` / `healthOpen`）与用户头像下拉菜单（`.user-menu-dropdown` / `userMenuOpen`）点击空白/其他区域不会自动关闭，且两者会同时保持打开叠加显示。
+- **核心改动**：
+  - `frontend/src/App.vue`：为 `.system-status-wrap` 与 `.user-menu-wrap` 绑定模板引用（`healthWrapRef`、`userMenuRef`），与 `breadcrumbSwitcherRef` 一并纳入捕获阶段 `window` `pointerdown` / `click` 全局外点关闭处理器，并在 `toggleHealthMenu`、`toggleUserMenu`、`toggleBreadcrumbMenu` 及路由切换监听中实现三者互斥收起与全关清理。
+  - `frontend/src/AppRoleNavigation.test.ts` & `frontend/scripts/authenticated-ui-smoke.mjs`：补充外点关闭、弹窗内部点击防误关、双弹窗互斥切换的 Vitest 单测及真实 Chromium 浏览器交互断言。
+- **实测验证结果（最终改动后）**：Vitest **56** 文件 / **208** 用例全部通过，`scan-vue-classes.mjs --check` **1243** 处用法 **0** 缺失，`!important` 为 **0**，`npm run build` **1.79s** 成功，`authenticated-ui-smoke.mjs` **170/170** 通过并清理 `.ui-visual-review`。
