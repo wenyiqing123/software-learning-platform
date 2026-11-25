@@ -225,6 +225,16 @@ const visualScenarios = {
     } },
     { route: '/tutor?courseId=3&sectionId=32&entity=数据流图', name: 'tutor-history', async check(page) {
       if (await page.locator('.tutor-mode-selector, .compare-toggle, .tutor-aside').count()) throw new Error('Legacy mode selector or strategy aside leaked in tutor view')
+      if (!await page.locator('.app-shell.is-sidebar-collapsed').count()) throw new Error('Tutor route should auto-collapse the main platform sidebar')
+      if (await page.locator('.student-sections-strip').count()) throw new Error('Legacy horizontal student-sections-strip should not render')
+      if (await page.locator('.tutor-topbar').count()) throw new Error('Legacy bordered tutor-topbar should be replaced by borderless tutor-canvas-header')
+      if (!await page.locator('.tutor-canvas-header').count()) throw new Error('Borderless tutor-canvas-header should be present')
+      await page.locator('.primary-nav .nav-item').first().hover()
+      const flyout = page.getByTestId('sidebar-flyout-menu')
+      await flyout.waitFor({ state: 'visible' })
+      if (!(await flyout.locator('.nav-flyout-item').count())) throw new Error('Collapsed sidebar flyout menu should display submenu items')
+      await page.mouse.move(480, 480)
+      await flyout.waitFor({ state: 'detached' })
       if (!await page.locator('.tutor-sidebar-pane.is-collapsed').count()) throw new Error('Context-driven tutor entry should auto-collapse the sidebar')
       await page.getByTestId('tutor-expand-sidebar').click()
       await page.waitForFunction(() => {

@@ -403,3 +403,14 @@
   - **前端生产构建**：`npm run build` 耗时 `2.11s`，**0 error、0 chunk warning**；
   - **Playwright 全路由视觉巡检**：`node scripts/authenticated-ui-smoke.mjs` 在 `1440×900` 与 `1280×800` 双桌面视口覆盖全路由与助教无模式、上下文跳入默认折叠、侧栏展开交互及默认折叠证据胶囊展开，实测 **170/170 场景全部通过**；巡检生成的临时目录 `.ui-visual-review` 已彻底清理。
 
+### 导航精简与 `/tutor` 沉浸态自动收起优化记录（2026-11-25）
+
+- **单行顶栏与子导航整合（方案 2）**：移除顶部 `.student-sections-strip` 二级条，将 `STUDENT_SECTIONS` 分组子导航整合至左侧主栏（展开态展示 `.nav-sublist` / `.nav-subitem`，保持 `.primary-nav .nav-item` 仍为 5 项），顶栏精简为单行并新增 `[data-testid="sidebar-collapse-toggle"]` 手动展开/收起按钮与 `学习空间 / 图谱与助教` 面包屑。
+- **进入 `/tutor` 自动收起与悬浮子菜单**：进入 `/tutor` 自动开启 `.app-shell.is-sidebar-collapsed`（`72px` 图标轨）并隐藏左侧重复的 `.help-box`，离开 `/tutor` 自动恢复；收缩态悬停或聚焦主菜单图标通过 `<Teleport to="body">` 弹出 `[data-testid="sidebar-flyout-menu"]` 展示全部分组子页面。
+- **无边框画布一体页头**：移除 `.tutor-topbar` 分割边框，升级为融合画布的 `.tutor-canvas-header`，并在 `TutorMessageList.vue` 空状态欢迎区承载唯一 `<h1>`（`AI 学习助教`）与引导卡片。
+- **全套实测记录**：
+  - `npx vitest run`：56 个测试文件、197 个测试用例全部通过（含 `AppRoleNavigation.test.ts` 与 `TutorMessageList.test.ts`、`design-system-contract.test.ts`、`compliance-guard.test.ts`）。
+  - `node scripts/scan-vue-classes.mjs --check`：1189 处模板 class 全部匹配（0 个缺失 class）。
+  - `npm run build`：Vite 生产构建耗时 `1.55s` 通过。
+  - `node scripts/authenticated-ui-smoke.mjs`：170/170 全量视觉巡检通过（已目视确认 `1440×900` 与 `1280×800` 截图并清理 `.ui-visual-review`）。
+  - 全局 CSS：`styles-design-system.css`（28,734 B）、`styles.css`（18,564 B）、`styles-learning.css`（11,389 B）、`styles-graph.css`（3,297 B），合计 **61,984 B**，`frontend/src/` 全仓 `!important` 为 `0`。

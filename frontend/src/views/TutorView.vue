@@ -428,9 +428,12 @@ function toggleSidebarDesktop() {
       </div>
 
       <div class="tutor-main-pane">
-        <!-- 紧凑二合一工作台顶栏：同时承载页面语义标题、当前会话及上下文回链入口 -->
-        <header class="tutor-topbar">
-          <div class="tutor-topbar-left">
+        <!-- 无边框透明画布顶行：空态只显示右侧上下文捷径；有消息时展示会话标题与语义描述 -->
+        <header
+          class="tutor-canvas-header"
+          :class="{ 'is-empty-state': !messages.length && !loading && !error }"
+        >
+          <div class="tutor-canvas-left">
             <button
               type="button"
               class="icon-button tutor-expand-btn"
@@ -453,7 +456,7 @@ function toggleSidebarDesktop() {
               <Plus :size="14" />
               <span>新对话</span>
             </button>
-            <div class="tutor-topbar-titles">
+            <div v-if="messages.length || loading || error" class="tutor-topbar-titles">
               <h1 class="tutor-heading-title">
                 {{ activeSessionTitle || 'AI 学习助教' }}
               </h1>
@@ -551,18 +554,17 @@ function toggleSidebarDesktop() {
   background: var(--surface);
 }
 
-.tutor-topbar {
+.tutor-canvas-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 50px;
-  padding: 6px 20px;
-  border-bottom: 1px solid var(--border-soft);
+  min-height: 44px;
+  padding: 10px 24px 2px;
   flex-shrink: 0;
 }
 
-.tutor-topbar-left {
+.tutor-canvas-left {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -707,8 +709,8 @@ function toggleSidebarDesktop() {
     background: var(--el-overlay-color-light);
   }
 
-  .tutor-topbar {
-    padding: 6px 14px;
+  .tutor-canvas-header {
+    padding: 8px 14px 2px;
   }
 
   .tutor-topbar-right {

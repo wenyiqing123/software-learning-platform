@@ -62,8 +62,56 @@ describe('App role navigation', () => {
     expect(wrapper.text()).toContain('实验与评估')
     expect(wrapper.text()).not.toContain('管理工作台')
     expect(wrapper.text()).not.toContain('教学总览')
-    expect(wrapper.find('.student-sections-strip').exists()).toBe(true)
+    expect(wrapper.find('.student-sections-strip').exists()).toBe(false)
+    expect(wrapper.findAll('.nav-sublist').length).toBeGreaterThan(0)
+    expect(wrapper.findAll('.nav-subitem').length).toBeGreaterThan(0)
     wrapper.unmount()
+  })
+
+  it('auto-collapses main sidebar on /tutor, hides help box, supports manual toggle and hover flyout submenus', async () => {
+    session.user.value = { id: 2, username: 'student', displayName: '学生', role: 'STUDENT' }
+    const routes = [
+      { path: '/dashboard', component: { template: '<div />' } },
+      { path: '/courses', component: { template: '<div />' } },
+      { path: '/knowledge', component: { template: '<div />' } },
+      { path: '/tutor', component: { template: '<div />' } },
+      { path: '/practice', component: { template: '<div />' } },
+      { path: '/study-plan', component: { template: '<div />' } },
+      { path: '/experiment-tasks', component: { template: '<div />' } },
+    ]
+    const router = createRouter({ history: createMemoryHistory(), routes })
+    await router.push('/tutor')
+    await router.isReady()
+    const wrapper = mount(App, { attachTo: document.body, global: { plugins: [router] } })
+    await flushPromises()
+
+    try {
+      expect(wrapper.find('.app-shell.is-sidebar-collapsed').exists()).toBe(true)
+      expect(wrapper.find('.help-box').exists()).toBe(false)
+      expect(wrapper.find('.student-sections-strip').exists()).toBe(false)
+
+      const firstNavItem = wrapper.find('.primary-nav .nav-item')
+      await firstNavItem.trigger('mouseenter')
+      await flushPromises()
+
+      const flyout = document.body.querySelector('[data-testid="sidebar-flyout-menu"]')
+      expect(flyout).not.toBeNull()
+      expect(flyout?.querySelectorAll('.nav-flyout-item').length ?? 0).toBeGreaterThan(0)
+
+      await wrapper.get('[data-testid="sidebar-collapse-toggle"]').trigger('click')
+      await flushPromises()
+      expect(wrapper.find('.app-shell.is-sidebar-collapsed').exists()).toBe(false)
+
+      await wrapper.get('[data-testid="sidebar-collapse-toggle"]').trigger('click')
+      await flushPromises()
+      expect(wrapper.find('.app-shell.is-sidebar-collapsed').exists()).toBe(true)
+
+      await router.push('/dashboard')
+      await flushPromises()
+      expect(wrapper.find('.app-shell.is-sidebar-collapsed').exists()).toBe(false)
+    } finally {
+      wrapper.unmount()
+    }
   })
 
   it('highlights the corresponding top-level group for each subroute', async () => {

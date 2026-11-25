@@ -109,8 +109,8 @@ defineExpose({ scrollToBottom })
           <div class="tutor-welcome-badge" aria-hidden="true">
             <GraduationCap :size="24" />
           </div>
-          <h2>软件工程智能学习助教</h2>
-          <p class="tutor-welcome-subtitle">基于课程知识图谱进行可溯源问答与分步思考引导</p>
+          <h1 class="tutor-welcome-title">AI 学习助教</h1>
+          <p class="section-description tutor-welcome-subtitle">基于课程知识图谱进行可溯源问答与分步思考引导</p>
           <div class="tutor-quick-grid" aria-label="推荐学习提问">
             <button
               v-for="item in activePrompts"
@@ -323,10 +323,11 @@ defineExpose({ scrollToBottom })
   border-radius: var(--radius-md);
 }
 
-.tutor-welcome h2 {
+.tutor-welcome-title {
   margin: 4px 0 0;
   color: var(--text);
-  font-size: 19px;
+  font-size: 20px;
+  line-height: 1.35;
   font-weight: 700;
 }
 

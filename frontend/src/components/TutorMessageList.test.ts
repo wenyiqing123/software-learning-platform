@@ -14,7 +14,7 @@ describe('TutorMessageList', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('软件工程智能学习助教')
+    expect(wrapper.find('h1.tutor-welcome-title').text()).toBe('AI 学习助教')
     const cards = wrapper.findAll('[data-testid="tutor-quick-prompt"]')
     expect(cards).toHaveLength(4)
 

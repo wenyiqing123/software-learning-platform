@@ -1,12 +1,18 @@
-.app-shell{min-height:100vh;display:grid;grid-template-columns:240px minmax(0,1fr)}
+.app-shell{min-height:100vh;display:grid;grid-template-columns:240px minmax(0,1fr);transition:grid-template-columns var(--motion)}
+.app-shell.is-sidebar-collapsed{grid-template-columns:72px minmax(0,1fr)}
 .sidebar{position:sticky;top:0;height:100dvh;display:flex;flex-direction:column;padding:22px 14px 16px;background:var(--surface);border-right:1px solid var(--border-default);z-index:5;overflow:hidden}
+.is-sidebar-collapsed .sidebar{padding:18px 10px}
 .brand{display:flex;align-items:center;gap:11px;padding:0 10px;color:inherit;text-decoration:none}
-.brand-mark{width:40px;height:40px;display:grid;place-items:center;color:#fff;background:var(--accent);border-radius:12px}
+.is-sidebar-collapsed .brand{justify-content:center;padding:0}
+.brand-mark{width:40px;height:40px;flex-shrink:0;display:grid;place-items:center;color:#fff;background:var(--accent);border-radius:12px}
+.brand>span:last-child{white-space:nowrap;overflow:hidden}
 .brand strong{display:block;font-size:17px;line-height:1.15;font-weight:700}
 .brand small{display:block;margin-top:3px;color:var(--text-subtle);font-size:11px}
+.is-sidebar-collapsed .brand>span:last-child,.is-sidebar-collapsed .course-switch-copy,.is-sidebar-collapsed .course-switch>svg,.is-sidebar-collapsed .nav-label,.is-sidebar-collapsed .nav-item>span,.is-sidebar-collapsed .nav-sublist,.is-sidebar-collapsed .help-box,.is-sidebar-collapsed .sidebar-version{display:none}
 .course-switch{width:100%;min-height:58px;display:flex;align-items:center;gap:10px;margin-top:24px;padding:9px 10px;text-align:left;background:var(--surface-soft);border:1px solid var(--border-soft);border-radius:8px;cursor:pointer}
+.is-sidebar-collapsed .course-switch{justify-content:center;min-height:46px;padding:6px}
 .course-switch:hover{background:var(--accent-soft);border-color:var(--border-focus)}
-.course-badge{width:34px;height:34px;display:grid;place-items:center;color:var(--accent);background:var(--accent-soft);border-radius:8px;font-size:11px;font-weight:700}
+.course-badge{width:34px;height:34px;flex-shrink:0;display:grid;place-items:center;color:var(--accent);background:var(--accent-soft);border-radius:8px;font-size:11px;font-weight:700}
 .course-switch-copy{flex:1;min-width:0}
 .course-switch-copy strong,.course-switch-copy small{display:block}
 .course-switch-copy strong{font-size:13px}
@@ -15,10 +21,21 @@
 .primary-nav{flex:1;min-height:0;overflow-y:auto;padding:22px 2px 0 0;scrollbar-color:var(--border-strong) transparent;scrollbar-width:thin}
 .nav-group+.nav-group{margin-top:16px}
 .nav-label{padding:0 12px;margin:0 0 9px;color:var(--text-subtle);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.nav-group-wrap{display:grid;gap:2px}
 .nav-item{width:100%;min-height:38px;display:flex;align-items:center;gap:10px;padding:0 12px;color:var(--text-muted);border:0;border-radius:var(--radius-sm);background:transparent;text-align:left;cursor:pointer}
-.nav-item span{flex:1;font-size:13px}
+.is-sidebar-collapsed .nav-item{justify-content:center;min-height:42px;padding:0}
+.nav-item span{flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nav-item:hover{color:var(--accent);background:var(--surface-soft)}
 .nav-item.active{position:relative;color:var(--accent-strong);background:var(--accent-soft);font-weight:650;box-shadow:inset 2px 0 0 var(--accent)}
+.nav-sublist{display:grid;gap:2px;margin:2px 0 6px 19px;padding-left:10px;border-left:1px solid var(--border-soft)}
+.nav-subitem{display:flex;align-items:center;min-height:32px;padding:0 10px;color:var(--text-muted);border-radius:var(--radius-sm);font-size:12.5px;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-subitem:hover{color:var(--accent);background:var(--surface-soft)}
+.nav-subitem.active{color:var(--accent-strong);background:var(--accent-soft);font-weight:600}
+.nav-flyout-menu{position:fixed;z-index:95;min-width:176px;max-width:240px;padding:6px;background:var(--surface);border:1px solid var(--border-default);border-radius:var(--radius-md);box-shadow:var(--shadow-md);display:grid;gap:2px}
+.nav-flyout-title{padding:6px 10px 4px;color:var(--text-subtle);font-size:11px;font-weight:650}
+.nav-flyout-item{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:36px;padding:0 10px;color:var(--text);border-radius:var(--radius-sm);font-size:13px;text-decoration:none;white-space:nowrap}
+.nav-flyout-item:hover{color:var(--accent-strong);background:var(--surface-soft)}
+.nav-flyout-item.active{color:var(--accent-strong);background:var(--accent-soft);font-weight:600}
 .nav-count{min-width:21px;height:21px;display:grid;place-items:center;color:var(--danger);background:var(--danger-soft);border-radius:999px;font-size:10px;font-style:normal;font-weight:600;font-variant-numeric:tabular-nums}
 .sidebar-bottom{display:grid;gap:6px;border-top:1px solid var(--border-soft);padding-top:10px}
 .help-box{display:grid;grid-template-columns:27px 1fr;column-gap:8px;margin:0 0 15px;padding:14px 11px 12px;background:var(--surface-soft);border:1px solid var(--border-soft);border-radius:8px}
@@ -29,8 +46,11 @@
 .help-box>button svg{transform:rotate(-90deg)}
 .sidebar-version{padding:2px 11px 0;color:var(--text-subtle);font-size:11px}
 .main-area{min-width:0}
-.topbar{position:sticky;top:0;z-index:4;display:flex;align-items:center;justify-content:space-between;min-height:var(--topbar-height);gap:12px;padding:0 var(--page-gutter);background:var(--surface);border-bottom:1px solid var(--border-soft)}
-.breadcrumb{display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:12px}
+.topbar{position:sticky;top:0;z-index:4;display:flex;align-items:center;justify-content:space-between;min-height:56px;gap:12px;padding:0 var(--page-gutter);background:var(--surface);border-bottom:1px solid var(--border-soft)}
+.topbar-left{display:flex;align-items:center;gap:10px;min-width:0}
+.sidebar-toggle-btn{width:32px;height:32px;min-height:32px;display:grid;place-items:center;color:var(--text-muted);background:transparent;border:1px solid transparent;border-radius:8px;cursor:pointer;flex-shrink:0}
+.sidebar-toggle-btn:hover{color:var(--accent-strong);background:var(--surface-soft)}
+.breadcrumb{display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:12px;min-width:0;overflow:hidden;white-space:nowrap}
 .breadcrumb i{color:var(--text-subtle);font-style:normal}
 .breadcrumb strong{color:var(--text);font-weight:600}
 .topbar-actions{display:flex;align-items:center;gap:12px;flex-shrink:0}
@@ -143,8 +163,10 @@
 }
 @media (max-width:620px){
 .app-shell{--topbar-height:56px;--page-gutter:14px;display:block}
+.app-shell.is-sidebar-collapsed{display:block}
 .sidebar{position:fixed;top:auto;right:0;bottom:0;left:0;z-index:10;height:auto;min-height:58px;padding:6px 8px max(6px,env(safe-area-inset-bottom));border-top:1px solid var(--border-default);border-right:0}
-.brand,.course-switch,.sidebar-bottom{display:none}
+.is-sidebar-collapsed .sidebar{padding:6px 8px max(6px,env(safe-area-inset-bottom))}
+.brand,.course-switch,.sidebar-bottom,.sidebar-toggle-btn,.nav-sublist{display:none}
 .primary-nav{display:flex;width:100%;gap:6px;overflow:auto;padding:0}
 .nav-group,.nav-group+.nav-group{display:flex;margin:0;flex-shrink:0}
 .nav-group-toggle{display:none}
