@@ -79,4 +79,60 @@ describe('TutorMessageList', () => {
 
     expect(wrapper.emitted('retry')).toEqual([['解释数据流图', 'RANKED']])
   })
+
+  it('hides next-level hint triggers once already expanded in the same turn and keeps subsequent turns independent', () => {
+    const wrapper = mount(TutorMessageList, {
+      props: {
+        messages: [
+          { id: 1, role: 'USER', content: '加工如何命名？', mode: 'RANKED' },
+          {
+            id: 2,
+            role: 'ASSISTANT',
+            content: '第1级提示',
+            mode: 'TUTOR_HINT_1',
+            metadata: {
+              hint: { question: '加工如何命名？', level: 1, content: '提示1', hasEvidence: false, evidence: [], nextLevelAvailable: true, source: 'MODEL' },
+            },
+          },
+          {
+            id: 3,
+            role: 'ASSISTANT',
+            content: '第2级提示',
+            mode: 'TUTOR_HINT_2',
+            metadata: {
+              hint: { question: '加工如何命名？', level: 2, content: '提示2', hasEvidence: false, evidence: [], nextLevelAvailable: true, source: 'MODEL' },
+            },
+          },
+          {
+            id: 4,
+            role: 'ASSISTANT',
+            content: '第3级提示',
+            mode: 'TUTOR_HINT_3',
+            metadata: {
+              hint: { question: '加工如何命名？', level: 3, content: '提示3', hasEvidence: false, evidence: [], nextLevelAvailable: false, source: 'MODEL' },
+            },
+          },
+          { id: 5, role: 'USER', content: '用例图包含哪些要素？', mode: 'RANKED' },
+          {
+            id: 6,
+            role: 'ASSISTANT',
+            content: '新一轮第1级提示',
+            mode: 'TUTOR_HINT_1',
+            metadata: {
+              hint: { question: '用例图包含哪些要素？', level: 1, content: '新一轮提示1', hasEvidence: false, evidence: [], nextLevelAvailable: true, source: 'MODEL' },
+            },
+          },
+        ],
+        streamingAnswer: '',
+        streamingEvidence: null,
+        loading: false,
+        error: '',
+      },
+    })
+
+    const expandButtons = wrapper.findAll('.tutor-hint-next-row button')
+    expect(expandButtons).toHaveLength(1)
+    expect(expandButtons[0].text()).toContain('展开第 2 级提示')
+    expect(wrapper.text()).not.toContain('展开第 3 级提示')
+  })
 })

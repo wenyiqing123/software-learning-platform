@@ -7,6 +7,8 @@ import type { TutorSession } from '../api/tutor'
 import type { TutorHintResult } from '../api/types'
 import {
   LOCKED_TUTOR_MODE,
+  expandedHintLevelsInTurn,
+  hasHintLevelInLatestTurn,
   stripLegacyModePrefix,
   type TutorAnswerResult,
   type TutorChatMessage,
@@ -338,9 +340,15 @@ async function saveAndPushHintMessage(activeSessionId: number, data: TutorHintRe
   }
 }
 
-async function requestHint(promptOverride?: string, level = 1) {
+async function requestHint(promptOverride?: string, level = 1, sourceIndex?: number) {
   const prompt = (promptOverride ?? question.value).trim()
   if (!prompt || hintLoading.value || loading.value) return
+  if (typeof sourceIndex === 'number' && expandedHintLevelsInTurn(messages.value, sourceIndex).has(level)) {
+    return
+  }
+  if (promptOverride && hasHintLevelInLatestTurn(messages.value, level, prompt)) {
+    return
+  }
   hintLoading.value = true
   error.value = ''
   try {

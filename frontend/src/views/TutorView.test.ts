@@ -266,6 +266,50 @@ describe('TutorView', () => {
     wrapper.unmount()
   })
 
+  it('ignores duplicate request-hint emits when level 2 and 3 hints are already present in the current turn', async () => {
+    learning.sessions.mockResolvedValueOnce([{ id: 20, title: '提示防重会话' }])
+    learning.sessionMessages.mockResolvedValueOnce([
+      { id: 1, role: 'USER', content: '数据流图怎么画？', mode: 'RANKED' },
+      {
+        id: 2,
+        role: 'ASSISTANT',
+        content: '第1级提示',
+        mode: 'TUTOR_HINT_1',
+        metadata: { hint: { question: '数据流图怎么画？', level: 1, content: '提示1', hasEvidence: false, evidence: [], nextLevelAvailable: true, source: 'MODEL' } },
+      },
+      {
+        id: 3,
+        role: 'ASSISTANT',
+        content: '第2级提示',
+        mode: 'TUTOR_HINT_2',
+        metadata: { hint: { question: '数据流图怎么画？', level: 2, content: '提示2', hasEvidence: false, evidence: [], nextLevelAvailable: true, source: 'MODEL' } },
+      },
+      {
+        id: 4,
+        role: 'ASSISTANT',
+        content: '第3级提示',
+        mode: 'TUTOR_HINT_3',
+        metadata: { hint: { question: '数据流图怎么画？', level: 3, content: '提示3', hasEvidence: false, evidence: [], nextLevelAvailable: false, source: 'MODEL' } },
+      },
+    ])
+
+    const wrapper = await mountPage()
+    await flushPromises()
+    await wrapper.get('.tutor-session-select').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.findAll('.tutor-hint-next-row button')).toHaveLength(0)
+
+    const listComp = wrapper.findComponent({ name: 'TutorMessageList' })
+    listComp.vm.$emit('request-hint', '数据流图怎么画？', 2, 1)
+    listComp.vm.$emit('request-hint', '数据流图怎么画？', 3, 2)
+    await flushPromises()
+
+    expect(learning.tutorHint).not.toHaveBeenCalled()
+    expect(wrapper.findAll('.tutor-message-row.is-assistant')).toHaveLength(3)
+    wrapper.unmount()
+  })
+
   it('prefills question and quick prompts for point-only context on exact match without auto-submitting', async () => {
     learning.knowledgePoints.mockResolvedValueOnce([
       { id: 42, courseId: 1, chapterId: 2, name: '软件架构风格', graphEntity: '架构风格', sortOrder: 1, mastery: 80 },

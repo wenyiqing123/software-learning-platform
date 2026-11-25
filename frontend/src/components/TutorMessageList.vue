@@ -3,7 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { ArrowDown, ArrowRight, BookOpen, CircleAlert, Copy, Database, GraduationCap, Lightbulb, RefreshCw, Sparkles } from '@lucide/vue'
 import MarkdownContent from './MarkdownContent.vue'
 import TutorAnswerCard from './TutorAnswerCard.vue'
-import { stripLegacyModePrefix, type TutorAnswerResult, type TutorChatMessage, type TutorQuickPrompt } from '../domain/tutorChat'
+import { expandedHintLevelsInTurn, stripLegacyModePrefix, type TutorAnswerResult, type TutorChatMessage, type TutorQuickPrompt } from '../domain/tutorChat'
 
 const DEFAULT_PROMPTS: TutorQuickPrompt[] = [
   { tag: '核心概念', title: '加工规范命名', prompt: '数据流图中的加工应该如何规范命名？' },
@@ -31,7 +31,7 @@ const emit = defineEmits<{
   retry: [question: string, mode: string]
   copy: [value: string]
   regenerate: [question: string]
-  'request-hint': [question: string, level: number]
+  'request-hint': [question: string, level: number, sourceIndex: number]
   'open-graph': [entity?: string]
   'quick-prompt': [prompt: string]
 }>()
@@ -53,6 +53,10 @@ function resultsOf(message: TutorChatMessage): TutorAnswerResult[] {
 
 function hintOf(message: TutorChatMessage) {
   return message.metadata?.hint
+}
+
+function expandedLevelsAt(index: number): Set<number> {
+  return expandedHintLevelsInTurn(props.messages, index)
 }
 
 function questionForMessage(index: number): string {
@@ -172,12 +176,15 @@ defineExpose({ scrollToBottom })
                     </div>
                   </div>
                 </details>
-                <div v-if="hintOf(message)!.nextLevelAvailable" class="tutor-hint-next-row">
+                <div
+                  v-if="hintOf(message)!.nextLevelAvailable && !expandedLevelsAt(index).has(hintOf(message)!.level + 1)"
+                  class="tutor-hint-next-row"
+                >
                   <button
                     type="button"
                     class="button button-outline button-small"
                     :disabled="loading || hintLoading"
-                    @click="emit('request-hint', hintOf(message)!.question || questionForMessage(index), hintOf(message)!.level + 1)"
+                    @click="emit('request-hint', hintOf(message)!.question || questionForMessage(index), hintOf(message)!.level + 1, index)"
                   >
                     <span>展开第 {{ hintOf(message)!.level + 1 }} 级提示</span>
                     <ArrowRight :size="14" />
@@ -192,10 +199,10 @@ defineExpose({ scrollToBottom })
                   :key="result.mode ? `${result.mode}-${rIdx}` : rIdx"
                   :item="result"
                   :can-regenerate="index === lastAssistantIndex && rIdx === resultsOf(message).length - 1 && !loading && Boolean(questionForMessage(index))"
-                  :hint-disabled="hintLoading || loading || !questionForMessage(index)"
+                  :hint-disabled="hintLoading || loading || !questionForMessage(index) || expandedLevelsAt(index).has(1)"
                   @copy="emit('copy', $event)"
                   @regenerate="emit('regenerate', questionForMessage(index))"
-                  @hint="emit('request-hint', questionForMessage(index), 1)"
+                  @hint="emit('request-hint', questionForMessage(index), 1, index)"
                   @open-graph="emit('open-graph', $event)"
                 />
               </template>

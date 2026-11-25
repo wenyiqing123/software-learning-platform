@@ -426,3 +426,14 @@
   - `npm run build`：Vite 生产构建耗时 `1.72s` 通过。
   - `node scripts/authenticated-ui-smoke.mjs`：170/170 全量视觉巡检通过（已目视核查 `/tutor`、`/dashboard` 与管理员 `/admin/content` 截图并清理 `.ui-visual-review`）。
   - 全局 CSS：`styles-design-system.css`（28,734 B）、`styles.css`（20,374 B）、`styles-learning.css`（11,389 B）、`styles-graph.css`（3,297 B），合计 **63,794 B**，`frontend/src/` 全仓 `!important` 为 `0`。
+
+### AI 助教二/三级分步提示防重复展开 Bug 修复记录（2026-11-25）
+
+- **缺陷成因**：同一轮问答点击展开第 2 级与第 3 级分步提示后，前序第 1 级/第 2 级提示下方的“展开第 2/3 级提示”触发按钮未根据本轮已展开状态隐去，且 `TutorView.vue` 的 `requestHint` 缺少同轮次已有层级校验，再次点击即在对话尾部重复追加。
+- **修复实现**：
+  - 在 `frontend/src/domain/tutorChat.ts` 新增 `expandedHintLevelsInTurn` 与 `hasHintLevelInLatestTurn`，以 `USER` 消息界定当前提问轮次并计算已展开提示层级集合；
+  - 在 `frontend/src/components/TutorMessageList.vue` 隐去同轮次已展开下一级的“展开第 N 级提示”按钮（后续新提问轮次保持独立不受影响），当本轮已生成第 1 级提示时同步禁用普通回答卡片底部“分步提示”按钮，并透传消息索引 `sourceIndex`；
+  - 在 `frontend/src/views/TutorView.vue` `requestHint` 入口补充双重幂等拦截，杜绝并发或手动调用导致同级提示重复追加。
+- **验证结果**：
+  - `npx vitest run`：**56 个测试文件、201 个测试用例全部通过**（新增 `TutorMessageList.test.ts`、`TutorHints.test.ts` 与 `TutorView.test.ts` 1→2→3 级展开防重与幂等拦截回归测试）；
+  - `node scripts/scan-vue-classes.mjs --check`：**1209** 处模板 class 全部匹配（`0 missing classes`）；`npm run build` 耗时 `1.60s` 通过；`node scripts/authenticated-ui-smoke.mjs` **170/170** 场景通过且 `.ui-visual-review` 已清理。
