@@ -460,3 +460,14 @@
   - 后端单测：`mvn -pl ai-service test`（JDK 21）**106 tests run, 0 failures, 0 errors, 0 skipped**（含 `KnowledgeRetrievalEnhancerTest`、`TutorHintServiceTest`、`TutorHintControllerTest`、`AnswerRequestTest`）；
   - 前端验证：`npx vitest run` **56 个测试文件、204 个测试用例全部通过**；`node scripts/scan-vue-classes.mjs --check` **1218** 处模板类全匹配（`0 missing classes`）；`npm run build` 耗时 `1.51s`；`node scripts/authenticated-ui-smoke.mjs` **170/170** 场景通过（`.ui-visual-review` 已彻底清理）；
   - 真机网关实测（经 `127.0.0.1:8080` + 新版 `ai-service` `8082` + `8999` Bridge）：`"数据流图中的加工应该如何规范命名？"` 的分步提示 1/2/3 级与 `RANKED` 问答均正确定位 `加工的命名` 与 `加工命名` 核心证据并准确回答动宾短语规范，`HAS_PROMPT_LEAK` 为 `False`。
+
+### 助教分步提示消息持久化 400 校验拦截修复记录（2026-11-25）
+
+- **缺陷成因**：`backend/learning-service/.../TutorSessionService.MessageInput` 的 `mode` 字段仅允许 `@Pattern(regexp="DIRECT|TRIPLES|RANKED|COMPARE")`，而助教页持久化 1/2/3 级分步引导提示时传参为 `TUTOR_HINT_1` / `TUTOR_HINT_2` / `TUTOR_HINT_3`，导致 `POST /api/tutor/sessions/{id}/messages` 被 `ApiExceptionHandler` 返回 `400 INVALID_INPUT`（`输入格式不正确，请检查必填项与长度限制`），提示气泡未能写入 MySQL `ai_message`。
+- **修复实现**：
+  - 将 `TutorSessionService.MessageInput.mode` 校验放宽为 `@Pattern(regexp="DIRECT|TRIPLES|RANKED|COMPARE|TUTOR_HINT_[1-3]")`（匹配表列 `VARCHAR(30)` 并继续拦截非法模式名）；
+  - 在 `frontend/src/views/TutorView.vue` 为 `saveAndPushHintMessage` 补充 `20,000` 字符保护截断，并在 `selectSession` 切换会话与提示保存成功后清理残留 `historyError`。
+- **验证结果**：
+  - 后端单测：`mvn -pl learning-service -am package`（JDK 21）**178 tests run, 0 failures, 0 errors, 0 skipped**（含新增 `TutorSessionControllerTest` MockMvc `@Valid` 校验测试与 `TutorSessionServiceTest` 多级提示持久化测试）；
+  - 前端验证：`npx vitest run` **56 个测试文件、204 个测试用例全部通过**；`node scripts/scan-vue-classes.mjs --check` **1218** 处模板类全匹配；`npm run build` 耗时 `1.55s`；`node scripts/authenticated-ui-smoke.mjs` **170/170** 场景通过且 `.ui-visual-review` 已彻底清理；
+  - 真机 MySQL + 网关全链路实测（经 `8080 -> 8081 -> MySQL 8`）：新建会话依次写入并读回 `['RANKED', 'TUTOR_HINT_1', 'TUTOR_HINT_2', 'TUTOR_HINT_3']` 全部 `201/200` 成功（临时验证账号与测试数据已清理归零）。

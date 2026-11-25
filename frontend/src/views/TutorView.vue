@@ -212,6 +212,7 @@ onBeforeUnmount(stopGenerating)
 
 async function selectSession() {
   error.value = ''
+  historyError.value = ''
   failedQuestion.value = ''
   failedAsHint.value = false
   streamingAnswer.value = ''
@@ -317,7 +318,7 @@ function buildHistoryContext() {
 }
 
 async function saveAndPushHintMessage(activeSessionId: number, data: TutorHintResult) {
-  const hintContent = `第${data.level}级学习提示：${data.content}`
+  const hintContent = `第${data.level}级学习提示：${data.content}`.slice(0, 20000)
   try {
     const saved = await learningApi.saveMessage(activeSessionId, {
       role: 'ASSISTANT',
@@ -325,6 +326,7 @@ async function saveAndPushHintMessage(activeSessionId: number, data: TutorHintRe
       mode: `TUTOR_HINT_${data.level}`,
       metadata: { hint: data },
     }) as TutorChatMessage
+    historyError.value = ''
     messages.value.push({
       ...saved,
       metadata: saved?.metadata && Object.keys(saved.metadata).length ? saved.metadata : { hint: data },

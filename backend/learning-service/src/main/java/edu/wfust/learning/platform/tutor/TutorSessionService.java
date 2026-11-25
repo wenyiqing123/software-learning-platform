@@ -21,7 +21,7 @@ public class TutorSessionService {
     public record MessageView(long id, String role, String content, String mode, Map<String,Object> metadata, LocalDateTime createdAt) { }
     public record MessageInput(@NotBlank @Pattern(regexp="USER|ASSISTANT") String role,
                                @NotBlank @Size(max=20000) String content,
-                               @Pattern(regexp="DIRECT|TRIPLES|RANKED|COMPARE") String mode, Map<String,Object> metadata) { }
+                               @Pattern(regexp="DIRECT|TRIPLES|RANKED|COMPARE|TUTOR_HINT_[1-3]") String mode, Map<String,Object> metadata) { }
     public List<SessionView> list(long userId) {
         return db.query("SELECT * FROM ai_session WHERE user_id=? ORDER BY updated_at DESC,id DESC LIMIT 50",
             (rs,n) -> new SessionView(rs.getLong("id"),rs.getString("title"),rs.getTimestamp("created_at").toLocalDateTime(),rs.getTimestamp("updated_at").toLocalDateTime()),userId);

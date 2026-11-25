@@ -58,4 +58,20 @@ class TutorSessionServiceTest {
             .isInstanceOfSatisfying(ResponseStatusException.class,
                 ex -> assertThat(ex.getStatusCode().value()).isEqualTo(404));
     }
+
+    @Test void persistsAndReloadsLayeredStepHintMessagesWithMetadata() {
+        var session = service.create(11, "加工命名");
+        var metadata = Map.<String, Object>of("hint", Map.of("level", 1, "content", "先定位加工实体", "nextLevelAvailable", true));
+
+        service.append(11, session.id(), new TutorSessionService.MessageInput("USER", "加工如何规范命名？", "RANKED", Map.of()));
+        service.append(11, session.id(), new TutorSessionService.MessageInput("ASSISTANT", "第1级学习提示：先定位加工实体", "TUTOR_HINT_1", metadata));
+        service.append(11, session.id(), new TutorSessionService.MessageInput("ASSISTANT", "第2级学习提示：证据", "TUTOR_HINT_2", metadata));
+        service.append(11, session.id(), new TutorSessionService.MessageInput("ASSISTANT", "第3级学习提示：动宾短语", "TUTOR_HINT_3", metadata));
+
+        var loaded = service.messages(11, session.id());
+        assertThat(loaded).hasSize(4);
+        assertThat(loaded).extracting(TutorSessionService.MessageView::mode)
+                .containsExactly("RANKED", "TUTOR_HINT_1", "TUTOR_HINT_2", "TUTOR_HINT_3");
+        assertThat(loaded.get(1).metadata()).containsKey("hint");
+    }
 }
