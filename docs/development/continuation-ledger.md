@@ -528,3 +528,15 @@
   - `frontend/src/views/AdminUserManagementView.vue` & `frontend/src/components/AdminUserProfileDrawer.vue`：拆分首次空表加载（`initialLoading`）与静默刷新（`refreshing` / `upsertUserRow` 原地更新行），抽屉在已有 `profile` 时保留当前视图与 Tab 不触发卸载重绘（仅切换不同用户时重置），操作反馈改为右下角浮动轻提示 `.user-toast` 消除文档流推挤，移除大面积遮罩 `backdrop-filter` 避免 Chromium 模糊重绘闪烁；新增页面内通用二次确认对话框（`confirmDialog`，支持遮罩点击与 `Escape` 关闭），完全替换 `window.confirm`（零浏览器原生弹窗）。
   - `frontend/src/views/AdminUserManagementView.test.ts` & `frontend/scripts/authenticated-ui-smoke.mjs`：验证操作行数据不销毁重挂主表格 DOM、不调用原生 `confirm` 且完整覆盖页内确认弹窗与画像切换流程。
 - **实测验证结果（最终改动后）**：`window.confirm(` 扫描为 0；Vitest **57** 文件 / **212** 用例全通过；`scan-vue-classes.mjs --check` **1402** 处用法 **0** 缺失；`!important` 为 **0**；`npm run build` **2.02s** 完成；`authenticated-ui-smoke.mjs` **176/176** 通过并已清理 `.ui-visual-review`。
+
+### 句子级图谱内联引用联动与 Mermaid 图表落地记录（2026-11-25）
+
+- **分支与边界**：在新建分支 `feat/learning-enhancements` 上完成纯前端实现，严格保持 `backend/` Java 代码、外部 Mecha-QA、Python Bridge、NebulaGraph 及模型权重零改动，`/tutor` 仍隐藏实验模式选择器与后台系统提示词正文。
+- **核心改动**：
+  - **功能 1（句子级内联引用与证据联动）**：新增 `frontend/src/domain/citationAlignment.ts` 与单测 `citationAlignment.test.ts`，在 `MarkdownContent.vue`（段落、列表、引用块句子级对齐）与 `TutorAnswerCard.vue`（实体覆盖概览胶囊、带 `[k]` 序号条目的可点击证据行 `evidence-triple-k`、`focusEvidenceCitation` 展开定位高亮）之间建立双向联动。
+  - **功能 2（软件工程 Mermaid 交互图表）**：在 `frontend/package.json` 引入 `mermaid`（`12.3.0`），更新 `frontend/src/domain/markdown.ts` 区分流式闭合状态，新建 `frontend/src/components/MermaidDiagram.vue`（按需动态 `import('mermaid')`、`securityLevel: 'strict'`、SVG DOM 清理、视图切换/源码复制/放大重置弹窗/SVG 下载、语法错误诚实源码降级），并在 `CourseView.vue`（接入 `MarkdownContent`）、`TutorMessageList.vue`（新增 Mermaid 流程图示例卡）与 `vite.config.ts`（配置 `mermaid-core`、`mermaid-elk`、`mermaid-layout`、`mermaid-math` 独立分包并保留动态子图懒加载）完成整合。
+- **实测验证结果（最终改动后）**：
+  - 前端全量单测（`npx vitest run --maxWorkers=2`）：**59 passed (59)** 个文件、**227 passed (227)** 条用例全部通过（新增 `citationAlignment.test.ts`、`MermaidDiagram.test.ts`，扩充 `markdown.test.ts`、`MarkdownContent.test.ts`、`TutorAnswerCard.test.ts`、`TutorMessageList.test.ts`）。
+  - AST 类名与规范检查：`node scripts/scan-vue-classes.mjs --check` 共检查 **1455** 处模板类用法、**0 missing classes**；`frontend/src/` 全仓 `!important` 为 **0**；`backend/` 改动文件数 **0**。
+  - 生产构建（`npm run build`）：耗时 **2.59s** 通过，**0 error、0 chunk warning**（`mermaid-elk` 1,463.38 kB、`mermaid-core` 1,307.51 kB、`mermaid-layout` 766.80 kB、`mermaid-math` 258.97 kB，均在按需动态加载路径中）。
+  - Playwright 真实鉴权 UI 冒烟（`node scripts/authenticated-ui-smoke.mjs`）：更新 `tutor-history` 覆盖 Mermaid SVG 与 `[1]` 点击联动断言，**176/176** 场景全绿通过，`.ui-visual-review` 临时目录已彻底删除。

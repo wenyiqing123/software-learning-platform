@@ -1,8 +1,8 @@
-import { describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
 import TutorAnswerCard from './TutorAnswerCard.vue'
 
-vi.mock('./MarkdownContent.vue', () => ({ default: { props: ['content'], template: '<div class="markdown">{{ content }}</div>' } }))
+afterEach(() => vi.useRealTimers())
 
 describe('TutorAnswerCard', () => {
   it('never renders backend system prompt or mode badges while keeping evidence collapsible', () => {
@@ -25,11 +25,14 @@ describe('TutorAnswerCard', () => {
     expect(wrapper.text()).not.toContain('TRIPLES')
     expect(wrapper.text()).not.toContain('DIRECT')
     expect(wrapper.text()).toContain('加工命名使用动宾短语。')
+    expect(wrapper.text()).not.toContain('正确率')
+    expect(wrapper.text()).not.toContain('置信度')
 
-    // 证据默认折叠为引用来源胶囊
+    // 证据默认折叠为引用来源胶囊并附客观实体覆盖概览
     const details = wrapper.get('details.evidence-block')
     expect((details.element as HTMLDetailsElement).open).toBe(false)
     expect(details.text()).toContain('已参考 1 条课程图谱证据')
+    expect(wrapper.get('[data-testid="evidence-coverage-pill"]').text()).toBe('回复提及了 1/1 条已检索图谱证据中的实体')
     expect(details.text()).toContain('加工')
     expect(details.text()).toContain('动宾短语')
 
@@ -38,6 +41,58 @@ describe('TutorAnswerCard', () => {
     expect(wrapper.text()).toContain('复制')
     expect(wrapper.text()).toContain('分步提示')
     expect(wrapper.text()).toContain('前往图谱')
+  })
+
+  it('expands evidence drawer and highlights matching triple when inline citation [k] is clicked', async () => {
+    vi.useFakeTimers()
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+
+    const wrapper = mount(TutorAnswerCard, {
+      props: {
+        item: {
+          answer: '需求分析阶段输出软件需求规格说明书。之后根据用例建模。',
+          triples: [
+            { subject: '需求分析', predicate: '输出', object: '软件需求规格说明书' },
+            { subject: '设计模式', predicate: '包含', object: '工厂模式' },
+          ],
+        },
+      },
+    })
+
+    const details = wrapper.get('details.evidence-block')
+    expect((details.element as HTMLDetailsElement).open).toBe(false)
+    expect(wrapper.get('[data-testid="evidence-coverage-pill"]').text()).toBe('回复提及了 1/2 条已检索图谱证据中的实体')
+
+    const citeBtn = wrapper.get('[data-testid="inline-citation-1"]')
+    expect(wrapper.find('[data-testid="inline-citation-2"]').exists()).toBe(false)
+
+    await citeBtn.trigger('click')
+    await flushPromises()
+
+    expect((details.element as HTMLDetailsElement).open).toBe(true)
+    const highlightedRow = wrapper.get('[data-testid="evidence-triple-1"]')
+    expect(highlightedRow.classes()).toContain('is-highlighted')
+    expect(scrollIntoView).toHaveBeenCalledTimes(1)
+
+    vi.advanceTimersByTime(2500)
+    await flushPromises()
+    expect(highlightedRow.classes()).not.toContain('is-highlighted')
+  })
+
+  it('never renders fake citations or coverage badge when triples are empty', () => {
+    const wrapper = mount(TutorAnswerCard, {
+      props: {
+        item: {
+          answer: '需求分析阶段输出软件需求规格说明书。',
+          triples: [],
+        },
+      },
+    })
+
+    expect(wrapper.findAll('.inline-citation-btn')).toHaveLength(0)
+    expect(wrapper.find('[data-testid="evidence-coverage-pill"]').exists()).toBe(false)
+    expect(wrapper.find('details.evidence-block').exists()).toBe(false)
   })
 
   it('shows honest error text and hides action bar when failed', async () => {

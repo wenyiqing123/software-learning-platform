@@ -203,3 +203,8 @@
 
 - **独立第 4 个管理员一级工作台（`/admin/users`）**：在 `App.vue` `adminItems` 与路由新增“用户管理”入口（对应 `AdminUserManagementView.vue` 与抽屉组件 `AdminUserProfileDrawer.vue`），支持关键词、角色、启停状态筛选，新建用户、编辑资料/角色、重置密码、启停及“强制下线”安全会话治理，并严格锁定操作防呆（管理员不能停用或降权当前登录账号自身，停用/改角色/重置密码均自动吊销目标账户有效刷新令牌）。
 - **白名单脱敏的单用户独立画像抽屉**：点击列表项右侧滑出 4 维独立学情抽屉（账号与实验、课程与掌握、错题与复习、助教活跃），明确屏蔽学生私人笔记（`learning_note`）、收藏与去标识化科研评估原始分数/反馈文本；在 `ExperimentTaskAdminView` 任务派发区联动增加按需勾选学生账号选择器，取代盲目手填数据库 ID。
+
+### 句子级图谱引用联动与 Mermaid 交互式图表渲染（2026-11-25）
+
+- **纯前端句子级图谱引用联动**：新增确定性对齐引擎 `frontend/src/domain/citationAlignment.ts`，按 `[1..N]` 真实三元组跳过 Markdown 代码块/行内代码/URL 匹配正文句子实体，在 `MarkdownContent.vue` 句末渲染学术风上标引用按钮 `[k]` 与悬浮三元组预览 tooltip（`主体 — 关系 — 客体`）；在 `TutorAnswerCard.vue` 呈现客观实体覆盖概览（`回复提及了 X/Y 条已检索图谱证据中的实体`，不出现“正确率/置信度”等不当措辞），点击 `[k]` 自动展开折叠的图谱证据面板、平滑滚动定位并短暂高亮第 `k` 条三元组（保留前往 `/knowledge?entity=...` 跳转入口）；无三元组时零虚构标注，严格零后台系统提示词与模式标签泄露。
+- **跨模块懒加载 Mermaid 交互图表**：扩展 `domain/markdown.ts` 识别 `mermaid` 代码块及其流式闭合状态（`closed?: boolean`）；新建 `MermaidDiagram.vue` 统一服务 AI 助教、课程正文（`CourseView.vue` 已接入 `MarkdownContent`）与证据微课（`MicroLessonView.vue`），未闭合时展示稳定代码占位、闭合后按需 `await import('mermaid')` 渲染，强制 `securityLevel: 'strict'` + SVG DOM 清理与浅色设计系统配色，提供**图表/源码切换**、**复制源码**、**弹窗放大与缩放重置**及**下载 SVG**，语法错误自动诚实降级并提示`图表语法暂无法渲染，已切换为源码视图`；欢迎页 2×2 卡片第 3 项更新为软件工程流程图示例提问；`vite.config.ts` 按需拆分为 `mermaid-elk`（1,463.38 kB）、`mermaid-core`（1,307.51 kB）、`mermaid-layout`（766.80 kB）、`mermaid-math`（258.97 kB）及按需加载图种子包，构建 0 error、0 chunk warning，全仓保持 `0 !important`（四份全局 CSS 合计 66,159 B）。

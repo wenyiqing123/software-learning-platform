@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import { Check, ChevronDown, Copy, Database, Lightbulb, Network, RotateCcw } from '@lucide/vue'
 import MarkdownContent from './MarkdownContent.vue'
+import { buildCitationAlignment } from '../domain/citationAlignment'
 import { stripLegacyModePrefix, type TutorAnswerResult } from '../domain/tutorChat'
 
 const props = withDefaults(defineProps<{
@@ -21,14 +22,46 @@ const emit = defineEmits<{
 }>()
 
 const copied = ref(false)
+const evidenceOpen = ref(false)
+const highlightedIndex = ref<number | null>(null)
+const tripleElements = new Map<number, HTMLElement>()
+
 let copyResetTimer: ReturnType<typeof setTimeout> | null = null
+let highlightResetTimer: ReturnType<typeof setTimeout> | null = null
 
 const cleanedAnswer = computed(() => stripLegacyModePrefix(props.item.answer || props.item.content || ''))
+const citationReport = computed(() => buildCitationAlignment(cleanedAnswer.value, props.item.triples))
 const primaryEntity = computed(() => {
   const fromEntities = props.item.entities?.find(e => e.canonicalName)?.canonicalName
   if (fromEntities) return fromEntities
-  return props.item.triples?.find(t => t.subject)?.subject
+  return citationReport.value.triples.find(t => t.subject)?.subject || props.item.triples?.find(t => t.subject)?.subject
 })
+
+function setTripleRef(index: number, el: unknown) {
+  if (el instanceof HTMLElement) {
+    tripleElements.set(index, el)
+  } else {
+    tripleElements.delete(index)
+  }
+}
+
+function onEvidenceToggle(event: Event) {
+  const target = event.target as HTMLDetailsElement | null
+  if (target) evidenceOpen.value = target.open
+}
+
+async function focusEvidenceCitation(citationIndex: number) {
+  if (!citationReport.value.triples.length) return
+  evidenceOpen.value = true
+  highlightedIndex.value = citationIndex
+  await nextTick()
+  const el = tripleElements.get(citationIndex)
+  el?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
+  if (highlightResetTimer) clearTimeout(highlightResetTimer)
+  highlightResetTimer = setTimeout(() => {
+    highlightedIndex.value = null
+  }, 2400)
+}
 
 function handleCopy() {
   if (!cleanedAnswer.value) return
@@ -39,15 +72,28 @@ function handleCopy() {
     copied.value = false
   }, 1800)
 }
+
+onBeforeUnmount(() => {
+  if (copyResetTimer) clearTimeout(copyResetTimer)
+  if (highlightResetTimer) clearTimeout(highlightResetTimer)
+})
 </script>
 
 <template>
   <article class="tutor-answer-card" :class="{ 'answer-result-failed': item.error }">
-    <!-- 知识图谱证据收纳为低调“引用来源胶囊”（默认折叠） -->
-    <details v-if="item.triples?.length" class="evidence-block">
+    <!-- 知识图谱证据收纳为低调“引用来源胶囊”（默认折叠，点击正文 [k] 时联动展开高亮） -->
+    <details
+      v-if="item.triples?.length"
+      class="evidence-block"
+      :open="evidenceOpen"
+      @toggle="onEvidenceToggle"
+    >
       <summary class="evidence-capsule-summary">
         <Database :size="14" class="evidence-capsule-icon" />
         <span class="evidence-capsule-label">已参考 {{ item.triples.length }} 条课程图谱证据</span>
+        <span v-if="citationReport.totalTripleCount" class="evidence-coverage-pill" data-testid="evidence-coverage-pill">
+          {{ citationReport.coverageText }}
+        </span>
         <ChevronDown :size="14" class="evidence-chevron" />
       </summary>
       <div class="evidence-panel">
@@ -75,11 +121,22 @@ function handleCopy() {
         </div>
         <div class="evidence-triple-list">
           <div
-            v-for="triple in item.triples"
-            :key="triple.subject + triple.predicate + triple.object"
+            v-for="triple in citationReport.triples"
+            :key="`${triple.index}-${triple.subject}-${triple.predicate}-${triple.object}`"
+            :ref="el => setTripleRef(triple.index, el)"
             class="evidence-triple"
+            :class="{ 'is-highlighted': highlightedIndex === triple.index }"
+            :data-testid="`evidence-triple-${triple.index}`"
           >
-            <span class="triple-subject">{{ triple.subject }}</span>
+            <span class="evidence-index-badge">[{{ triple.index }}]</span>
+            <button
+              type="button"
+              class="triple-subject-link"
+              :title="`在图谱中查看「${triple.subject}」`"
+              @click="emit('open-graph', triple.subject)"
+            >
+              {{ triple.subject }}
+            </button>
             <i class="triple-predicate">— {{ triple.predicate }} —</i>
             <span class="triple-object">{{ triple.object }}</span>
           </div>
@@ -87,10 +144,14 @@ function handleCopy() {
       </div>
     </details>
 
-    <!-- 失败或正常 Markdown 回答排版 -->
+    <!-- 失败或正常 Markdown 回答排版（带确定性内联引用标注） -->
     <p v-if="item.error" class="tutor-answer-error" role="alert">{{ item.error }}</p>
     <div v-else class="tutor-answer-prose">
-      <MarkdownContent :content="cleanedAnswer" />
+      <MarkdownContent
+        :content="cleanedAnswer"
+        :citations="citationReport.triples"
+        @select-citation="focusEvidenceCitation"
+      />
     </div>
 
     <!-- 回复底部轻量操作条（仅生成完成且无错时展示） -->
@@ -160,6 +221,7 @@ function handleCopy() {
 .evidence-capsule-summary {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
   min-height: 30px;
   padding: 4px 10px;
@@ -191,6 +253,16 @@ function handleCopy() {
 
 .evidence-capsule-label {
   line-height: 1.4;
+}
+
+.evidence-coverage-pill {
+  padding: 1px 7px;
+  color: var(--accent-strong);
+  background: color-mix(in srgb, var(--accent-soft) 75%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 500;
 }
 
 .evidence-chevron {
@@ -266,28 +338,54 @@ function handleCopy() {
 
 .evidence-triple-list {
   display: grid;
+  gap: 2px;
 }
 
 .evidence-triple {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr);
   gap: 6px 10px;
   align-items: baseline;
-  padding: 7px 0;
+  padding: 7px 8px;
   border-top: 1px solid var(--border-soft);
+  border-radius: 6px;
   font-size: 12.5px;
   line-height: 1.5;
   overflow-wrap: anywhere;
+  transition: background-color var(--motion), box-shadow var(--motion);
 }
 
 .evidence-triple:first-child {
   border-top: 0;
-  padding-top: 2px;
 }
 
-.triple-subject {
+.evidence-triple.is-highlighted {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.evidence-index-badge {
+  color: var(--accent-strong);
+  font-size: 11.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.triple-subject-link {
+  padding: 0;
   color: var(--text);
-  font-weight: 550;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  font-size: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.triple-subject-link:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
 }
 
 .triple-predicate {
@@ -352,11 +450,13 @@ function handleCopy() {
 
 @media (max-width: 560px) {
   .evidence-triple {
-    grid-template-columns: 1fr;
-    gap: 2px;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 2px 8px;
   }
 
-  .triple-predicate {
+  .triple-predicate,
+  .triple-object {
+    grid-column: 2;
     text-align: left;
   }
 }

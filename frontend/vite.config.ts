@@ -19,6 +19,11 @@ export default defineConfig({
           if (normalized.includes('/@antv/algorithm/') || normalized.includes('/@antv/graphlib/')) return 'graph-algorithm'
           if (normalized.includes('/@antv/g6/')) return 'graph-g6'
           if (normalized.includes('/echarts/')) return 'charts'
+          if (normalized.includes('/mermaid/dist/chunks/')) return undefined
+          if (normalized.includes('/mermaid/') || normalized.includes('/@mermaid-js/')) return 'mermaid-core'
+          if (normalized.includes('/elkjs/')) return 'mermaid-elk'
+          if (normalized.includes('/cytoscape') || normalized.includes('/dagre') || normalized.includes('/d3/') || normalized.includes('/d3-') || normalized.includes('/khroma/')) return 'mermaid-layout'
+          if (normalized.includes('/katex/')) return 'mermaid-math'
           if (normalized.includes('/element-plus/') || normalized.includes('/@element-plus/')) return 'element-plus'
           if (normalized.includes('/vue/') || normalized.includes('/vue-router/') || normalized.includes('/pinia/')) return 'vue-core'
           if (normalized.includes('/axios/') || normalized.includes('/@lucide/vue/')) return 'ui-vendor'

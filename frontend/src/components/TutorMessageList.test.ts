@@ -20,6 +20,9 @@ describe('TutorMessageList', () => {
 
     await cards[0].trigger('click')
     expect(wrapper.emitted('quick-prompt')?.[0]?.[0]).toContain('数据流图')
+
+    await cards[2].trigger('click')
+    expect(wrapper.emitted('quick-prompt')?.[1]?.[0]).toContain('Mermaid')
   })
 
   it('renders user messages, assistant markdown, collapsible evidence, and hides system prompt and mode labels', () => {

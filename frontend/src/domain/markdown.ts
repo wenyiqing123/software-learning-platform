@@ -20,7 +20,7 @@ export type MarkdownBlock =
   | { kind: 'blockquote'; lines: string[] }
   | { kind: 'table'; headers: string[]; rows: string[][] }
   | { kind: 'hr' }
-  | { kind: 'code'; text: string; language: string }
+  | { kind: 'code'; text: string; language: string; closed?: boolean }
 
 const INLINE_TOKEN_RE = /(\*\*[^*\n]+?\*\*|__[^_\n]+?__|\*[^*\n]+?\*|`[^`\n]+?`)/g
 const ORDERED_ITEM_RE = /^\s*\d+[.、)]\s+(.+)$/
@@ -104,9 +104,9 @@ export function parseSimpleMarkdown(input: string): MarkdownBlock[] {
     flushList()
     flushQuote()
   }
-  const flushCode = () => {
+  const flushCode = (closed: boolean) => {
     if (code) {
-      output.push({ kind: 'code', language: code.language, text: code.lines.join('\n') })
+      output.push({ kind: 'code', language: code.language, text: code.lines.join('\n'), closed })
       code = null
     }
   }
@@ -116,7 +116,7 @@ export function parseSimpleMarkdown(input: string): MarkdownBlock[] {
     const fence = line.match(/^\s*```(\w*)\s*$/)
     if (fence) {
       if (code) {
-        flushCode()
+        flushCode(true)
       } else {
         flushNonCode()
         code = { language: fence[1] || 'text', lines: [] }
@@ -195,7 +195,7 @@ export function parseSimpleMarkdown(input: string): MarkdownBlock[] {
     paragraph.push(line)
   }
 
-  flushCode()
+  flushCode(false)
   flushNonCode()
   return output
 }

@@ -1,6 +1,24 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import MarkdownContent from './MarkdownContent.vue'
+
+const mermaidApi = vi.hoisted(() => ({
+  initialize: vi.fn(),
+  parse: vi.fn(),
+  render: vi.fn(),
+}))
+
+vi.mock('mermaid', () => ({
+  default: mermaidApi,
+}))
+
+beforeEach(() => {
+  mermaidApi.initialize.mockReset()
+  mermaidApi.parse.mockResolvedValue(true)
+  mermaidApi.render.mockResolvedValue({
+    svg: '<svg xmlns="http://www.w3.org/2000/svg"><rect width="40" height="20" /></svg>',
+  })
+})
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -50,5 +68,56 @@ describe('MarkdownContent', () => {
     expect(wrapper.get('blockquote.markdown-quote').text()).toContain('禁止使用纯名词短语')
     expect(wrapper.findAll('table.markdown-table th').map(th => th.text())).toEqual(['对象', '规则'])
     expect(wrapper.findAll('table.markdown-table td').map(td => td.text())).toEqual(['加工', '动宾短语'])
+  })
+
+  it('keeps unclosed streaming mermaid blocks as code placeholder and renders MermaidDiagram when closed', async () => {
+    const wrapper = mount(MarkdownContent, {
+      props: {
+        content: '正在绘制流程图：\n\n```mermaid\nflowchart LR\n  A[需求] --> B[设计]',
+      },
+    })
+
+    expect(wrapper.find('[data-testid="mermaid-streaming-placeholder"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="mermaid-diagram-card"]').exists()).toBe(false)
+    expect(mermaidApi.render).not.toHaveBeenCalled()
+
+    await wrapper.setProps({
+      content: '正在绘制流程图：\n\n```mermaid\nflowchart LR\n  A[需求] --> B[设计]\n```',
+    })
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="mermaid-streaming-placeholder"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="mermaid-diagram-card"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="mermaid-svg-stage"]').html()).toContain('<svg')
+    wrapper.unmount()
+  })
+
+  it('renders deterministic inline citation markers with hover tooltip preview and skips ungrounded text', async () => {
+    const wrapper = mount(MarkdownContent, {
+      props: {
+        content: '需求分析用于编写需求规格说明书。也可以用 `需求分析` 代码块讨论无关内容。',
+        citations: [
+          { index: 1, subject: '需求分析', predicate: '输出', object: '需求规格说明书' },
+          { index: 2, subject: '数据库设计', predicate: '生成', object: 'ER 图' },
+        ],
+      },
+    })
+
+    const btn = wrapper.get('[data-testid="inline-citation-1"]')
+    expect(btn.text()).toBe('[1]')
+    expect(wrapper.find('[data-testid="inline-citation-2"]').exists()).toBe(false)
+    expect(wrapper.findAll('.inline-citation-btn')).toHaveLength(1)
+    expect(wrapper.get('.citation-hover-preview').text()).toContain('需求分析 — 输出 — 需求规格说明书')
+
+    await btn.trigger('click')
+    expect(wrapper.emitted('select-citation')).toEqual([[1]])
+
+    const withoutCitations = mount(MarkdownContent, {
+      props: {
+        content: '需求分析用于编写需求规格说明书。',
+        citations: [],
+      },
+    })
+    expect(withoutCitations.findAll('.inline-citation-btn')).toHaveLength(0)
   })
 })

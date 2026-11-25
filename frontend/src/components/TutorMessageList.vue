@@ -9,7 +9,7 @@ import { expandedHintLevelsInTurn, stripLegacyModePrefix, type TutorAnswerResult
 const DEFAULT_PROMPTS: TutorQuickPrompt[] = [
   { tag: '核心概念', title: '加工规范命名', prompt: '数据流图中的加工应该如何规范命名？' },
   { tag: '需求规格', title: '需求说明书结构', prompt: '软件需求规格说明书包含哪些核心内容？' },
-  { tag: '方法对比', title: 'SA 与 OOA', prompt: '结构化分析（SA）与面向对象分析（OOA）有何区别？' },
+  { tag: '图解建模', title: '系统业务流程图', prompt: '请结合软件工程课程案例，用 Mermaid 流程图展示机票预定系统的核心处理流程。' },
   { tag: '自测辨析', title: '黑盒与白盒测试', prompt: '黑盒测试与白盒测试的核心区别与适用场景是什么？' },
 ]
 

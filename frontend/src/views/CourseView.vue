@@ -6,6 +6,7 @@ import SectionHeading from '../components/SectionHeading.vue'
 import FeedbackState from '../components/FeedbackState.vue'
 import LearningNotesPanel from '../components/LearningNotesPanel.vue'
 import LearningContextActions from '../components/LearningContextActions.vue'
+import MarkdownContent from '../components/MarkdownContent.vue'
 import { rememberLearningContext } from '../domain/learningContext'
 
 interface Course { id: number; name: string; term: string; description: string }
@@ -108,7 +109,7 @@ onMounted(loadCourses)
         <article v-if="active" :id="'section-' + active.id" class="study-reading reading-flow" :aria-labelledby="'section-title-' + active.id">
           <p class="eyebrow">小节 {{ position + 1 }} / {{ sections.length }} · {{ active.knowledgePointName }}</p><h2 :id="'section-title-' + active.id">{{ active.title }}</h2>
           <section class="study-objectives"><h3>本节学习目标</h3><ul><li v-for="objective in active.objectives" :key="objective">{{ objective }}</li></ul></section>
-          <section v-for="block in active.content" :key="block.heading" class="reading-block"><h3>{{ block.heading }}</h3><p v-for="paragraph in block.paragraphs" :key="paragraph">{{ paragraph }}</p></section>
+          <section v-for="block in active.content" :key="block.heading" class="reading-block"><h3>{{ block.heading }}</h3><MarkdownContent v-for="paragraph in block.paragraphs" :key="paragraph" :content="paragraph" /></section>
            <section v-if="active.resources.length" class="study-resources"><h3>延伸阅读</h3><div v-for="resource in active.resources" :key="resource.url"><a v-if="safeUrl(resource.url)" :href="safeUrl(resource.url)" target="_blank" rel="noopener noreferrer">{{ resource.title }} ↗</a><strong v-else>{{ resource.title }}</strong><p>{{ resource.description }}</p></div></section>
           <LearningContextActions :context="{ courseId: courseId ?? undefined, sectionId: active.id, knowledgePointId: active.knowledgePointId, entity: active.graphEntity }" />
            <footer class="study-footer"><div><button class="button button-outline" :disabled="saving" @click="markRead">{{ saving ? '正在保存…' : active.completed ? '✓ 已读 · 撤销标记' : '标记本节已读' }}</button><p>阅读记录与练习掌握度分别统计。</p><span v-if="progressError" role="alert">{{ progressError }}</span></div><div class="section-paging"><button class="text-button" :disabled="position <= 0" @click="sections[position - 1] && chooseSection(sections[position - 1]!)">上一节</button><button class="text-button" :disabled="position >= sections.length - 1" @click="sections[position + 1] && chooseSection(sections[position + 1]!)">下一节 →</button></div></footer>

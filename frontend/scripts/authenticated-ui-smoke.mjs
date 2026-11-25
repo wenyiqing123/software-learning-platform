@@ -50,7 +50,7 @@ const evidence = [
 const graphNodes = coursePoints.map(point => ({ id: point.graphEntity, label: point.name, type: 'knowledge' }))
 const pathNodes = coursePoints.map((point, index) => ({ ...point, status: ['MASTERED', 'IN_PROGRESS', 'BLOCKED'][index], prerequisiteIds: index ? [point.id - 1] : [] }))
 const chatQuestion = '软件需求规格说明书应该包含哪些内容？'
-const chatAnswer = '## 从边界开始\n\n先说明目标、业务边界和参与者，再分别写出功能需求与约束。最后为每项需求补上可验证的验收条件。\n\n- 功能：记录借阅申请\n- 约束：库存不足时说明原因\n\n```text\n条件：库存大于 0\n预期：生成借阅记录\n```'
+const chatAnswer = '## 从边界开始\n\n先说明需求分析的目标、业务边界和参与者，输出完整的需求规格说明书，并结合数据流图分解处理过程。最后为每项需求补上可验证的验收条件。\n\n- 功能：记录借阅申请\n- 约束：库存不足时说明原因\n\n```mermaid\nflowchart LR\n  A[需求分析] --> B[数据流图]\n  B --> C[需求规格说明书]\n```\n\n```text\n条件：库存大于 0\n预期：生成借阅记录\n```'
 const quiz = { id: 101, stem: '在数据流图中，表示数据变换的加工通常怎样命名？', knowledgePoint: '数据流图', type: 'SINGLE', options: [
   { key: 'A', text: '用动词与宾语描述对数据执行的操作' },
   { key: 'B', text: '用名词短语写出保存的数据对象' },
@@ -301,9 +301,15 @@ const visualScenarios = {
       })
       await page.getByRole('button', { name: '需求规格说明书练习', exact: true }).click()
       await page.locator('.tutor-assistant-body pre').waitFor()
+      await page.locator('[data-testid="mermaid-svg-stage"] svg').waitFor()
       const evidenceDetails = page.locator('.tutor-assistant-body details.evidence-block')
       if (await evidenceDetails.evaluate(el => el.open)) throw new Error('Tutor graph evidence should be collapsed by default')
-      await evidenceDetails.locator('summary').click()
+      await page.getByTestId('inline-citation-1').first().click()
+      await page.waitForFunction(() => {
+        const d = document.querySelector('.tutor-assistant-body details.evidence-block')
+        const highlighted = document.querySelector('[data-testid="evidence-triple-1"]')
+        return Boolean(d?.hasAttribute('open') && highlighted?.classList.contains('is-highlighted'))
+      })
       await page.getByText('需求规格说明书').first().waitFor()
     } },
     { route: '/practice', name: 'practice-selected', check: page => page.locator('.answer-option').nth(1).click() },

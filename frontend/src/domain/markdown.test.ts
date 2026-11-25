@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { renderSimpleMarkdown } from './markdown'
+import { parseSimpleMarkdown, renderSimpleMarkdown } from './markdown'
 
 describe('simple markdown renderer', () => {
   it('renders headings, lists, paragraphs and fenced code without exposing raw HTML', () => {
@@ -37,5 +37,18 @@ describe('simple markdown renderer', () => {
     expect(html).toContain('<blockquote><p>参考示例：生成报表</p></blockquote>')
     expect(html).toContain('<table><thead><tr><th>元素</th><th>规范</th></tr></thead><tbody><tr><td>加工</td><td>动宾短语</td></tr></tbody></table>')
     expect(html).toContain('<hr>')
+  })
+
+  it('tracks closed vs unclosed fenced mermaid blocks for streaming stability', () => {
+    const unclosed = parseSimpleMarkdown('先看流程：\n```mermaid\nflowchart LR\n  A --> B')
+    expect(unclosed).toEqual([
+      { kind: 'paragraph', lines: ['先看流程：'] },
+      { kind: 'code', language: 'mermaid', text: 'flowchart LR\n  A --> B', closed: false },
+    ])
+
+    const closed = parseSimpleMarkdown('```mermaid\nflowchart LR\n  A --> B\n```')
+    expect(closed).toEqual([
+      { kind: 'code', language: 'mermaid', text: 'flowchart LR\n  A --> B', closed: true },
+    ])
   })
 })
