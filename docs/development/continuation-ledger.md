@@ -566,3 +566,17 @@
   - 后端三模块 Maven 全量回归（JDK 21，`mvn -f backend/pom.xml test "-Dsurefire.failIfNoSpecifiedTests=false"`）：`learning-service` **192** tests run、`ai-service` **113** tests run、`learning-gateway` **5** tests run，合计 **310** 条用例全部 0 failures、0 errors、0 skipped。
   - 前端全量单测（`npx vitest run --maxWorkers=2`）：**61 passed (61)** 个文件、**237 passed (237)** 条用例全部通过。
   - AST 样式与构建检查：`node scripts/scan-vue-classes.mjs --check` **53** 个文件 **1552** 处用法 **0 missing classes**；`frontend/src/` 全仓 `!important` 为 **0**；`npm run build` 耗时 **2.90s**，**0 error、0 chunk warning**；Playwright `authenticated-ui-smoke.mjs` **180/180** 全场景双视口通过并已删除 `.ui-visual-review` 临时目录。
+
+### 增量真机联调、费曼配额修复与终版封口记录（2026-11-25）
+
+- **第一轮全栈真机核验（基于 `08558a7`）**：
+  - 重新打包 JAR 并启动完整本机依赖后，真实 MySQL 8（`software_learning`）成功从 V16 自动执行 Flyway `V17__knowledge_mastery_peak.sql`（`success=1`，耗时 `0.205s`），`knowledge_mastery.peak_mastery` 列与 12 条既有记录回填均通过；`/api/dashboard/overview`、`/api/knowledge/mastery-map`、`/api/knowledge/learning-path?targetId=2` 均返回 `200 OK` 并正确携带双值掌握度字段（同时经管理员接口只读核对了 `student_f2021a07` 的基线档案）。
+  - `/api/system/status` 报告 `overallStatus=UP`；`POST /api/ai/feynman/evaluate` 实测匿名 `401 Unauthorized`、`slp_admin` 越权 `403 Forbidden`，停止 Python Bridge（8999）后实测 `503 KNOWLEDGE_UNAVAILABLE`（绝不编造三元组）。
+  - **真机发现的 Bug**：在学生在线调用 `POST /api/ai/feynman/evaluate` 时，真实 `deepseek-flash` 模型单次消耗 `827` 个 `reasoning_tokens`，在默认 `max_tokens=1024` 预算下仅输出 752 字符正文即触发 `finish_reason=length` 截断；`FeynmanEvaluationService` 原纯文本兜底将半截 JSON 原文直接写入 `misconceptions[0]`。按发布收口纪律第一时间停下汇报现场证据与日志。
+- **定点修复（提交 `d6b816d`）**：
+  - 仅修改 `FeynmanEvaluationService.java` 与 `FeynmanEvaluationServiceTest.java`：新增 `FEYNMAN_EVALUATE_MAX_TOKENS = 4096` 并改为调用三参 `model.call(userPrompt, systemPrompt, FEYNMAN_EVALUATE_MAX_TOKENS)`，补充紧凑 JSON 约束提示词，并在 `parseAndGroundResponse` 兜底分支增加 `isLikelyRawOrTruncatedJson` 检测，截断 JSON 一律拦截为可读中文友好提示而非原始碎片；新增单测验证 `maxTokens=4096` 与半截 JSON 安全兜底。
+  - 修复后重新运行三模块后端全量回归（JDK 21）：`learning-service` **192**、`ai-service` **114**、`learning-gateway` **5**，合计 **311/311** 全部通过，重新打包最新 JAR。
+- **第二轮真机复验与封口收尾**：
+  - 拉起 NebulaGraph（9669）、只读 Python Bridge（8999，预热后返回 7 条三元组）与最新后端服务，再次验证 `/api/system/status=UP`、匿名 `401`、管理员 `403`，学生调用 `POST /api/ai/feynman/evaluate`（主题 `需求分析`）稳定返回 `200 OK`：`coveredPoints` **2** 条、`missingTriples` **5** 条（全部属于 `evidenceTriples` **7** 条子集，含《软件需求规格说明书》）、`misconceptions` **1** 条自然语言提示且零 `{` 或 JSON 原文、`followUpQuestion` **36** 字符，响应体 **0** 系统提示词泄露。
+  - 停止全部本轮临时 Java/Python 进程（8080/8081/8082/8999/5173 监听均已归零），在 MySQL 事务内按主键精确删除本轮临时测试用户及关联记录，复核基线数据库表零脏数据残留（`remaining_test_users=0`、`km_rows=12`、`ai_exp_cnt=12`、`eval_sess_cnt=2`）。
+  - 终版全仓基线统一锁定为：后端 **311/311**（192 + 114 + 5）、前端 Vitest **61 文件 / 237 项**、AST **53 文件 / 1,552 用法 / 0 missing**、Playwright **180/180**、构建 **0 error / 0 chunk warning**、CSS `!important` **0**（四文件共 `66,159 B`），并同步封口至 `docs/test-report.md` 与 `docs/毕业设计工程验收报告.md`。

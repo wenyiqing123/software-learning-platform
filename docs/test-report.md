@@ -317,9 +317,44 @@ git diff --check:  pass
 
 - **数据库迁移版本状态**：
   - 当前 Flyway 迁移链已包含 `V16__add_task_group_order.sql`，支持 `task_group_order` 组间评估顺序字段与实验任务状态机持久化；
-  - **重要说明**：不存在所谓的 `V17` 迁移，V16 即为平台重构的终版数据库 Schema；针对真实 MySQL 独立实例的端到端执行在本地 suite 中标记为 `not run (verified via H2 compatibility suite)`。
+  - **基线说明（2026-11-24 M1–M4 快照）**：截至 2026-11-24 收口时终版 Schema 为 V16，真实 MySQL 端到端迁移在当时标记为 `not run`；此后 2026-11-25 在 `feat/learning-enhancements` 分支已新增并实测应用 V17（见下文终版章节）。
 - **安全与学术合规守卫**：
   - `compliance-guard.test.ts`（4/4 通过）：严禁向前端暴露任何系统内部固定提示词（如 RANKED 标识或具体 Prompt 正文）；严禁在界面与报告中出现“降低认知负荷”、“采集生理信号”等无依据的越界学术宣称；
   - 敏感凭据扫描：本地执行全仓正则与敏感词排查（`Get-Command gitleaks` 在本地 Windows 环境未安装，标记为 `not run`；已通过 `rg` 针对各类 API Key、Token、私钥和密码模式全面排查），全仓仅包含测试用 Mock 占位符（如 `dummy-token`、`test-password`），无任何真实线上凭据泄露。
 - **Docker Compose 配置合规**：
   - 运行 `docker compose --env-file deploy/.env.server.example -f deploy/compose.server.yml config --quiet` 退出码为 0，46 个环境变量全部与模板规范严格对齐。
+
+## 学习增强终版增量验收与真机联调封口报告（2026-11-25）
+
+本章节汇总 `feat/learning-enhancements` 分支在完成【句子级知识图谱内联引用联动】、【软件工程 Mermaid 交互图表渲染】、【V17 双值掌握度（历史峰值 + 14 天半衰期衰减保持度）与遗忘预警】及【费曼“以教促学”图谱对照自检】四项增强，并完成真机全栈增量联调与 `d6b816d` 定点修复后的终版实测结果。
+
+### 1. 终版全量自动化测试与静态扫描基线
+
+| 验收维度 | 验证命令与范围 | 实测结果 | 结论 |
+| --- | --- | ---: | --- |
+| **Java 后端总体验收** | `mvn -f backend/pom.xml test "-Dsurefire.failIfNoSpecifiedTests=false"` | **311/311 passed** | **100% 通过** |
+| ├─ `learning-service` | 含 `KnowledgeMasteryPeakMigrationTest`、`MasteryRetentionPolicyTest` 等全部测试 | 192/192 passed | 0 失败 / 0 错误 |
+| ├─ `ai-service` | 含 `FeynmanEvaluationServiceTest`（提交 `d6b816d` 新增配额与截断清洗回归后由 113 增至 114）、`FeynmanControllerTest`、`AiSecurityConfigTest` | 114/114 passed | 0 失败 / 0 错误 |
+| └─ `learning-gateway` | `GatewayRouteConfigurationTest`（含 `/api/ai/feynman/evaluate` 与 SSE 路由匹配） | 5/5 passed | 0 失败 / 0 错误 |
+| **前端单元与集成测试** | `cd frontend; npx vitest run --maxWorkers=2` | **61 文件 / 237 项 passed** | **100% 通过** |
+| **AST 模板类名扫描** | `cd frontend; node scripts/scan-vue-classes.mjs --check` | 53 个 Vue 文件 / **1,552** 处用法 / **0 missing classes** | **100% 匹配** |
+| **Playwright 视觉冒烟** | `cd frontend; node scripts/authenticated-ui-smoke.mjs`（1440×900 与 1280×800 双视口） | **180/180 场景 passed** | **100% 通过** |
+| **前端生产构建与 CSS** | `npm run build` 及 `git grep -n "!important" frontend/src/` | 构建 0 error / **0 chunk warning**；四份全局 CSS 共 **66,159 B**，全仓 `!important` 为 **0** | **通过** |
+
+- **全局 CSS 精确字节基线**：`styles-design-system.css`（30,169 B）、`styles.css`（20,374 B）、`styles-learning.css`（11,389 B）、`styles-graph.css`（4,227 B），全仓 `!important` 严格为 `0`。
+
+### 2. 真实全栈增量联调核验记录（两轮实测与定点修复）
+
+在真实本机环境（Windows 11 / Temurin JDK 21.0.13+9 / MySQL 8.0.33 `software_learning` / Redis / RabbitMQ / NebulaGraph Desktop `9669` / 只读 Python Bridge `8999` / DeepSeek `deepseek-flash`）依次打包最新 JAR 并执行以下实测：
+
+1. **真实 MySQL 8 Flyway V17 迁移与双值掌握度接口**：
+   - `learning-service` 启动日志实时记录 `Migrating schema software_learning to version "17 - knowledge mastery peak"` -> `now at version v17 (00:00.205s)`；
+   - `flyway_schema_history` 中 `version=17, success=1`；`knowledge_mastery.peak_mastery`（`decimal(5,2) NOT NULL DEFAULT 0.00`）创建且 12 条既有记录自动回填 `peak_mastery = mastery_score`（包括基线用户 `user_id=1` `student_f2021a07` 的 `33.33 -> 33.33`，并通过管理员接口 `GET /api/admin/users/1/profile` 只读核对基线档案；严守凭据边界未重置其密码或伪造 JWT）；
+   - 通过网关调用 `GET /api/dashboard/overview`、`GET /api/knowledge/mastery-map`（8 节点）与 `GET /api/knowledge/learning-path?targetId=2` 均返回 `200 OK`，完整携带可选双值字段 `peakMastery`、`effectiveMastery`、`daysSinceLastPractice`、`reviewUrgency`。
+2. **费曼在线权限边界、思考模型配额Bug暴露与修复后复验**：
+   - **系统状态与鉴权边界**：`GET /api/system/status` 返回 `200 OK`（`overallStatus=UP`，`mysql`/`redis`/`rabbitmq`/`knowledge`/`ai` 均为 `UP`）；匿名调用 `POST /api/ai/feynman/evaluate` 返回 `401 Unauthorized`；管理员账号 `slp_admin` 越权调用返回 `403 Forbidden`；
+   - **第一轮真机暴露 Bug 与定点修复（`d6b816d`）**：首轮真机联调发现 `deepseek-flash` 思考模型单次消耗 `reasoning_tokens=827`，导致默认 `max_tokens=1024` 预算下正文仅输出 752 字符即触发 `finish_reason=length` 截断，且原兜底分支将半截 JSON 原文写入 `misconceptions[0]`。提交 `d6b816d` 后，[FeynmanEvaluationService.java](file:///d:/develop/PythonProject/pythonallwork/毕设/software-learning-platform/backend/ai-service/src/main/java/edu/wfust/learning/ai/FeynmanEvaluationService.java) 显式采用 `FEYNMAN_EVALUATE_MAX_TOKENS = 4096` 并对截断/原始 JSON 片段执行安全中文兜底清洗；
+   - **第二轮重新打包复验通过**：热加载 Python Bridge（8999，检索“需求分析”返回 7 条三元组）后，临时学生账号经网关调用 `POST /api/ai/feynman/evaluate` 返回 **`200 OK`**：`coveredPoints` 返回 2 条清晰要点、`missingTriples` 返回 5 条遗漏三元组（全部为真实 `evidenceTriples` 7 条的子集，准确包含《软件需求规格说明书》）、`misconceptions` 返回 1 条自然语言诊断且零 `{` / 残缺 JSON 片段、`followUpQuestion` 可读（36 字符），响应体逐字扫描 **0 后台系统提示词泄露**。
+3. **费曼离线诚实降级与环境清理复原**：
+   - 临时停止 Python Bridge（8999，`PORT_8999_LISTENING_COUNT=0`）后再次调用 `POST /api/ai/feynman/evaluate`，系统诚实返回 `503 Service Unavailable`（`code="KNOWLEDGE_UNAVAILABLE"`），绝不编造假三元组；
+   - 验收结束后已停止全部本轮临时启动的 Java/Python 后台进程（`8080/8081/8082/8999/5173` 监听数均归零），并在 MySQL 事务内按主键精确删除本轮全部临时验证学生账号及其关联记录，确认 `sys_user` 无残留验证用户、`knowledge_mastery=12`、`ai_experiment_run=12`、`learning_evaluation_session=2` 与基线一致。
