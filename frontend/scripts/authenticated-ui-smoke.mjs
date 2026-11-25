@@ -96,6 +96,8 @@ function apiResponse(url, role, scenario, method) {
     ],
     total: 2, page: 0, size: 20,
   })
+  if (path === '/api/admin/users/2/enabled') return json({ id: 2, username: 'smoke-student', displayName: '张同学', role: 'STUDENT', enabled: false, completedSections: 3, attemptCount: 10, correctCount: 8, accuracy: 80, averageMastery: 74.5, openWrongCount: 2, dueReviewCount: 1, activeTokenCount: 0, lastActiveAt: '2026-11-25T10:00:00Z' })
+  if (path === '/api/admin/users/2/revoke-tokens') return json({ revokedCount: 1 })
   if (path === '/api/admin/users/2/profile') return json({
     account: { id: 2, username: 'smoke-student', displayName: '张同学', role: 'STUDENT', enabled: true, createdAt: '2026-11-01T08:00:00Z', updatedAt: '2026-11-25T10:00:00Z', activeSessionCount: 1 },
     summary: { completedSections: 3, totalSections: 8, attemptCount: 10, correctCount: 8, accuracy: 80, averageMastery: 74.5, openWrongCount: 2, dueReviewCount: 1, aiSessionCount: 2, aiQuestionCount: 5, lastStudiedAt: '2026-11-25T10:00:00Z' },
@@ -431,7 +433,15 @@ const visualScenarios = {
       if (await page.getByRole('button', { name: '生成证据微课草稿' }).isDisabled()) throw new Error('Valid course data did not enable evidence draft authoring')
     } },
     { route: '/admin/users', name: 'admin-users-profile', async check(page) {
+      let nativeDialogOpened = false
+      page.once('dialog', () => { nativeDialogOpened = true })
       await page.getByTestId('user-row-2').waitFor()
+      await page.getByTestId('user-row-2').getByRole('button', { name: '停用账号' }).click()
+      const confirmDialog = page.getByTestId('user-confirm-dialog')
+      await confirmDialog.waitFor({ state: 'visible' })
+      await page.getByTestId('confirm-dialog-submit').click()
+      await confirmDialog.waitFor({ state: 'detached' })
+      if (nativeDialogOpened) throw new Error('User disable action triggered a native browser confirm dialog')
       await page.getByTestId('user-profile-btn-2').click()
       const drawer = page.getByTestId('user-profile-drawer')
       await drawer.waitFor({ state: 'visible' })

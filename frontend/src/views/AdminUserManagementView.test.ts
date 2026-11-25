@@ -113,7 +113,6 @@ const sampleProfile = {
 
 beforeEach(() => {
   vi.resetAllMocks()
-  vi.spyOn(window, 'confirm').mockReturnValue(true)
   mocks.listAdminUsers.mockResolvedValue({ items: sampleUsers, total: 2, page: 0, size: 20 })
   mocks.createAdminUser.mockResolvedValue({ ...sampleUsers[0], id: 4, username: 'student02', displayName: '李同学' })
   mocks.updateAdminUser.mockResolvedValue({ ...sampleUsers[0], displayName: '张改名' })
@@ -129,8 +128,9 @@ afterEach(() => {
 })
 
 describe('AdminUserManagementView', () => {
-  it('renders user directory with learning summaries and guards against self-disabling', async () => {
-    const wrapper = mount(AdminUserManagementView)
+  it('renders user directory, uses in-page confirm modal instead of window.confirm, and updates row without unmounting table', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm')
+    const wrapper = mount(AdminUserManagementView, { attachTo: document.body })
     await flushPromises()
 
     expect(mocks.listAdminUsers).toHaveBeenCalledWith(expect.objectContaining({ page: 0, size: 20, role: 'ALL' }))
@@ -141,9 +141,26 @@ describe('AdminUserManagementView', () => {
     const selfDisableBtn = wrapper.get('[data-testid="user-row-3"] button[aria-label="停用账号"]')
     expect(selfDisableBtn.attributes('disabled')).toBeDefined()
 
+    const initialTableEl = wrapper.get('table.user-table').element
+
+    // 点击停用触发页内确认弹窗，绝不弹出浏览器 window.confirm
     await wrapper.get('[data-testid="user-row-1"] button[aria-label="停用账号"]').trigger('click')
     await flushPromises()
+    expect(confirmSpy).not.toHaveBeenCalled()
+    expect(mocks.setAdminUserEnabled).not.toHaveBeenCalled()
+
+    const confirmDialog = document.body.querySelector('[data-testid="user-confirm-dialog"]')
+    expect(confirmDialog).not.toBeNull()
+    expect(confirmDialog?.textContent).toContain('停用用户账号')
+
+    ;(document.body.querySelector('[data-testid="confirm-dialog-submit"]') as HTMLButtonElement).click()
+    await flushPromises()
+
     expect(mocks.setAdminUserEnabled).toHaveBeenCalledWith(1, false)
+    // 原地更新行数据，不重建整张表 DOM（消除闪烁）
+    expect(wrapper.get('table.user-table').element).toBe(initialTableEl)
+    expect(wrapper.get('[data-testid="user-row-1"]').text()).toContain('已停用')
+    expect(document.body.querySelector('[data-testid="user-toast"]')?.textContent).toContain('已停用')
     wrapper.unmount()
   })
 

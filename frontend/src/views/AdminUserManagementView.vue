@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
-import { KeyRound, RefreshCw, Search, UserCheck, UserCog, UserPlus, UserX, Users, X } from '@lucide/vue'
+import { KeyRound, RefreshCw, Search, ShieldAlert, UserCheck, UserCog, UserPlus, UserX, Users, X } from '@lucide/vue'
 import { apiError, learningApi } from '../api/client'
 import type { AdminUserProfile, AdminUserSummary } from '../api/types'
 import { useSession } from '../state/session'
@@ -11,10 +11,13 @@ import AdminUserProfileDrawer from '../components/AdminUserProfileDrawer.vue'
 const session = useSession()
 const currentUserId = computed(() => session.user.value?.id)
 
-const loading = ref(true)
+const initialLoading = ref(true)
+const refreshing = ref(false)
 const working = ref(false)
 const error = ref('')
-const notice = ref('')
+const toastMessage = ref('')
+let toastTimer: ReturnType<typeof setTimeout> | null = null
+
 const users = ref<AdminUserSummary[]>([])
 const total = ref(0)
 const page = ref(0)
@@ -32,7 +35,7 @@ const profileData = ref<AdminUserProfile | null>(null)
 const profileUserId = ref<number | null>(null)
 const revokingTokens = ref(false)
 
-// 对话框状态（新建 / 编辑 / 重置密码）
+// 表单对话框状态（新建 / 编辑 / 重置密码）
 const modalKind = ref<'create' | 'edit' | 'password' | null>(null)
 const modalError = ref('')
 const editingUser = ref<AdminUserSummary | null>(null)
@@ -44,7 +47,37 @@ const formState = reactive({
   confirmPassword: '',
 })
 
+// 页面内二次确认弹窗（替代浏览器原生 window.confirm）
+interface ConfirmDialogState {
+  kind: 'disable' | 'enable' | 'revoke'
+  userId: number
+  title: string
+  description: string
+  confirmLabel: string
+  danger: boolean
+}
+const confirmDialog = ref<ConfirmDialogState | null>(null)
+const confirmWorking = ref(false)
+const confirmError = ref('')
+
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize)))
+
+function showToast(message: string) {
+  toastMessage.value = message
+  if (toastTimer) clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => {
+    toastMessage.value = ''
+    toastTimer = null
+  }, 3200)
+}
+
+function dismissToast() {
+  if (toastTimer) {
+    clearTimeout(toastTimer)
+    toastTimer = null
+  }
+  toastMessage.value = ''
+}
 
 function formatTime(iso?: string) {
   if (!iso) return '尚未活跃'
@@ -53,8 +86,18 @@ function formatTime(iso?: string) {
   return new Intl.DateTimeFormat('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(date)
 }
 
-async function loadUsers(targetPage = page.value) {
-  loading.value = true
+function upsertUserRow(updated: AdminUserSummary) {
+  const idx = users.value.findIndex(item => item.id === updated.id)
+  if (idx >= 0) {
+    const next = [...users.value]
+    next[idx] = updated
+    users.value = next
+  }
+}
+
+async function loadUsers(targetPage = page.value, silent = false) {
+  const showFullLoader = !silent && initialLoading.value && !users.value.length
+  if (!showFullLoader) refreshing.value = true
   error.value = ''
   try {
     const enabled = statusFilter.value === 'ALL' ? undefined : statusFilter.value === 'ENABLED'
@@ -71,7 +114,8 @@ async function loadUsers(targetPage = page.value) {
   } catch (cause) {
     error.value = apiError(cause, '用户列表暂时无法加载。')
   } finally {
-    loading.value = false
+    initialLoading.value = false
+    refreshing.value = false
   }
 }
 
@@ -87,7 +131,12 @@ function resetFilters() {
 }
 
 async function openProfile(user: AdminUserSummary) {
+  const switchedUser = profileUserId.value !== user.id
   profileUserId.value = user.id
+  if (switchedUser) {
+    profileData.value = null
+    profileError.value = ''
+  }
   profileOpen.value = true
   await reloadProfile()
 }
@@ -105,19 +154,79 @@ async function reloadProfile() {
   }
 }
 
-async function handleRevokeTokens(userId: number) {
-  if (!window.confirm('确认强退该用户的全部有效登录会话？用户下次刷新令牌时需重新登录。')) return
-  revokingTokens.value = true
-  notice.value = ''
+function requestRevokeTokens(userId: number) {
+  const target = users.value.find(item => item.id === userId)
+  const label = target ? `${target.displayName} (@${target.username})` : `UID #${userId}`
+  confirmError.value = ''
+  confirmDialog.value = {
+    kind: 'revoke',
+    userId,
+    title: '强制全端下线',
+    description: `确认吊销「${label}」的所有有效刷新令牌？该账号下次刷新凭证时需重新登录。`,
+    confirmLabel: '确认强制下线',
+    danger: true,
+  }
+}
+
+function requestToggleEnabled(user: AdminUserSummary) {
+  if (user.id === currentUserId.value) return
+  confirmError.value = ''
+  if (user.enabled) {
+    confirmDialog.value = {
+      kind: 'disable',
+      userId: user.id,
+      title: '停用用户账号',
+      description: `确认停用「${user.displayName}」(@${user.username})？停用后该账号将无法继续登录，现有刷新令牌也会被立即吊销。`,
+      confirmLabel: '确认停用',
+      danger: true,
+    }
+  } else {
+    confirmDialog.value = {
+      kind: 'enable',
+      userId: user.id,
+      title: '恢复启用账号',
+      description: `确认恢复启用「${user.displayName}」(@${user.username})，允许其重新登录平台？`,
+      confirmLabel: '确认启用',
+      danger: false,
+    }
+  }
+}
+
+function closeConfirmDialog() {
+  if (confirmWorking.value) return
+  confirmDialog.value = null
+  confirmError.value = ''
+}
+
+async function submitConfirmDialog() {
+  const dialog = confirmDialog.value
+  if (!dialog || confirmWorking.value) return
+  confirmWorking.value = true
+  confirmError.value = ''
   error.value = ''
+
   try {
-    const res = await learningApi.revokeAdminUserTokens(userId)
-    notice.value = `已吊销 ${res.revokedCount} 个活跃会话令牌。`
-    await reloadProfile()
-    await loadUsers(page.value)
+    if (dialog.kind === 'revoke') {
+      revokingTokens.value = true
+      const res = await learningApi.revokeAdminUserTokens(dialog.userId)
+      confirmDialog.value = null
+      showToast(`已吊销 ${res.revokedCount} 个活跃会话令牌。`)
+      const targetRow = users.value.find(item => item.id === dialog.userId)
+      if (targetRow) upsertUserRow({ ...targetRow, activeTokenCount: 0 })
+      if (profileOpen.value && profileUserId.value === dialog.userId) await reloadProfile()
+      return
+    }
+
+    const nextEnabled = dialog.kind === 'enable'
+    const updated = await learningApi.setAdminUserEnabled(dialog.userId, nextEnabled)
+    confirmDialog.value = null
+    upsertUserRow(updated)
+    showToast(`账号「${updated.displayName}」已${updated.enabled ? '启用' : '停用'}。`)
+    if (profileOpen.value && profileUserId.value === updated.id) await reloadProfile()
   } catch (cause) {
-    error.value = apiError(cause, '强制下线失败。')
+    confirmError.value = apiError(cause, '操作未能完成，请重试。')
   } finally {
+    confirmWorking.value = false
     revokingTokens.value = false
   }
 }
@@ -177,7 +286,6 @@ function validatePasswordInputs() {
 async function submitModal() {
   if (working.value || !modalKind.value) return
   modalError.value = ''
-  notice.value = ''
 
   if (modalKind.value === 'create') {
     const username = formState.username.trim()
@@ -199,8 +307,8 @@ async function submitModal() {
         password: formState.password,
       })
       modalKind.value = null
-      notice.value = `已创建用户「${created.displayName}」(@${created.username})。`
-      await loadUsers(0)
+      showToast(`已创建用户「${created.displayName}」(@${created.username})。`)
+      await loadUsers(0, true)
     } catch (cause) {
       modalError.value = apiError(cause, '创建用户失败。')
     } finally {
@@ -221,8 +329,8 @@ async function submitModal() {
         role: formState.role,
       })
       modalKind.value = null
-      notice.value = `已更新用户「${updated.displayName}」资料。`
-      await loadUsers(page.value)
+      upsertUserRow(updated)
+      showToast(`已更新用户「${updated.displayName}」资料。`)
       if (profileOpen.value && profileUserId.value === updated.id) await reloadProfile()
     } catch (cause) {
       modalError.value = apiError(cause, '更新用户失败。')
@@ -243,8 +351,8 @@ async function submitModal() {
       const target = editingUser.value
       await learningApi.resetAdminUserPassword(target.id, formState.password)
       modalKind.value = null
-      notice.value = `已重置「${target.displayName}」密码并吊销旧会话。`
-      await loadUsers(page.value)
+      upsertUserRow({ ...target, activeTokenCount: 0 })
+      showToast(`已重置「${target.displayName}」密码并吊销旧会话。`)
       if (profileOpen.value && profileUserId.value === target.id) await reloadProfile()
     } catch (cause) {
       modalError.value = apiError(cause, '重置密码失败。')
@@ -254,34 +362,23 @@ async function submitModal() {
   }
 }
 
-async function toggleEnabled(user: AdminUserSummary) {
-  if (user.id === currentUserId.value) return
-  const next = !user.enabled
-  const prompt = next
-    ? `确认恢复启用账号「${user.displayName}」(@${user.username})？`
-    : `确认停用账号「${user.displayName}」(@${user.username})？停用后将立刻吊销其所有活跃刷新令牌。`
-  if (!window.confirm(prompt)) return
-  error.value = ''
-  notice.value = ''
-  try {
-    const updated = await learningApi.setAdminUserEnabled(user.id, next)
-    notice.value = `账号「${updated.displayName}」已${updated.enabled ? '启用' : '停用'}。`
-    await loadUsers(page.value)
-    if (profileOpen.value && profileUserId.value === updated.id) await reloadProfile()
-  } catch (cause) {
-    error.value = apiError(cause, '变更账号状态失败。')
-  }
-}
-
 function onModalKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape' && modalKind.value) closeModal()
+  if (event.key !== 'Escape') return
+  if (confirmDialog.value) {
+    closeConfirmDialog()
+    return
+  }
+  if (modalKind.value) closeModal()
 }
 
 onMounted(() => {
   void loadUsers(0)
   window.addEventListener('keydown', onModalKeydown)
 })
-onBeforeUnmount(() => window.removeEventListener('keydown', onModalKeydown))
+onBeforeUnmount(() => {
+  dismissToast()
+  window.removeEventListener('keydown', onModalKeydown)
+})
 </script>
 
 <template>
@@ -291,12 +388,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onModalKeydown))
       title="用户与学情管理"
       description="管理平台账号状态与安全会话，按白名单脱敏查看单用户课程进度、知识点掌握及错题概况（不包含私人笔记与匿名评价原文）。"
     >
-      <button type="button" class="button button-outline" :disabled="loading" @click="loadUsers(page)"><RefreshCw :size="15" />刷新</button>
+      <button type="button" class="button button-outline" :disabled="initialLoading || refreshing" @click="loadUsers(page, true)">
+        <RefreshCw :size="15" :class="{ spinning: refreshing }" />刷新
+      </button>
       <button type="button" class="button button-dark" data-testid="create-user-btn" @click="openCreateModal"><UserPlus :size="15" />新建用户</button>
     </SectionHeading>
 
     <div v-if="error" class="inline-notice" role="alert">{{ error }}</div>
-    <div v-if="notice" class="inline-notice success" role="status">{{ notice }}</div>
 
     <section class="user-filters" aria-label="用户筛选条件">
       <label class="user-search-field">
@@ -324,9 +422,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onModalKeydown))
       <span class="user-total-count"><Users :size="14" />共 {{ total }} 位用户</span>
     </section>
 
-    <FeedbackState v-if="loading" :loading="true" loading-title="正在加载用户与学习概览" loading-text="正在读取账号目录及汇总进度数据。" />
+    <FeedbackState v-if="initialLoading" :loading="true" loading-title="正在加载用户与学习概览" loading-text="正在读取账号目录及汇总进度数据。" />
     <FeedbackState v-else-if="!users.length" :empty="true" empty-title="没有匹配的用户记录" empty-text="尝试调整搜索关键词或角色筛选条件。" action-label="新建用户" @action="openCreateModal" />
-    <section v-else class="user-table-card">
+    <section v-else class="user-table-card" :class="{ 'is-refreshing': refreshing }">
       <div class="user-table-wrap">
         <table class="user-table" aria-label="平台用户管理表">
           <thead>
@@ -381,7 +479,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onModalKeydown))
                     :disabled="user.id === currentUserId"
                     :title="user.id === currentUserId ? '不能停用当前登录账号' : (user.enabled ? '停用账号' : '启用账号')"
                     :aria-label="user.enabled ? '停用账号' : '启用账号'"
-                    @click="toggleEnabled(user)"
+                    @click="requestToggleEnabled(user)"
                   >
                     <UserX v-if="user.enabled" :size="15" />
                     <UserCheck v-else :size="15" />
@@ -396,8 +494,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onModalKeydown))
       <footer v-if="totalPages > 1" class="user-pagination">
         <span>第 {{ page + 1 }} / {{ totalPages }} 页</span>
         <div class="user-pagination-btns">
-          <button type="button" class="button button-outline button-small" :disabled="page <= 0" @click="loadUsers(page - 1)">上一页</button>
-          <button type="button" class="button button-outline button-small" :disabled="page + 1 >= totalPages" @click="loadUsers(page + 1)">下一页</button>
+          <button type="button" class="button button-outline button-small" :disabled="page <= 0" @click="loadUsers(page - 1, true)">上一页</button>
+          <button type="button" class="button button-outline button-small" :disabled="page + 1 >= totalPages" @click="loadUsers(page + 1, true)">下一页</button>
         </div>
       </footer>
     </section>
@@ -411,8 +509,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onModalKeydown))
       :revoking="revokingTokens"
       @close="profileOpen = false"
       @retry="reloadProfile"
-      @revoke-tokens="handleRevokeTokens"
+      @revoke-tokens="requestRevokeTokens"
     />
+
+    <Teleport to="body">
+      <div v-if="toastMessage" class="user-toast" role="status" data-testid="user-toast">
+        <span>{{ toastMessage }}</span>
+        <button type="button" class="icon-button" aria-label="关闭提示" @click="dismissToast"><X :size="14" /></button>
+      </div>
+    </Teleport>
 
     <Teleport to="body">
       <div v-if="modalKind" class="user-modal-backdrop" @click.self="closeModal">
@@ -478,6 +583,37 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onModalKeydown))
         </div>
       </div>
     </Teleport>
+
+    <Teleport to="body">
+      <div v-if="confirmDialog" class="user-modal-backdrop" data-testid="user-confirm-backdrop" @click.self="closeConfirmDialog">
+        <div class="user-modal-card" role="dialog" aria-modal="true" :aria-label="confirmDialog.title" data-testid="user-confirm-dialog">
+          <header class="user-modal-head">
+            <div class="confirm-head-title">
+              <span class="confirm-head-icon" :class="{ 'is-danger': confirmDialog.danger }"><ShieldAlert :size="16" /></span>
+              <h3>{{ confirmDialog.title }}</h3>
+            </div>
+            <button type="button" class="icon-button" aria-label="关闭确认窗口" :disabled="confirmWorking" @click="closeConfirmDialog"><X :size="16" /></button>
+          </header>
+          <div class="user-modal-form">
+            <div v-if="confirmError" class="inline-notice" role="alert">{{ confirmError }}</div>
+            <p class="confirm-description">{{ confirmDialog.description }}</p>
+            <footer class="user-modal-actions">
+              <button type="button" class="button button-outline" :disabled="confirmWorking" @click="closeConfirmDialog">取消</button>
+              <button
+                type="button"
+                class="button"
+                :class="confirmDialog.danger ? 'button-danger' : 'button-dark'"
+                :disabled="confirmWorking"
+                data-testid="confirm-dialog-submit"
+                @click="submitConfirmDialog"
+              >
+                {{ confirmWorking ? '处理中...' : confirmDialog.confirmLabel }}
+              </button>
+            </footer>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -489,7 +625,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onModalKeydown))
 .user-search-field input{width:100%;min-height:var(--control-height-small);border:0;background:transparent;outline:0;font-size:13px}
 .user-filters select{min-height:var(--control-height-small)}
 .user-total-count{margin-left:auto;display:inline-flex;align-items:center;gap:6px;color:var(--text-muted);font-size:13px;font-variant-numeric:tabular-nums}
-.user-table-card{background:var(--surface);border:1px solid var(--border-default);border-radius:var(--radius-md);box-shadow:var(--shadow-xs);overflow:hidden}
+.user-table-card{background:var(--surface);border:1px solid var(--border-default);border-radius:var(--radius-md);box-shadow:var(--shadow-xs);overflow:hidden;transition:opacity var(--motion)}
+.user-table-card.is-refreshing{opacity:.78}
 .user-table-wrap{overflow-x:auto}
 .user-table{width:100%;border-collapse:collapse;border:1px solid var(--border-soft);font-size:13px;font-variant-numeric:tabular-nums}
 .user-table th,.user-table td{padding:11px 14px;border-top:1px solid var(--border-soft);text-align:left;vertical-align:middle}
@@ -508,14 +645,23 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onModalKeydown))
 .user-row-actions{display:flex;align-items:center;gap:4px}
 .user-pagination{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--border-soft);color:var(--text-muted);font-size:13px}
 .user-pagination-btns{display:flex;gap:8px}
-.user-modal-backdrop{position:fixed;inset:0;z-index:1150;display:grid;place-items:center;padding:16px;background:rgb(23 43 39 / .38);backdrop-filter:blur(2px)}
+.user-modal-backdrop{position:fixed;inset:0;z-index:1150;display:grid;place-items:center;padding:16px;background:rgb(23 43 39 / .36)}
 .user-modal-card{width:min(440px,100%);background:var(--surface);border:1px solid var(--border-default);border-radius:var(--radius-md);box-shadow:var(--shadow-md);overflow:hidden}
 .user-modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border-soft)}
 .user-modal-head h3{margin:0;font-size:16px;color:var(--text)}
+.confirm-head-title{display:flex;align-items:center;gap:10px}
+.confirm-head-icon{width:30px;height:30px;display:grid;place-items:center;color:var(--accent-strong);background:var(--accent-soft);border-radius:var(--radius-sm)}
+.confirm-head-icon.is-danger{color:var(--danger);background:var(--danger-soft)}
+.confirm-description{margin:0;color:var(--text-muted);font-size:13.5px;line-height:1.6}
 .user-modal-form{padding:18px 20px;display:grid;gap:14px}
 .user-modal-form label{display:grid;gap:6px;font-size:12.5px;color:var(--text-muted)}
 .user-modal-form input,.user-modal-form select{min-height:var(--control-height);padding:6px 10px;color:var(--text);background:var(--surface);border:1px solid var(--border-default);border-radius:var(--radius-sm);font:inherit}
 .modal-hint{margin:0;color:var(--text-muted);font-size:12px}
 .user-modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:4px}
+.button-danger{color:var(--surface);background:var(--danger)}
+.button-danger:hover:not(:disabled){opacity:.9}
+.user-toast{position:fixed;right:24px;bottom:24px;z-index:1250;display:flex;align-items:center;gap:10px;max-width:min(420px,calc(100vw - 32px));padding:10px 12px 10px 16px;color:var(--accent-strong);background:var(--surface);border:1px solid var(--border-default);border-left:3px solid var(--accent);border-radius:var(--radius-md);box-shadow:var(--shadow-md);font-size:13px;font-weight:500}
+.spinning{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 @media(max-width:700px){.user-total-count{width:100%;margin-left:0}}
 </style>

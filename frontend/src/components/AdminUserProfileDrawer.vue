@@ -103,9 +103,10 @@ function coursePercent(completed: number, total: number) {
             <span>白名单学情视图：仅呈现进度、掌握度、错题待复习与实验任务分配状态，严格屏蔽私人笔记、收藏夹与匿名评估打分原文。</span>
           </div>
 
-          <FeedbackState v-if="loading" :loading="true" loading-title="正在整理用户独立学习画像" loading-text="正在汇总课程进度、知识点掌握度与待巩固错题。" />
-          <FeedbackState v-else-if="error" :error="error" retry-label="重新加载画像" @retry="emit('retry')" />
+          <FeedbackState v-if="loading && !profile" :loading="true" loading-title="正在整理用户独立学习画像" loading-text="正在汇总课程进度、知识点掌握度与待巩固错题。" />
+          <FeedbackState v-else-if="error && !profile" :error="error" retry-label="重新加载画像" @retry="emit('retry')" />
           <template v-else-if="profile">
+            <div v-if="error" class="inline-notice" role="alert">{{ error }}</div>
             <section class="profile-kpis" aria-label="核心学习指标">
               <article class="profile-kpi-card">
                 <span>章节完成</span>
@@ -311,7 +312,7 @@ function coursePercent(completed: number, total: number) {
 </template>
 
 <style scoped>
-.profile-drawer-backdrop{position:fixed;inset:0;z-index:1100;display:flex;justify-content:flex-end;background:rgb(23 43 39 / .38);backdrop-filter:blur(2px)}
+.profile-drawer-backdrop{position:fixed;inset:0;z-index:1100;display:flex;justify-content:flex-end;background:rgb(23 43 39 / .36)}
 .profile-drawer{width:min(760px,96vw);height:100dvh;display:grid;grid-template-rows:auto minmax(0,1fr);background:var(--surface);border-left:1px solid var(--border-default);box-shadow:var(--shadow-md)}
 .profile-drawer-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 22px;border-bottom:1px solid var(--border-soft)}
 .profile-identity{display:flex;align-items:center;gap:12px;min-width:0}

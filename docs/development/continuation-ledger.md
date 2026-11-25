@@ -520,3 +520,11 @@
   - 前端单测（`npx vitest run --maxWorkers=2`）：**57 passed (57)** 个文件、**212 passed (212)** 条用例全部通过。
   - AST 类名扫描（`node scripts/scan-vue-classes.mjs --check`）：**1383** 处模板类用法 **0** 缺失；四份全局 CSS `!important` 为 **0**。
   - 生产构建与 Playwright 冒烟：`npm run build` **1.84s** 完成；`authenticated-ui-smoke.mjs` **176/176** 通过（已目视确认 `/admin/users` 界面截图并清理 `.ui-visual-review`）。
+
+### 用户管理页防闪烁与页内确认弹窗优化记录（2026-11-25）
+
+- **问题现象**：操作用户（启停、改资料、重置密码、查看或刷新学情画像、强制下线）时，整张用户表与抽屉内部会经历 `v-if="loading"` 卸载重写、文档流通知条推挤以及遮罩 `backdrop-filter` 合成层重绘导致画面明显闪烁；停用与强制下线仍使用浏览器原生 `window.confirm` 弹窗。
+- **核心改动**：
+  - `frontend/src/views/AdminUserManagementView.vue` & `frontend/src/components/AdminUserProfileDrawer.vue`：拆分首次空表加载（`initialLoading`）与静默刷新（`refreshing` / `upsertUserRow` 原地更新行），抽屉在已有 `profile` 时保留当前视图与 Tab 不触发卸载重绘（仅切换不同用户时重置），操作反馈改为右下角浮动轻提示 `.user-toast` 消除文档流推挤，移除大面积遮罩 `backdrop-filter` 避免 Chromium 模糊重绘闪烁；新增页面内通用二次确认对话框（`confirmDialog`，支持遮罩点击与 `Escape` 关闭），完全替换 `window.confirm`（零浏览器原生弹窗）。
+  - `frontend/src/views/AdminUserManagementView.test.ts` & `frontend/scripts/authenticated-ui-smoke.mjs`：验证操作行数据不销毁重挂主表格 DOM、不调用原生 `confirm` 且完整覆盖页内确认弹窗与画像切换流程。
+- **实测验证结果（最终改动后）**：`window.confirm(` 扫描为 0；Vitest **57** 文件 / **212** 用例全通过；`scan-vue-classes.mjs --check` **1402** 处用法 **0** 缺失；`!important` 为 **0**；`npm run build` **2.02s** 完成；`authenticated-ui-smoke.mjs` **176/176** 通过并已清理 `.ui-visual-review`。
