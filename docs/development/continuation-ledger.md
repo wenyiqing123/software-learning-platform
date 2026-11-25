@@ -448,3 +448,15 @@
   - `npx vitest run`：**56 个测试文件、202 个测试用例全部通过**（更新 `TutorHints.test.ts` 与 `TutorMessageList.test.ts` 分层证据渲染断言）；
   - `node scripts/scan-vue-classes.mjs --check`：**1218** 处模板 class 全部匹配（`0 missing classes`），`frontend/src/` 全仓 `!important` 为 `0`；
   - `npm run build` 耗时 `1.58s` 通过；`node scripts/authenticated-ui-smoke.mjs` **170/170** 场景通过且 `.ui-visual-review` 已彻底清理。
+
+### 助教图谱检索别名对齐、有界二跳扩展与焦点排序优化记录（2026-11-25）
+
+- **问题根因与只读实测结论**：问句 `"数据流图中的加工应该如何规范命名？"` 中，“数据流图”在 NebulaGraph 内节点名为 `数据流图DFD`，词典未直接命中后退化拆出前缀词 `数据流`；同时真正包含答案的三元组位于 2 跳子实体 `加工的命名`（`规则 -> 应使用动宾短语描述处理逻辑`、`0.7351`）及 `加工命名`（`语法结构 -> 必须采用动词+宾语的动宾短语形式...`、`0.6767`）；原有 1 跳查询加上按实体顺序切片截断直接把 `加工` 相关边丢在 Top 5 之外。
+- **工程完善（外部 Mecha-QA 与实验基线零改动）**：
+  - 新增 `backend/ai-service/.../KnowledgeRetrievalEnhancer.java`：维护轻量课程术语别名映射（如 `数据流图 -> 数据流图DFD`）、识别结构性桥接尾实体（如 `加工 -> 包含 -> 加工命名`、`数据流图DFD -> 绘制注意事项2 -> 加工的命名`）发起有界 2 跳扩搜并重新交由 Python Bridge 打分汇总，最后通过 `isSubsumedPrefixNoise` 抑制被长复合词包裹的局部前缀噪声（不改写真实 `score` 分值，也不误伤独立问 `数据流` 的场景）；
+  - `TutorHintService.java` 与 `AnswerPreparationCoordinator.java` 交互式问答链路统一接入 `KnowledgeRetrievalEnhancer`，实验对照/消融基线 `retrieveSnapshot(question, ...)` 保持原始一跳/原始排序不变；
+  - `AnswerRequest.java`、`TutorHintRequest.java` 与前端 `frontend/src/api/tutor.ts`、`frontend/src/views/TutorView.vue` 新增向后兼容的可选 `entities` 字段，把当前有效学习上下文焦点实体透传至检索服务（关闭上下文标签后停止透传）。
+- **验证与实测记录**：
+  - 后端单测：`mvn -pl ai-service test`（JDK 21）**106 tests run, 0 failures, 0 errors, 0 skipped**（含 `KnowledgeRetrievalEnhancerTest`、`TutorHintServiceTest`、`TutorHintControllerTest`、`AnswerRequestTest`）；
+  - 前端验证：`npx vitest run` **56 个测试文件、204 个测试用例全部通过**；`node scripts/scan-vue-classes.mjs --check` **1218** 处模板类全匹配（`0 missing classes`）；`npm run build` 耗时 `1.51s`；`node scripts/authenticated-ui-smoke.mjs` **170/170** 场景通过（`.ui-visual-review` 已彻底清理）；
+  - 真机网关实测（经 `127.0.0.1:8080` + 新版 `ai-service` `8082` + `8999` Bridge）：`"数据流图中的加工应该如何规范命名？"` 的分步提示 1/2/3 级与 `RANKED` 问答均正确定位 `加工的命名` 与 `加工命名` 核心证据并准确回答动宾短语规范，`HAS_PROMPT_LEAK` 为 `False`。

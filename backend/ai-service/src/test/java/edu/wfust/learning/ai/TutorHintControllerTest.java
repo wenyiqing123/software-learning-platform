@@ -30,6 +30,14 @@ class TutorHintControllerTest {
                 .andExpect(jsonPath("$.prompt").doesNotExist());
     }
 
+    @Test void forwardsExplicitEntitiesToHintService() throws Exception {
+        when(service.hint(any())).thenReturn(new TutorHintResponse("问题", 1, "方向", false, List.of(), false, "NO_EVIDENCE"));
+        mvc.perform(post("/api/ai/tutor/hint").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"question\":\"如何命名？\",\"level\":1,\"entities\":[\"加工\"]}"))
+                .andExpect(status().isOk());
+        verify(service).hint(argThat(req -> req.entities().equals(List.of("加工"))));
+    }
+
     @Test void rejectsInvalidHintLevelBeforeCallingService() throws Exception {
         mvc.perform(post("/api/ai/tutor/hint").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"question\":\"问题\",\"level\":4}"))

@@ -310,6 +310,44 @@ describe('TutorView', () => {
     wrapper.unmount()
   })
 
+  it('forwards route context entities on streamAsk and tutorHint until dismissed', async () => {
+    learning.tutorHint.mockResolvedValue({
+      question: '加工如何命名？',
+      level: 1,
+      content: '思考加工命名',
+      hasEvidence: false,
+      evidence: [],
+      nextLevelAvailable: true,
+      source: 'MODEL',
+    })
+
+    const wrapper = await mountPage('/tutor?entity=加工&courseId=3')
+    await flushPromises()
+
+    await wrapper.get('[data-testid="tutor-send"]').trigger('click')
+    await flushPromises()
+    expect(learning.streamAsk).toHaveBeenLastCalledWith(
+      expect.any(String),
+      'RANKED',
+      expect.any(Function),
+      expect.any(AbortSignal),
+      expect.objectContaining({ entities: ['加工'] })
+    )
+
+    await wrapper.get('[data-testid="tutor-hint-toggle"]').trigger('click')
+    await wrapper.get('#question-input').setValue('加工如何命名？')
+    await wrapper.get('[data-testid="tutor-send"]').trigger('click')
+    await flushPromises()
+    expect(learning.tutorHint).toHaveBeenLastCalledWith('加工如何命名？', 1, expect.any(Array), expect.any(Array), ['加工'])
+
+    await wrapper.get('.tutor-context-close').trigger('click')
+    await wrapper.get('#question-input').setValue('关闭标签后再问')
+    await wrapper.get('[data-testid="tutor-send"]').trigger('click')
+    await flushPromises()
+    expect(learning.tutorHint).toHaveBeenLastCalledWith('关闭标签后再问', 1, expect.any(Array), expect.any(Array))
+    wrapper.unmount()
+  })
+
   it('prefills question and quick prompts for point-only context on exact match without auto-submitting', async () => {
     learning.knowledgePoints.mockResolvedValueOnce([
       { id: 42, courseId: 1, chapterId: 2, name: '软件架构风格', graphEntity: '架构风格', sortOrder: 1, mastery: 80 },

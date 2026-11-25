@@ -75,7 +75,7 @@
 
 `/tutor` 仅允许 `STUDENT` 角色访问。页面复用 `/tutor/sessions` 会话列表和 `/tutor/sessions/{id}/messages` 历史消息，通过 `PATCH /tutor/sessions/{id}` 重命名；所有读写、重命名和删除操作都按 JWT 当前用户校验 `ai_session.user_id`。
 
-`POST /ai/ask/stream` 的 SSE 事件保持兼容：`status` 表示生成阶段，`knowledge` 返回真实实体/三元组证据，`delta` 返回增量回答，`done` 返回完成结果，`error` 返回结构化失败。学习助手支持停止生成和失败重试；中断或失败的回答不会被当作有效成功答案。课程/图谱页面可通过 `courseId`、`sectionId`、`knowledgePointId`、`entity` 查询参数进入助教，参数只用于显示学习上下文和构造有限历史，不会把隐藏系统提示词发送到浏览器或保存到消息 metadata。
+`POST /ai/ask/stream`、`POST /ai/ask` 与 `POST /ai/tutor/hint` 保持向后兼容，新增可选 `entities` 字符串列表（最多 10 个，供学习助教带入当前焦点实体，配合别名补全、有界 2 跳桥接扩展与相关性重排提升召回准确性；实验对照与消融路径保持原基线不变）。SSE 事件保持兼容：`status` 表示生成阶段，`knowledge` 返回真实实体/三元组证据，`delta` 返回增量回答，`done` 返回完成结果，`error` 返回结构化失败。学习助手支持停止生成和失败重试；中断或失败的回答不会被当作有效成功答案。课程/图谱页面可通过 `courseId`、`sectionId`、`knowledgePointId`、`entity` 查询参数进入助教，参数只用于显示学习上下文、注入可选 `entities` 和构造有限历史，不会把隐藏系统提示词发送到浏览器或保存到消息 metadata。
 | GET / POST | /admin/courses | 查询全部课程 / 创建课程 |
 | PUT | /admin/courses/{id} | code、name、term、description；图空间固定1 |
 | PUT | /admin/courses/{id}/enabled | enabled |

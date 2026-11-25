@@ -3,6 +3,7 @@ package edu.wfust.learning.ai;
 import edu.wfust.learning.ai.client.PythonKnowledgeClient;
 import edu.wfust.learning.ai.client.PythonKnowledgeResponse;
 import edu.wfust.learning.ai.client.PythonTriple;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -11,19 +12,25 @@ import java.util.stream.Collectors;
 @Service
 public class TutorHintService {
     private static final int MAX_EVIDENCE = 5;
-    private final PythonKnowledgeClient knowledge;
     private final AiModelClient model;
+    private final KnowledgeRetrievalEnhancer retrievalEnhancer;
 
     public TutorHintService(PythonKnowledgeClient knowledge, @Qualifier("aiModelClient") AiModelClient model) {
-        this.knowledge = knowledge;
+        this(knowledge, model, new KnowledgeRetrievalEnhancer(knowledge));
+    }
+
+    @Autowired
+    TutorHintService(PythonKnowledgeClient knowledge, @Qualifier("aiModelClient") AiModelClient model,
+                     KnowledgeRetrievalEnhancer retrievalEnhancer) {
         this.model = model;
+        this.retrievalEnhancer = retrievalEnhancer;
     }
 
     public TutorHintResponse hint(TutorHintRequest request) {
-        PythonKnowledgeResponse response = knowledge.retrieve(request.question(), List.of(),
-                request.historyMessages(), request.historyEntities());
+        PythonKnowledgeResponse response = retrievalEnhancer.retrieve(
+                request.question(), request.entities(), request.historyMessages(), request.historyEntities(), true);
         List<TutorHintResponse.HintEvidence> evidence = evidence(response);
-        if (!response.hasEvidence() || evidence.isEmpty()) {
+        if (response == null || !response.hasEvidence() || evidence.isEmpty()) {
             return new TutorHintResponse(request.question(), request.level(),
                     "当前课程知识图谱没有检索到足够证据，暂不展开提示。请先换一个更具体的知识点或查看课程正文。",
                     false, List.of(), false, "NO_EVIDENCE");

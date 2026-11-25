@@ -340,6 +340,21 @@ async function saveAndPushHintMessage(activeSessionId: number, data: TutorHintRe
   }
 }
 
+const focusEntities = computed<string[]>(() => {
+  if (contextDismissed.value) return []
+  const candidates = [queryValue(route.query.entity), resolvedPointName.value]
+    .map(item => item.trim())
+    .filter(Boolean)
+  return [...new Set(candidates)]
+})
+
+function fetchTutorHint(prompt: string, level: number, historyMessages: string[], historyEntities: string[]) {
+  if (focusEntities.value.length) {
+    return learningApi.tutorHint(prompt, level, historyMessages, historyEntities, focusEntities.value)
+  }
+  return learningApi.tutorHint(prompt, level, historyMessages, historyEntities)
+}
+
 async function requestHint(promptOverride?: string, level = 1, sourceIndex?: number) {
   const prompt = (promptOverride ?? question.value).trim()
   if (!prompt || hintLoading.value || loading.value) return
@@ -353,7 +368,7 @@ async function requestHint(promptOverride?: string, level = 1, sourceIndex?: num
   error.value = ''
   try {
     const { historyMessages, historyEntities } = buildHistoryContext()
-    const data = await learningApi.tutorHint(prompt, level, historyMessages, historyEntities)
+    const data = await fetchTutorHint(prompt, level, historyMessages, historyEntities)
     const activeSessionId = await ensureActiveSession(prompt)
     if (!promptOverride && question.value.trim() === prompt) {
       await appendUserPrompt(activeSessionId, prompt, true)
@@ -379,7 +394,7 @@ async function submitStepHint(prompt: string, retrying: boolean, fromExplicitPro
       await appendUserPrompt(activeSessionId, prompt, !fromExplicitPrompt)
     }
     const { historyMessages, historyEntities } = buildHistoryContext()
-    const data = await learningApi.tutorHint(prompt, 1, historyMessages, historyEntities)
+    const data = await fetchTutorHint(prompt, 1, historyMessages, historyEntities)
     await saveAndPushHintMessage(activeSessionId, data)
   } catch (cause) {
     error.value = apiError(cause, '提示暂时不可用，请检查图谱与模型服务')
@@ -428,7 +443,11 @@ async function submit(options: { retry?: boolean; prompt?: string; forceHint?: b
         if (name === 'delta') streamingAnswer.value += payload.content || ''
       },
       abortController.signal,
-      { historyMessages, historyEntities }
+      {
+        historyMessages,
+        historyEntities,
+        ...(focusEntities.value.length ? { entities: focusEntities.value } : {}),
+      }
     )
 
     const generatedResults: TutorAnswerResult[] = [data]

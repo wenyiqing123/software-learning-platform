@@ -59,4 +59,40 @@ class TutorHintServiceTest {
         assertThat(result.content()).contains("没有检索到足够证据");
         verifyNoInteractions(model);
     }
+
+    @Test void prioritizesHighestScoredTwoHopEvidenceForDfdProcessNamingHint() {
+        String question = "数据流图中的加工应该如何规范命名？";
+        PythonKnowledgeResponse first = new PythonKnowledgeResponse(
+                question,
+                List.of(),
+                List.of(
+                        new PythonTriple("数据流", "命名规则", "必须采用名词或名词短语", .71),
+                        new PythonTriple("数据流", "定义", "数据路径", .55),
+                        new PythonTriple("加工", "包含", "加工命名", .79),
+                        new PythonTriple("数据流图DFD", "绘制注意事项2", "加工的命名", .78)
+                ),
+                "prompt1",
+                true,
+                "template"
+        );
+        PythonKnowledgeResponse expanded = new PythonKnowledgeResponse(
+                question,
+                List.of(),
+                List.of(
+                        new PythonTriple("数据流", "命名规则", "必须采用名词或名词短语", .71),
+                        new PythonTriple("加工", "包含", "加工命名", .79),
+                        new PythonTriple("加工的命名", "规则", "应使用动宾短语描述处理逻辑", .74),
+                        new PythonTriple("加工命名", "语法结构", "必须采用动词+宾语的动宾短语形式", .68)
+                ),
+                "prompt2",
+                true,
+                "template"
+        );
+        when(knowledge.retrieve(eq(question), eq(List.of("数据流图DFD")), anyList(), anyList())).thenReturn(first);
+        when(knowledge.retrieve(eq(question), argThat(list -> list.contains("加工命名")), anyList(), anyList())).thenReturn(expanded);
+
+        var levelTwo = service.hint(new TutorHintRequest(question, 2));
+        assertThat(levelTwo.evidence()).extracting(TutorHintResponse.HintEvidence::object)
+                .contains("应使用动宾短语描述处理逻辑", "必须采用动词+宾语的动宾短语形式");
+    }
 }

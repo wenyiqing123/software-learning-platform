@@ -5,7 +5,19 @@ import type { TutorHintResult } from './types'
 export interface TutorSession { id: number; title: string; createdAt?: string; updatedAt?: string }
 
 export const ask = (question: string, mode: string) => api.post('/ai/ask', { question, mode }).then((r) => r.data)
-export const tutorHint = (question: string, level: number, historyMessages: string[] = [], historyEntities: string[] = []) => api.post<TutorHintResult>('/ai/tutor/hint', { question, level, historyMessages, historyEntities }).then((r) => r.data)
+export const tutorHint = (
+  question: string,
+  level: number,
+  historyMessages: string[] = [],
+  historyEntities: string[] = [],
+  entities: string[] = []
+) => api.post<TutorHintResult>('/ai/tutor/hint', {
+  question,
+  level,
+  historyMessages,
+  historyEntities,
+  ...(entities.length ? { entities } : {}),
+}).then((r) => r.data)
 export const sessions = () => api.get<TutorSession[]>('/tutor/sessions').then(r => r.data)
 export const createSession = (title: string) => api.post<TutorSession>('/tutor/sessions', { title }).then(r => r.data)
 export const renameSession = (id: number, title: string) => api.patch<TutorSession>('/tutor/sessions/' + id, { title }).then(r => r.data)
@@ -13,7 +25,13 @@ export const sessionMessages = (id: number) => api.get('/tutor/sessions/' + id +
 export const saveMessage = (id: number, payload: { role: string; content: string; mode: string; metadata?: unknown }) => api.post('/tutor/sessions/' + id + '/messages', payload).then(r => r.data)
 export const deleteSession = (id: number) => api.delete('/tutor/sessions/' + id).then(r => r.data)
 
-export async function streamAsk(question: string, mode: string, onEvent: (name: string, payload: any) => void, signal?: AbortSignal, history?: { historyMessages: string[]; historyEntities: string[] }) {
+export async function streamAsk(
+  question: string,
+  mode: string,
+  onEvent: (name: string, payload: any) => void,
+  signal?: AbortSignal,
+  history?: { historyMessages: string[]; historyEntities: string[]; entities?: string[] }
+) {
   const request = () => fetch('/api/ai/ask/stream', {
     method: 'POST', signal,
     headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (localStorage.getItem('slp-access-token') || ''), Accept: 'text/event-stream' },

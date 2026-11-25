@@ -20,10 +20,12 @@ class AnswerRequestTest {
 
     @Test void followupHistoryIsAcceptedAndListsAreImmutable() {
         AnswerRequest request = json.readValue("{\"question\":\"它是什么\",\"mode\":\"TRIPLES\","
-                + "\"historyMessages\":[\"需求分析\"],\"historyEntities\":[\"软件需求规格说明书\"]}", AnswerRequest.class);
+                + "\"historyMessages\":[\"需求分析\"],\"historyEntities\":[\"软件需求规格说明书\"],\"entities\":[\"加工\"]}", AnswerRequest.class);
         assertThat(request.historyMessages()).containsExactly("需求分析");
         assertThat(request.historyEntities()).containsExactly("软件需求规格说明书");
+        assertThat(request.entities()).containsExactly("加工");
         assertThatThrownBy(() -> request.historyMessages().add("edit")).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> request.entities().add("edit")).isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test void historyCountsLengthsAndBlankValuesAreBounded() {

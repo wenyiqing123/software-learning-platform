@@ -9,6 +9,7 @@ import java.util.UUID;
 /** Owns knowledge retrieval, prompt preparation and provenance construction. */
 final class AnswerPreparationCoordinator {
     private final PythonKnowledgeClient knowledgeClient;
+    private final KnowledgeRetrievalEnhancer retrievalEnhancer;
     private final PromptStrategy promptStrategy;
     private final AiModelClient defaultModel;
     private final AiModelClient dedicatedRankedModel;
@@ -18,6 +19,7 @@ final class AnswerPreparationCoordinator {
                                  AiModelClient defaultModel, AiModelClient dedicatedRankedModel,
                                  GroundedRankedAnswer dedicatedGroundedRanked) {
         this.knowledgeClient = knowledgeClient;
+        this.retrievalEnhancer = new KnowledgeRetrievalEnhancer(knowledgeClient);
         this.promptStrategy = promptStrategy;
         this.defaultModel = defaultModel;
         this.dedicatedRankedModel = dedicatedRankedModel;
@@ -34,14 +36,30 @@ final class AnswerPreparationCoordinator {
     }
 
     AnswerSnapshot retrieveSnapshot(AnswerRequest request, boolean rawOrder) {
+        return retrieveSnapshot(request, rawOrder, !rawOrder);
+    }
+
+    AnswerSnapshot retrieveSnapshot(String question, boolean rawOrder) {
+        // 实验对比与消融实验严格保持原始一跳/原始排序基线不变
+        return retrieveSnapshot(new AnswerRequest(question, QaMode.RANKED), rawOrder, false);
+    }
+
+    private AnswerSnapshot retrieveSnapshot(AnswerRequest request, boolean rawOrder, boolean enhanceInteractive) {
         String question = request.question();
         long startedAt = System.nanoTime();
         String retrievalId = UUID.randomUUID().toString();
         try {
-            PythonKnowledgeResponse knowledge = rawOrder ? knowledgeClient.retrieveUntruncated(question)
-                    : request.historyMessages().isEmpty() && request.historyEntities().isEmpty()
-                    ? knowledgeClient.retrieve(question, List.of(), List.of())
-                    : knowledgeClient.retrieve(question, List.of(), request.historyMessages(), request.historyEntities());
+            PythonKnowledgeResponse knowledge;
+            if (rawOrder) {
+                knowledge = knowledgeClient.retrieveUntruncated(question);
+            } else if (enhanceInteractive) {
+                knowledge = retrievalEnhancer.retrieve(
+                        question, request.entities(), request.historyMessages(), request.historyEntities(), false);
+            } else {
+                knowledge = request.historyMessages().isEmpty() && request.historyEntities().isEmpty() && request.entities().isEmpty()
+                        ? knowledgeClient.retrieve(question, List.of(), List.of())
+                        : knowledgeClient.retrieve(question, request.entities(), request.historyMessages(), request.historyEntities());
+            }
             if (knowledge == null) throw AiFailure.knowledge(null);
             return new AnswerSnapshot(knowledge, UUID.randomUUID().toString(), retrievalId,
                     AnswerService.elapsedMs(startedAt), null, rawOrder ? 0 : 20, rawOrder);
@@ -50,10 +68,6 @@ final class AnswerPreparationCoordinator {
             return new AnswerSnapshot(null, null, retrievalId, AnswerService.elapsedMs(startedAt), failure,
                     rawOrder ? 0 : 20, rawOrder);
         }
-    }
-
-    AnswerSnapshot retrieveSnapshot(String question, boolean rawOrder) {
-        return retrieveSnapshot(new AnswerRequest(question, QaMode.RANKED), rawOrder);
     }
 
     AnswerService.PreparedAnswer matrixPrepared(String question, AnswerSnapshot snapshot,
