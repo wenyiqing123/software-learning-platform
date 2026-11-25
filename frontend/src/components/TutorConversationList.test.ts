@@ -4,7 +4,7 @@ import { nextTick } from 'vue'
 import TutorConversationList from './TutorConversationList.vue'
 
 describe('TutorConversationList', () => {
-  it('emits session actions without owning persistence', async () => {
+  it('emits session actions and collapse without owning persistence', async () => {
     const wrapper = mount(TutorConversationList, {
       props: {
         sessions: [{ id: 7, title: '需求分析' }],
@@ -13,6 +13,7 @@ describe('TutorConversationList', () => {
     })
 
     await wrapper.get('[data-testid="tutor-new-session"]').trigger('click')
+    await wrapper.get('[data-testid="tutor-collapse-sidebar"]').trigger('click')
     await wrapper.get('[data-testid="tutor-rename-7"]').trigger('click')
     await wrapper.get('[data-testid="tutor-rename-input"]').setValue('数据流图复习')
     await wrapper.get('form.tutor-session-rename').trigger('submit')
@@ -20,6 +21,7 @@ describe('TutorConversationList', () => {
     await wrapper.get('[data-testid="tutor-delete-7"]').trigger('click')
 
     expect(wrapper.emitted('create')).toHaveLength(1)
+    expect(wrapper.emitted('collapse')).toHaveLength(1)
     expect(wrapper.emitted('rename')?.[0]).toEqual([7, '数据流图复习'])
     expect(wrapper.emitted('remove')?.[0]).toEqual([7])
   })

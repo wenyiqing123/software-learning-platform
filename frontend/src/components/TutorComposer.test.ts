@@ -5,31 +5,63 @@ import TutorComposer from './TutorComposer.vue'
 describe('TutorComposer', () => {
   const baseProps = {
     question: '',
-    mode: 'RANKED',
-    compareAll: false,
     loading: false,
+    hintLoading: false,
     context: [{ label: '知识点', value: '数据流图' }],
-    quickPrompts: ['解释这个概念', '给我一道练习题'],
-    modes: [],
   }
 
-  it('emits quick prompt, input and submit actions', async () => {
+  it('renders no mode selector or compare toggle and supports input and submit', async () => {
     const wrapper = mount(TutorComposer, { props: baseProps })
 
-    await wrapper.get('[data-testid="tutor-quick-prompt"]').trigger('click')
+    expect(wrapper.find('.tutor-mode-selector').exists()).toBe(false)
+    expect(wrapper.find('.compare-toggle').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('对比三种方式')
+    expect(wrapper.text()).not.toContain('大模型直答')
+
     await wrapper.get('#question-input').setValue('请举一个例子')
     await wrapper.setProps({ question: '请举一个例子' })
     await wrapper.get('[data-testid="tutor-send"]').trigger('click')
 
-    expect(wrapper.emitted('quick-prompt')).toEqual([['解释这个概念']])
     expect(wrapper.emitted('update:question')?.at(-1)).toEqual(['请举一个例子'])
     expect(wrapper.emitted('submit')).toHaveLength(1)
   })
 
-  it('shows stop instead of send while loading', () => {
+  it('prevents accidental submit during IME composition and allows Enter after composition ends', async () => {
+    const wrapper = mount(TutorComposer, { props: { ...baseProps, question: '需求分析' } })
+    const textarea = wrapper.get('#question-input')
+
+    // isComposing 属性为 true 时不触发发送
+    await textarea.trigger('keydown.enter', { isComposing: true })
+    expect(wrapper.emitted('submit')).toBeUndefined()
+
+    // compositionstart 到 compositionend 之间不触发发送
+    await textarea.trigger('compositionstart')
+    await textarea.trigger('keydown.enter')
+    expect(wrapper.emitted('submit')).toBeUndefined()
+
+    await textarea.trigger('compositionend')
+    await textarea.trigger('keydown.enter')
+    expect(wrapper.emitted('submit')).toHaveLength(1)
+
+    // Shift + Enter 换行不发送
+    await textarea.trigger('keydown.enter', { shiftKey: true })
+    expect(wrapper.emitted('submit')).toHaveLength(1)
+  })
+
+  it('shows stop button instead of send while loading', () => {
     const wrapper = mount(TutorComposer, { props: { ...baseProps, question: '正在提问', loading: true } })
 
     expect(wrapper.find('[data-testid="tutor-send"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="tutor-stop"]').exists()).toBe(true)
+  })
+
+  it('emits request-hint and dismiss-context actions', async () => {
+    const wrapper = mount(TutorComposer, { props: { ...baseProps, question: '加工是什么' } })
+
+    await wrapper.get('[data-testid="tutor-hint-trigger"]').trigger('click')
+    await wrapper.get('.tutor-context-close').trigger('click')
+
+    expect(wrapper.emitted('request-hint')).toHaveLength(1)
+    expect(wrapper.emitted('dismiss-context')).toHaveLength(1)
   })
 })

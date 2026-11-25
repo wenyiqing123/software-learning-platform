@@ -1,64 +1,78 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
-import { ArrowRight, Bot, CircleAlert, Database, Gauge, Lightbulb, Sparkles } from '@lucide/vue'
-import { useRoute } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { PanelLeftOpen, Plus } from '@lucide/vue'
+import { useRoute, useRouter } from 'vue-router'
 import { apiError, learningApi } from '../api/client'
 import type { TutorSession } from '../api/tutor'
-import type { TutorAnswerResult, TutorChatMessage, TutorContextChip } from '../domain/tutorChat'
+import {
+  LOCKED_TUTOR_MODE,
+  stripLegacyModePrefix,
+  type TutorAnswerResult,
+  type TutorChatMessage,
+  type TutorContextChip,
+  type TutorQuickPrompt,
+} from '../domain/tutorChat'
+import { contextFromQuery, graphHref, type LearningContext } from '../domain/learningContext'
 import SectionHeading from '../components/SectionHeading.vue'
 import LearningContextActions from '../components/LearningContextActions.vue'
-import { contextFromQuery, type LearningContext } from '../domain/learningContext'
-import MarkdownContent from '../components/MarkdownContent.vue'
 import TutorConversationList from '../components/TutorConversationList.vue'
 import TutorMessageList from '../components/TutorMessageList.vue'
 import TutorComposer from '../components/TutorComposer.vue'
-import type { TutorModeOption } from '../components/TutorModeSelector.vue'
 
-type Mode = 'DIRECT' | 'TRIPLES' | 'RANKED'
-interface TutorHintResult { question: string; level: number; content: string; hasEvidence: boolean; evidence: { subject: string; predicate: string; object: string; score: number }[]; nextLevelAvailable: boolean; source: string }
 const route = useRoute()
-const mode = ref<Mode>('RANKED')
+const router = useRouter()
+
 const queryValue = (value: unknown) => typeof value === 'string' ? value : Array.isArray(value) ? String(value[0] || '') : ''
 const initialEntity = queryValue(route.query.entity)
+
 const question = ref(initialEntity ? '请解释「' + initialEntity + '」的核心概念及相关知识。' : '')
 const resolvedPointName = ref('')
+const contextDismissed = ref(false)
 const loading = ref(false)
 const streamingAnswer = ref('')
 const streamingEvidence = ref<{ triples?: unknown[] } | null>(null)
-const compareAll = ref(false)
 const error = ref('')
 const failedQuestion = ref('')
-const failedMode = ref<string>('RANKED')
-const modes: TutorModeOption[] = [
-  { key: 'DIRECT', title: '大模型直答', note: '不检索图谱知识', icon: Bot },
-  { key: 'TRIPLES', title: '三元组增强', note: '提供图谱事实', icon: Database },
-  { key: 'RANKED', title: '相关性排序', note: '评分与提示词增强', icon: Gauge },
-]
 
 const sessions = ref<TutorSession[]>([])
 const sessionId = ref<number | null>(null)
 const messages = ref<TutorChatMessage[]>([])
 const historyError = ref('')
-const hintLevel = ref(1)
 const hintLoading = ref(false)
-const hintError = ref('')
-const hintResult = ref<TutorHintResult | null>(null)
-const context = computed<TutorContextChip[]>(() => ([
-  ['课程', route.query.courseId],
-  ['小节', route.query.sectionId],
-  ['知识点', route.query.knowledgePointId],
-  ['实体', route.query.entity],
-  ] as Array<[string, unknown]>).flatMap(([label, value]) => {
-  const text = queryValue(value)
-  return text ? [{ label, value: text }] : []
-}))
 
-const quickPrompts = computed(() => {
-  const target = context.value.find(item => item.label === '实体')?.value ||
-    resolvedPointName.value ||
-    context.value.find(item => item.label === '知识点')?.value ||
-    '这个知识点'
-  return [`解释「${target}」`, `举一个「${target}」的例子`, '给我一道练习题']
+const sidebarCollapsed = ref(false)
+const mobileDrawerOpen = ref(false)
+const composerRef = ref<InstanceType<typeof TutorComposer> | null>(null)
+const messageListRef = ref<InstanceType<typeof TutorMessageList> | null>(null)
+
+const context = computed<TutorContextChip[]>(() => {
+  if (contextDismissed.value) return []
+  return ([
+    ['课程', route.query.courseId],
+    ['小节', route.query.sectionId],
+    ['知识点', route.query.knowledgePointId],
+    ['实体', route.query.entity],
+  ] as Array<[string, unknown]>).flatMap(([label, value]) => {
+    const text = queryValue(value)
+    return text ? [{ label, value: text }] : []
+  })
+})
+
+const quickPrompts = computed<TutorQuickPrompt[]>(() => {
+  const entityVal = queryValue(route.query.entity)
+  const pointVal = resolvedPointName.value || queryValue(route.query.knowledgePointId)
+  const target = entityVal || pointVal
+
+  if (!target) {
+    return []
+  }
+
+  return [
+    { tag: '核心概念', title: `解析「${target}」`, prompt: `请解释「${target}」的核心概念、适用场景与关键要点。` },
+    { tag: '工程实例', title: `「${target}」应用实例`, prompt: `结合软件工程课程案例，举一个「${target}」的具体例子。` },
+    { tag: '易错辨析', title: `常见易混淆点`, prompt: `在学习「${target}」时，有哪些常见的易混淆概念？` },
+    { tag: '自测巩固', title: `随堂自测练习`, prompt: `围绕「${target}」给我出一道自测练习题并附思考线索。` },
+  ]
 })
 
 const learningContext = computed<LearningContext>(() => {
@@ -67,6 +81,11 @@ const learningContext = computed<LearningContext>(() => {
     base.knowledgePointTitle = resolvedPointName.value
   }
   return base
+})
+
+const activeSessionTitle = computed(() => {
+  if (!sessionId.value) return '新对话'
+  return sessions.value.find(s => s.id === sessionId.value)?.title || '学习对话'
 })
 
 async function resolvePointContext() {
@@ -94,196 +113,538 @@ async function resolvePointContext() {
       }
     }
   } catch {
-    // unknown/loading/error 不造名，静默失败，保持已有逻辑
+    // 未知或接口失败时不编造名称，保持既有边界
   }
 }
 
 let abortController: AbortController | null = null
+
 onMounted(async () => {
   void resolvePointContext()
-  try { sessions.value = await learningApi.sessions() } catch (e) { historyError.value = apiError(e, '会话历史暂不可用') }
+  try {
+    sessions.value = await learningApi.sessions()
+  } catch (e) {
+    historyError.value = apiError(e, '会话历史暂不可用')
+  }
 })
-function selectMode(selected: string) {
-  if (selected === 'DIRECT' || selected === 'TRIPLES' || selected === 'RANKED') mode.value = selected
-  compareAll.value = false
+
+function stopGenerating() {
+  abortController?.abort()
 }
-function stopGenerating() { abortController?.abort() }
+
 onBeforeUnmount(stopGenerating)
+
 async function selectSession() {
-  error.value = ''; failedQuestion.value = ''; streamingAnswer.value = ''; streamingEvidence.value = null; messages.value = []
+  error.value = ''
+  failedQuestion.value = ''
+  streamingAnswer.value = ''
+  streamingEvidence.value = null
+  messages.value = []
   if (!sessionId.value) return
-  try { messages.value = await learningApi.sessionMessages(Number(sessionId.value)) as TutorChatMessage[] } catch (e) { historyError.value = apiError(e) }
+  try {
+    messages.value = await learningApi.sessionMessages(Number(sessionId.value)) as TutorChatMessage[]
+  } catch (e) {
+    historyError.value = apiError(e)
+  }
 }
-function selectSessionById(id: number) { sessionId.value = id; void selectSession() }
-function newSession() { abortController?.abort(); sessionId.value = null; messages.value = []; failedQuestion.value = ''; error.value = ''; streamingAnswer.value = ''; streamingEvidence.value = null; hintResult.value = null; hintError.value = ''; historyError.value = '' }
+
+function selectSessionById(id: number) {
+  sessionId.value = id
+  mobileDrawerOpen.value = false
+  void selectSession()
+}
+
+function newSession() {
+  abortController?.abort()
+  sessionId.value = null
+  messages.value = []
+  failedQuestion.value = ''
+  error.value = ''
+  streamingAnswer.value = ''
+  streamingEvidence.value = null
+  historyError.value = ''
+  mobileDrawerOpen.value = false
+}
+
 async function deleteSession() {
   if (!sessionId.value || loading.value) return
-  try { await learningApi.deleteSession(sessionId.value); sessions.value = sessions.value.filter(s => s.id !== sessionId.value); newSession() } catch (e) { historyError.value = apiError(e) }
+  try {
+    await learningApi.deleteSession(sessionId.value)
+    sessions.value = sessions.value.filter(s => s.id !== sessionId.value)
+    newSession()
+  } catch (e) {
+    historyError.value = apiError(e)
+  }
 }
-function removeSessionById(id: number) { sessionId.value = id; void deleteSession() }
+
+function removeSessionById(id: number) {
+  sessionId.value = id
+  void deleteSession()
+}
+
 async function renameSession(id: number, title: string) {
   try {
     const updated = await learningApi.renameSession(id, title)
     sessions.value = sessions.value.map(item => item.id === id ? updated : item)
-  } catch (e) { historyError.value = apiError(e, '会话标题保存失败') }
+  } catch (e) {
+    historyError.value = apiError(e, '会话标题保存失败')
+  }
 }
 
 async function copyAnswer(value?: string) {
   if (value) await window.navigator.clipboard?.writeText(value)
 }
 
-async function requestHint(level = hintLevel.value) {
-  const prompt = question.value.trim()
+async function requestHint(promptOverride?: string, level = 1) {
+  const prompt = (promptOverride ?? question.value).trim()
   if (!prompt || hintLoading.value || loading.value) return
-  hintLoading.value = true; hintError.value = ''; hintLevel.value = level
+  hintLoading.value = true
+  error.value = ''
   try {
-    const data = await learningApi.tutorHint(prompt, level,
-      messages.value.slice(-10).map(message => message.content.slice(0, 2000)),
-      messages.value.filter(message => message.role === 'ASSISTANT').flatMap(message => message.metadata?.results?.flatMap(result => result.entities?.map(entity => entity.canonicalName) || []) || []).slice(-20))
-    hintResult.value = data
+    const historyMessages = messages.value.slice(-10).map(message => message.content.slice(0, 2000))
+    const historyEntities = messages.value
+      .filter(message => message.role === 'ASSISTANT')
+      .flatMap(message => message.metadata?.results?.flatMap(result => result.entities?.map(entity => entity.canonicalName) || []) || [])
+      .slice(-20)
+
+    const data = await learningApi.tutorHint(prompt, level, historyMessages, historyEntities)
     if (!sessionId.value) {
       const created = await learningApi.createSession(prompt.slice(0, 100)) as TutorSession
-      sessions.value = [created, ...sessions.value]; sessionId.value = created.id
+      sessions.value = [created, ...sessions.value]
+      sessionId.value = created.id
     }
+    if (!promptOverride && question.value.trim() === prompt) {
+      const userMessage = await learningApi.saveMessage(sessionId.value!, {
+        role: 'USER',
+        content: prompt,
+        mode: LOCKED_TUTOR_MODE,
+      })
+      messages.value.push(userMessage as TutorChatMessage)
+      question.value = ''
+    }
+    const hintContent = `第${data.level}级学习提示：${data.content}`
     try {
       const saved = await learningApi.saveMessage(sessionId.value!, {
-        role: 'ASSISTANT', content: '第' + data.level + '级学习提示：' + data.content,
-        mode: 'TUTOR_HINT_' + data.level, metadata: { hint: data },
+        role: 'ASSISTANT',
+        content: hintContent,
+        mode: `TUTOR_HINT_${data.level}`,
+        metadata: { hint: data },
+      }) as TutorChatMessage
+      messages.value.push({
+        ...saved,
+        metadata: saved?.metadata && Object.keys(saved.metadata).length ? saved.metadata : { hint: data },
       })
-      messages.value.push(saved as TutorChatMessage)
-    } catch (cause) { historyError.value = apiError(cause, '提示已生成，但历史记录保存失败') }
-  } catch (cause) { hintError.value = apiError(cause, '提示暂时不可用，请检查图谱与模型服务') }
-  finally { hintLoading.value = false }
+    } catch (cause) {
+      historyError.value = apiError(cause, '提示已生成，但历史记录保存失败')
+      messages.value.push({
+        role: 'ASSISTANT',
+        content: hintContent,
+        mode: `TUTOR_HINT_${data.level}`,
+        metadata: { hint: data },
+      })
+    }
+  } catch (cause) {
+    error.value = apiError(cause, '提示暂时不可用，请检查图谱与模型服务')
+  } finally {
+    hintLoading.value = false
+  }
 }
 
-async function submit(options: { retry?: boolean; prompt?: string; mode?: string } = {}) {
+async function submit(options: { retry?: boolean; prompt?: string } = {}) {
   const prompt = (options.prompt ?? question.value).trim()
   if (!prompt || loading.value) return
   const retrying = Boolean(options.retry)
-  const requestMode = options.mode || (compareAll.value ? 'COMPARE' : mode.value)
-  if (requestMode === 'COMPARE') compareAll.value = true
-  else if (requestMode === 'DIRECT' || requestMode === 'TRIPLES' || requestMode === 'RANKED') { compareAll.value = false; mode.value = requestMode }
-  loading.value = true; error.value = ''; failedQuestion.value = ''; streamingAnswer.value = ''; streamingEvidence.value = null
+
+  loading.value = true
+  error.value = ''
+  failedQuestion.value = ''
+  streamingAnswer.value = ''
+  streamingEvidence.value = null
   abortController = new AbortController()
+  messageListRef.value?.scrollToBottom(false)
+
   try {
     if (!sessionId.value) {
       const created = await learningApi.createSession(prompt.slice(0, 100)) as TutorSession
-      sessions.value = [created, ...sessions.value]; sessionId.value = created.id
+      sessions.value = [created, ...sessions.value]
+      sessionId.value = created.id
     }
     if (!retrying) {
-      const userMessage = await learningApi.saveMessage(sessionId.value!, { role: 'USER', content: prompt, mode: requestMode })
+      const userMessage = await learningApi.saveMessage(sessionId.value!, {
+        role: 'USER',
+        content: prompt,
+        mode: LOCKED_TUTOR_MODE,
+      })
       messages.value.push(userMessage as TutorChatMessage)
+      if (!options.prompt) {
+        question.value = ''
+      }
     }
-    const historyMessages = messages.value.slice(0, -1).slice(-10).map(m => m.content.slice(0, 2000))
-    const historyEntities = messages.value.filter(m => m.role === 'ASSISTANT').flatMap(m => m.metadata?.results?.flatMap(r => r.entities?.map(e => e.canonicalName) || []) || []).slice(-20)
-    let generatedResults: TutorAnswerResult[]
-    if (compareAll.value) {
-      const data = await learningApi.compare(prompt)
-      generatedResults = Array.isArray(data) ? data : data.results || [data]
-    } else {
-      const data = await learningApi.streamAsk(prompt, mode.value, (name, payload) => {
+
+    const lastMsg = messages.value[messages.value.length - 1]
+    const historySource = lastMsg?.role === 'USER' ? messages.value.slice(0, -1) : messages.value
+    const historyMessages = historySource.slice(-10).map(m => m.content.slice(0, 2000))
+    const historyEntities = messages.value
+      .filter(m => m.role === 'ASSISTANT')
+      .flatMap(m => m.metadata?.results?.flatMap(r => r.entities?.map(e => e.canonicalName) || []) || [])
+      .slice(-20)
+
+    const data = await learningApi.streamAsk(
+      prompt,
+      LOCKED_TUTOR_MODE,
+      (name, payload) => {
         if (name === 'knowledge') streamingEvidence.value = payload
         if (name === 'delta') streamingAnswer.value += payload.content || ''
-      }, abortController.signal, { historyMessages, historyEntities })
-      generatedResults = [data]
-    }
-    const content = generatedResults.map(r => r.error ? '[' + r.mode + '] ' + r.error : '[' + r.mode + '] ' + (r.answer || r.content || '')).join('\n\n')
+      },
+      abortController.signal,
+      { historyMessages, historyEntities }
+    )
+
+    const generatedResults: TutorAnswerResult[] = [data]
+    const content = generatedResults
+      .map(r => r.error ? stripLegacyModePrefix(r.error) : stripLegacyModePrefix(r.answer || r.content || ''))
+      .join('\n\n')
+
     if (content.trim()) {
       try {
-        const saved = await learningApi.saveMessage(sessionId.value!, { role: 'ASSISTANT', content: content.slice(0, 20000), mode: requestMode, metadata: { results: generatedResults } })
-        messages.value.push(saved as TutorChatMessage)
+        const saved = await learningApi.saveMessage(sessionId.value!, {
+          role: 'ASSISTANT',
+          content: content.slice(0, 20000),
+          mode: LOCKED_TUTOR_MODE,
+          metadata: { results: generatedResults },
+        }) as TutorChatMessage
+        messages.value.push({
+          ...saved,
+          metadata: saved?.metadata && Object.keys(saved.metadata).length ? saved.metadata : { results: generatedResults },
+        })
       } catch (e) {
         historyError.value = apiError(e, '回答已生成，但历史记录保存失败')
-        messages.value.push({ role: 'ASSISTANT', content: content.slice(0, 20000), mode: requestMode, metadata: { results: generatedResults } })
+        messages.value.push({
+          role: 'ASSISTANT',
+          content: content.slice(0, 20000),
+          mode: LOCKED_TUTOR_MODE,
+          metadata: { results: generatedResults },
+        })
       }
     }
   } catch (e) {
-    error.value = e instanceof DOMException && e.name === 'AbortError' ? '已停止生成，可修改问题后重试。' : apiError(e, 'AI 服务暂不可用，请检查模型与知识服务配置')
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      if (streamingAnswer.value.trim()) {
+        messages.value.push({
+          role: 'ASSISTANT',
+          content: `${streamingAnswer.value}\n\n（生成已停止，内容未完成）`,
+          mode: LOCKED_TUTOR_MODE,
+          metadata: { incomplete: true },
+        })
+      }
+      error.value = '已停止生成，可修改问题后重试。'
+    } else {
+      error.value = apiError(e, 'AI 服务或知识图谱服务暂不可用，请检查依赖状态')
+    }
     failedQuestion.value = prompt
-    failedMode.value = requestMode
-  } finally { loading.value = false; abortController = null }
+  } finally {
+    loading.value = false
+    streamingAnswer.value = ''
+    streamingEvidence.value = null
+    abortController = null
+  }
 }
 
-function retryQuestion(prompt: string, retryMode: string) {
-  question.value = prompt
-  void submit({ retry: true, prompt, mode: retryMode })
+function retryQuestion(prompt: string) {
+  void submit({ retry: true, prompt })
+}
+
+function regenerateQuestion(prompt: string) {
+  if (!prompt.trim() || loading.value) return
+  void submit({ retry: true, prompt })
 }
 
 function selectQuickPrompt(prompt: string) {
   question.value = prompt
+  composerRef.value?.focus()
 }
 
+function openGraph(entity?: string) {
+  const target: LearningContext = {
+    ...learningContext.value,
+    ...(entity ? { entity } : {}),
+  }
+  void router.push(graphHref(target))
+}
+
+function toggleSidebarDesktop() {
+  sidebarCollapsed.value = !sidebarCollapsed.value
+}
 </script>
 
 <template>
-  <div class="page-stack tutor-page">
-    <SectionHeading eyebrow="基于课程知识图谱" title="AI 学习助教" description="在连续学习会话中提问，查看回答过程和真实图谱证据。">
-      <LearningContextActions :context="learningContext" current-view="tutor" compact />
-    </SectionHeading>
-    <section class="tutor-chat-workspace">
-      <aside class="tutor-rail">
-        <TutorConversationList :sessions="sessions" :active-id="sessionId" :disabled="loading" :error="historyError" @select="selectSessionById" @create="newSession" @rename="renameSession" @remove="removeSessionById"></TutorConversationList>
-        <details class="tutor-aside" aria-label="回答策略">
-          <summary class="tutor-aside-summary">
-            <div class="tutor-aside-header">
-              <div class="tutor-aside-icon"><Sparkles :size="15" /></div>
-              <span class="tutor-aside-title">回答策略说明</span>
-            </div>
-            <span class="tutor-aside-badge">{{ compareAll ? '对照观察' : modes.find((item) => item.key === mode)?.title }}</span>
-          </summary>
-          <div class="tutor-aside-body">
-            <p v-if="mode === 'DIRECT' && !compareAll">直接将问题交给大模型，适合作为不使用课程图谱的对照基线。</p>
-            <p v-else-if="mode === 'TRIPLES' && !compareAll">检索相关三元组作为上下文，不提供相关性分数，观察结构化知识的作用。</p>
-            <p v-else>使用 Python 返回的相关性排序与原始提示词，帮助模型聚焦关键证据。</p>
-            <div class="strategy-steps"><span><i>1</i>识别问题实体</span><span><i>2</i>检索图谱邻居</span><span><i>3</i>生成有依据的回答</span></div>
-            <div class="aside-footnote">回答可能有误，请结合课程材料核对。</div>
+  <div class="tutor-page">
+    <header class="tutor-page-bar">
+      <SectionHeading title="AI 学习助教" description="基于课程知识图谱进行连续学习问答与分步思考引导。">
+        <LearningContextActions :context="learningContext" current-view="tutor" compact />
+      </SectionHeading>
+    </header>
+
+    <section class="tutor-workspace" aria-label="AI 学习助教工作台">
+      <div
+        v-if="mobileDrawerOpen"
+        class="tutor-drawer-backdrop"
+        aria-hidden="true"
+        @click="mobileDrawerOpen = false"
+      ></div>
+
+      <div
+        class="tutor-sidebar-pane"
+        :class="{ 'is-collapsed': sidebarCollapsed, 'is-mobile-open': mobileDrawerOpen }"
+      >
+        <TutorConversationList
+          :sessions="sessions"
+          :active-id="sessionId"
+          :disabled="loading"
+          :error="historyError"
+          @select="selectSessionById"
+          @create="newSession"
+          @rename="renameSession"
+          @remove="removeSessionById"
+          @collapse="toggleSidebarDesktop(); mobileDrawerOpen = false"
+        />
+      </div>
+
+      <div class="tutor-main-pane">
+        <div class="tutor-chat-topbar">
+          <div class="tutor-chat-topbar-left">
+            <button
+              type="button"
+              class="icon-button tutor-expand-btn"
+              :class="{ 'is-desktop-visible': sidebarCollapsed }"
+              title="展开会话侧栏"
+              aria-label="展开会话侧栏"
+              data-testid="tutor-expand-sidebar"
+              @click="sidebarCollapsed = false; mobileDrawerOpen = !mobileDrawerOpen"
+            >
+              <PanelLeftOpen :size="16" />
+            </button>
+            <h2 class="tutor-current-title">{{ activeSessionTitle }}</h2>
           </div>
-        </details>
-      </aside>
-      <div class="tutor-chat-main">
-        <TutorMessageList :messages="messages" :streaming-answer="streamingAnswer" :streaming-evidence="streamingEvidence" :loading="loading" :error="error" :retry-question="failedQuestion" :retry-mode="failedMode" @retry="retryQuestion" @copy="copyAnswer"></TutorMessageList>
-        <TutorComposer :question="question" :mode="mode" :compare-all="compareAll" :loading="loading" :context="context" :quick-prompts="quickPrompts" :modes="modes" @update:question="question = $event" @update:compare-all="compareAll = $event" @select-mode="selectMode" @quick-prompt="selectQuickPrompt" @submit="submit()" @stop="stopGenerating"></TutorComposer>
-        <section class="hint-panel">
-          <div class="hint-heading"><div><p class="eyebrow">分层学习提示</p><h2>先思考，再展开证据，最后查看解析</h2></div><Lightbulb :size="20" /></div>
-          <div class="hint-levels"><button v-for="level in [1, 2, 3]" :key="level" class="hint-level-button" :class="{ selected: hintLevel === level }" :disabled="hintLoading || loading || !question.trim()" @click="requestHint(level)"><strong>第{{ level }}级</strong><small>{{ level === 1 ? '思考方向' : level === 2 ? '知识证据' : '完整解析' }}</small></button></div>
-          <div v-if="hintLoading" class="hint-loading"><span class="spinner"></span>正在准备第{{ hintLevel }}级提示</div>
-          <div v-else-if="hintError" class="inline-notice" role="alert"><CircleAlert :size="16" />{{ hintError }}<button class="text-button" @click="requestHint(hintLevel)">重试</button></div>
-          <div v-else-if="hintResult" class="hint-result"><MarkdownContent :content="hintResult.content" /><div v-if="hintResult.evidence.length" class="hint-evidence-list"><div v-for="item in hintResult.evidence" :key="item.subject + item.predicate + item.object" class="hint-evidence"><span>{{ item.subject }}</span><i>{{ item.predicate }}</i><span>{{ item.object }}</span></div></div><button v-if="hintResult.nextLevelAvailable" class="button button-outline button-small" @click="requestHint(hintResult.level + 1)">展开第{{ hintResult.level + 1 }}级提示 <ArrowRight :size="14" /></button></div>
-          <div v-else class="hint-empty">输入问题后，先点击第1级提示；低层提示不会直接展示完整答案。</div>
-        </section>
+          <button
+            v-if="sidebarCollapsed"
+            type="button"
+            class="tutor-topbar-new-btn"
+            title="新建学习对话"
+            :disabled="loading"
+            @click="newSession"
+          >
+            <Plus :size="14" />
+            <span>新对话</span>
+          </button>
+        </div>
+
+        <TutorMessageList
+          ref="messageListRef"
+          :messages="messages"
+          :streaming-answer="streamingAnswer"
+          :streaming-evidence="streamingEvidence"
+          :loading="loading"
+          :error="error"
+          :retry-question="failedQuestion"
+          :quick-prompts="quickPrompts"
+          :hint-loading="hintLoading"
+          @retry="retryQuestion"
+          @copy="copyAnswer"
+          @regenerate="regenerateQuestion"
+          @request-hint="requestHint"
+          @open-graph="openGraph"
+          @quick-prompt="selectQuickPrompt"
+        />
+
+        <div class="tutor-composer-dock">
+          <TutorComposer
+            ref="composerRef"
+            :question="question"
+            :loading="loading"
+            :hint-loading="hintLoading"
+            :context="context"
+            @update:question="question = $event"
+            @submit="submit()"
+            @stop="stopGenerating"
+            @request-hint="requestHint()"
+            @dismiss-context="contextDismissed = true"
+          />
+        </div>
       </div>
     </section>
   </div>
 </template>
 
 <style scoped>
-.tutor-chat-workspace{display:grid;grid-template-columns:minmax(215px,246px) minmax(0,1fr);gap:20px;align-items:start;min-width:0}
-.tutor-chat-main,.tutor-rail{display:grid;gap:16px;min-width:0}
-.tutor-aside{padding:12px 14px;color:var(--text-muted);background:var(--surface-tint);border-radius:var(--radius-md);font-size:13px}
-.tutor-aside-summary{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;list-style:none}
-.tutor-aside-summary::-webkit-details-marker{display:none}
-.tutor-aside-header{display:flex;align-items:center;gap:8px}
-.tutor-aside-title{color:var(--text);font-size:13px;font-weight:600}
-.tutor-aside-badge{padding:2px 8px;color:var(--accent-strong);background:var(--accent-soft);border-radius:var(--radius-pill);font-size:11px}
-.tutor-aside-body{padding-top:10px}
-.tutor-aside-body>p{margin:8px 0;line-height:1.65}
-.tutor-aside-icon{display:grid;place-items:center;width:24px;height:24px;color:var(--accent);background:var(--accent-soft);border-radius:var(--radius-sm)}
-.strategy-steps{display:grid;gap:6px;margin-block:12px}
-.strategy-steps span{display:flex;align-items:center;gap:8px;font-size:12px}
-.strategy-steps i{display:grid;place-items:center;width:22px;height:22px;color:var(--accent-strong);background:var(--accent-soft);border-radius:50%;font-size:12px;font-style:normal;font-weight:650}
-.aside-footnote{padding-top:10px;border-top:1px solid var(--border-default);font-size:12px}
-.hint-panel{padding-top:16px;border-top:1px solid var(--border-default)}
-.hint-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--accent)}
-.hint-heading h2{margin:0;color:var(--text);font-size:16px}
-.hint-levels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
-.hint-level-button{display:grid;justify-items:start;gap:2px;min-height:48px;padding:8px 12px;text-align:left}
-.hint-level-button small,.hint-empty,.hint-loading{color:var(--text-muted);font-size:12px}
-.hint-level-button.selected,.hint-result{background:var(--accent-soft);border-color:var(--border-focus)}
-.hint-loading,.hint-empty,.hint-result{margin-top:12px;padding:12px;border-radius:var(--radius-sm)}
-.hint-loading{display:flex;align-items:center;gap:8px}
-.hint-evidence-list{margin-top:10px}
-.hint-evidence{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;padding:8px 0;border-top:1px solid var(--border-default);font-size:12px;overflow-wrap:anywhere}
-.hint-evidence i{color:var(--accent-strong);font-style:normal}
-.hint-result .button{margin-top:10px}
-@media(max-width:760px){.tutor-chat-workspace{grid-template-columns:1fr}.tutor-rail{display:contents}.tutor-aside{grid-row:3}}
+.tutor-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 12px;
+}
+
+.tutor-page-bar {
+  flex-shrink: 0;
+}
+
+.tutor-page-bar :deep(.section-heading) {
+  gap: 8px 16px;
+}
+
+.tutor-workspace {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
+  overflow: hidden;
+}
+
+.tutor-sidebar-pane {
+  width: 256px;
+  flex-shrink: 0;
+  height: 100%;
+  border-right: 1px solid var(--border-soft);
+  transition: width var(--motion), opacity var(--motion);
+  overflow: hidden;
+}
+
+.tutor-sidebar-pane.is-collapsed {
+  width: 0;
+  border-right: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.tutor-main-pane {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  background: var(--surface);
+}
+
+.tutor-chat-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 46px;
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--border-soft);
+  flex-shrink: 0;
+}
+
+.tutor-chat-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.tutor-expand-btn {
+  display: none;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+}
+
+.tutor-expand-btn.is-desktop-visible {
+  display: grid;
+}
+
+.tutor-current-title {
+  margin: 0;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tutor-topbar-new-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 4px 10px;
+  color: var(--text-muted);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 550;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.tutor-topbar-new-btn:hover:not(:disabled) {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  border-color: var(--border-default);
+}
+
+.tutor-composer-dock {
+  flex-shrink: 0;
+  padding: 4px 20px 10px;
+  background: var(--surface);
+}
+
+.tutor-drawer-backdrop {
+  display: none;
+}
+
+@media (max-width: 820px) {
+  .tutor-expand-btn {
+    display: grid;
+  }
+
+  .tutor-sidebar-pane {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 20;
+    width: min(272px, 85%);
+    box-shadow: var(--shadow-md);
+    transform: translateX(-100%);
+    transition: transform var(--motion);
+  }
+
+  .tutor-sidebar-pane.is-collapsed {
+    width: min(272px, 85%);
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    border-right: 1px solid var(--border-soft);
+  }
+
+  .tutor-sidebar-pane.is-mobile-open {
+    transform: translateX(0);
+  }
+
+  .tutor-drawer-backdrop {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 15;
+    background: var(--el-overlay-color-light);
+  }
+
+  .tutor-composer-dock {
+    padding: 8px 14px 10px;
+  }
+}
 </style>

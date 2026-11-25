@@ -31,7 +31,7 @@ export async function streamAsk(question: string, mode: string, onEvent: (name: 
   const parser = new SseDecoder(({ event, data }) => {
     let payload: any
     try { payload = JSON.parse(data) } catch { payload = { content: data } }
-    if (event === 'error') throw new Error(payload.message || 'AI 请求失败')
+    if (event === 'error') throw new Error(payload.message || payload.error || 'AI 请求失败')
     if (event === 'done') completed = payload
     onEvent(event, payload)
   })

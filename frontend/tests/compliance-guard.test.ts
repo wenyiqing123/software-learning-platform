@@ -9,6 +9,8 @@ describe('thesis compliance guards', () => {
     const browserSource = [
       'src/views/TutorView.vue',
       'src/components/TutorAnswerCard.vue',
+      'src/components/TutorComposer.vue',
+      'src/components/TutorMessageList.vue',
       'src/components/ExperimentResultGrid.vue',
       'src/views/ExperimentsView.vue',
     ].map(source).join('\n')

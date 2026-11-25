@@ -1,44 +1,363 @@
 <script setup lang="ts">
-import { Database, ChevronDown } from '@lucide/vue'
+import { computed, ref } from 'vue'
+import { Check, ChevronDown, Copy, Database, Lightbulb, Network, RotateCcw } from '@lucide/vue'
 import MarkdownContent from './MarkdownContent.vue'
+import { stripLegacyModePrefix, type TutorAnswerResult } from '../domain/tutorChat'
 
-interface TutorAnswer { mode?: string; answer?: string; content?: string; error?: string; entities?: { canonicalName: string }[]; triples?: { subject: string; predicate: string; object: string; score?: number }[]; prompt?: string; latencyMs?: number }
-defineProps<{ item: TutorAnswer; label?: string; showPrompt?: boolean }>()
-const emit = defineEmits<{ copy: [value: string] }>()
+const props = withDefaults(defineProps<{
+  item: TutorAnswerResult
+  canRegenerate?: boolean
+  hintDisabled?: boolean
+}>(), {
+  canRegenerate: false,
+  hintDisabled: false,
+})
+
+const emit = defineEmits<{
+  copy: [value: string]
+  regenerate: []
+  hint: []
+  'open-graph': [entity?: string]
+}>()
+
+const copied = ref(false)
+let copyResetTimer: ReturnType<typeof setTimeout> | null = null
+
+const cleanedAnswer = computed(() => stripLegacyModePrefix(props.item.answer || props.item.content || ''))
+const primaryEntity = computed(() => {
+  const fromEntities = props.item.entities?.find(e => e.canonicalName)?.canonicalName
+  if (fromEntities) return fromEntities
+  return props.item.triples?.find(t => t.subject)?.subject
+})
+
+function handleCopy() {
+  if (!cleanedAnswer.value) return
+  emit('copy', cleanedAnswer.value)
+  copied.value = true
+  if (copyResetTimer) clearTimeout(copyResetTimer)
+  copyResetTimer = setTimeout(() => {
+    copied.value = false
+  }, 1800)
+}
 </script>
 
 <template>
   <article class="tutor-answer-card" :class="{ 'answer-result-failed': item.error }">
-    <div v-if="label" class="result-mode-label">{{ label }}</div>
-    <div class="answer-card-meta"><span :class="['answer-state', item.error ? 'is-error' : 'is-ready']">{{ item.error ? '失败' : '已生成' }}</span><span v-if="item.latencyMs">{{ item.latencyMs }} ms</span><button v-if="!item.error && (item.answer || item.content)" class="text-button" type="button" @click="emit('copy', item.answer || item.content || '')">复制回答</button></div>
-    <p v-if="item.error" class="compare-error">{{ item.error }}</p>
-    <MarkdownContent v-else :content="item.answer || item.content" />
-    <div v-if="item.entities?.length" class="entity-tags"><span v-for="entity in item.entities" :key="entity.canonicalName">{{ entity.canonicalName }}</span></div>
-    <details v-if="item.triples?.length" class="evidence-block"><summary class="evidence-title"><Database :size="15" /><strong>图谱证据</strong><span>{{ item.triples.length }} 条三元组</span><ChevronDown :size="14" /></summary><div v-for="triple in item.triples" :key="triple.subject + triple.predicate + triple.object" class="evidence-triple"><span>{{ triple.subject }}</span><i>{{ triple.predicate }}</i><span>{{ triple.object }}</span><small v-if="triple.score !== undefined">{{ Number(triple.score).toFixed(3) }}</small></div></details>
-    <details v-if="showPrompt && item.prompt && item.mode !== 'RANKED'" class="prompt-details"><summary>查看检索提示（RANKED 后台约束不展示）<ChevronDown :size="14" /></summary><pre>{{ item.prompt }}</pre></details>
+    <!-- 知识图谱证据收纳为低调“引用来源胶囊”（默认折叠） -->
+    <details v-if="item.triples?.length" class="evidence-block">
+      <summary class="evidence-capsule-summary">
+        <Database :size="14" class="evidence-capsule-icon" />
+        <span class="evidence-capsule-label">已参考 {{ item.triples.length }} 条课程图谱证据</span>
+        <ChevronDown :size="14" class="evidence-chevron" />
+      </summary>
+      <div class="evidence-panel">
+        <div v-if="item.entities?.length || primaryEntity" class="evidence-panel-top">
+          <div v-if="item.entities?.length" class="entity-tags">
+            <button
+              v-for="entity in item.entities"
+              :key="entity.canonicalName"
+              type="button"
+              class="entity-tag-btn"
+              @click="emit('open-graph', entity.canonicalName)"
+            >
+              {{ entity.canonicalName }}
+            </button>
+          </div>
+          <button
+            v-if="primaryEntity"
+            type="button"
+            class="evidence-graph-jump"
+            @click="emit('open-graph', primaryEntity)"
+          >
+            <Network :size="13" />
+            <span>在图谱中查看</span>
+          </button>
+        </div>
+        <div class="evidence-triple-list">
+          <div
+            v-for="triple in item.triples"
+            :key="triple.subject + triple.predicate + triple.object"
+            class="evidence-triple"
+          >
+            <span class="triple-subject">{{ triple.subject }}</span>
+            <i class="triple-predicate">— {{ triple.predicate }} —</i>
+            <span class="triple-object">{{ triple.object }}</span>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <!-- 失败或正常 Markdown 回答排版 -->
+    <p v-if="item.error" class="tutor-answer-error" role="alert">{{ item.error }}</p>
+    <div v-else class="tutor-answer-prose">
+      <MarkdownContent :content="cleanedAnswer" />
+    </div>
+
+    <!-- 回复底部轻量操作条（仅生成完成且无错时展示） -->
+    <div v-if="!item.error && cleanedAnswer" class="tutor-answer-actions">
+      <button
+        type="button"
+        class="tutor-action-btn"
+        :title="copied ? '已复制全文' : '复制全文'"
+        @click="handleCopy"
+      >
+        <Check v-if="copied" :size="14" />
+        <Copy v-else :size="14" />
+        <span>{{ copied ? '已复制' : '复制' }}</span>
+      </button>
+      <button
+        v-if="canRegenerate"
+        type="button"
+        class="tutor-action-btn"
+        title="重新生成回答"
+        data-testid="tutor-regenerate"
+        @click="emit('regenerate')"
+      >
+        <RotateCcw :size="14" />
+        <span>重新生成</span>
+      </button>
+      <button
+        type="button"
+        class="tutor-action-btn"
+        title="获取分步引导提示"
+        :disabled="hintDisabled"
+        @click="emit('hint')"
+      >
+        <Lightbulb :size="14" />
+        <span>分步提示</span>
+      </button>
+      <button
+        v-if="primaryEntity"
+        type="button"
+        class="tutor-action-btn"
+        title="前往知识图谱查看结构关系"
+        @click="emit('open-graph', primaryEntity)"
+      >
+        <Network :size="14" />
+        <span>前往图谱</span>
+      </button>
+    </div>
   </article>
 </template>
 
 <style scoped>
-.tutor-answer-card{min-width:0}
-.answer-result-failed{border-left:3px solid var(--danger)}
-.answer-card-meta,.evidence-title,.entity-tags{display:flex;align-items:center;gap:8px}
-.answer-card-meta{flex-wrap:wrap;margin-bottom:10px;color:var(--text-muted);font-size:12px;font-variant-numeric:tabular-nums}
-.answer-card-meta .text-button,.evidence-title span{margin-left:auto}
-.answer-state,.entity-tags span{padding:3px 8px;border-radius:var(--radius-pill);font-weight:600;font-size:12px}
-.answer-state.is-ready,.entity-tags span{color:var(--accent-strong);background:var(--accent-soft)}
-.answer-state.is-error,.compare-error{color:var(--danger);background:var(--danger-soft)}
-.compare-error{padding:10px;border-radius:var(--radius-sm)}
-.result-mode-label{margin-bottom:6px;font-weight:650}
-.prompt-details{margin-top:12px;color:var(--text-muted);font-size:12px}
-.prompt-details summary{cursor:pointer}
-.prompt-details pre{max-height:170px;overflow:auto;padding:10px;background:var(--surface-soft);border-radius:var(--radius-sm);white-space:pre-wrap;overflow-wrap:anywhere}
-.entity-tags{flex-wrap:wrap;margin-top:10px}
-.evidence-block{margin-top:12px;padding:0 12px;background:var(--surface-tint);border-radius:var(--radius-sm)}
-.evidence-title{min-height:40px;cursor:pointer;font-size:13px}
-.evidence-title svg{flex:none;color:var(--accent)}
-.evidence-title span,.evidence-triple small{color:var(--text-muted);font-size:12px}
-.evidence-triple{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(64px,auto) minmax(0,1.2fr) auto;gap:8px;align-items:baseline;padding:8px 0;border-top:1px solid var(--border-default);font-size:13px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
-.evidence-triple i{color:var(--accent-strong);font-style:normal;text-align:center}
-@media(max-width:520px){.evidence-triple small{grid-column:1/-1}}
+.tutor-answer-card {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.answer-result-failed {
+  padding-left: 12px;
+  border-left: 3px solid var(--danger);
+}
+
+.evidence-block {
+  min-width: 0;
+  border-radius: var(--radius-sm);
+}
+
+.evidence-capsule-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 4px 10px;
+  color: var(--text-muted);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+  transition: background-color var(--motion), border-color var(--motion), color var(--motion);
+}
+
+.evidence-capsule-summary::-webkit-details-marker {
+  display: none;
+}
+
+.evidence-capsule-summary:hover {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  border-color: var(--border-default);
+}
+
+.evidence-capsule-icon {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.evidence-capsule-label {
+  line-height: 1.4;
+}
+
+.evidence-chevron {
+  color: var(--text-subtle);
+  flex-shrink: 0;
+  transition: transform var(--motion);
+}
+
+.evidence-block[open] .evidence-chevron {
+  transform: rotate(180deg);
+}
+
+.evidence-panel {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  display: grid;
+  gap: 8px;
+}
+
+.evidence-panel-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.entity-tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.entity-tag-btn {
+  min-height: 24px;
+  padding: 2px 8px;
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.entity-tag-btn:hover {
+  border-color: var(--border-focus);
+}
+
+.evidence-graph-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 26px;
+  padding: 2px 8px;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.evidence-graph-jump:hover {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+}
+
+.evidence-triple-list {
+  display: grid;
+}
+
+.evidence-triple {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 6px 10px;
+  align-items: baseline;
+  padding: 7px 0;
+  border-top: 1px solid var(--border-soft);
+  font-size: 12.5px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.evidence-triple:first-child {
+  border-top: 0;
+  padding-top: 2px;
+}
+
+.triple-subject {
+  color: var(--text);
+  font-weight: 550;
+}
+
+.triple-predicate {
+  color: var(--accent-strong);
+  font-style: normal;
+  font-size: 12px;
+  text-align: center;
+}
+
+.triple-object {
+  color: var(--text-muted);
+}
+
+.tutor-answer-error {
+  margin: 0;
+  padding: 10px 12px;
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.tutor-answer-prose {
+  min-width: 0;
+  color: var(--text);
+}
+
+.tutor-answer-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  opacity: 0.78;
+  transition: opacity var(--motion);
+}
+
+.tutor-answer-card:hover .tutor-answer-actions,
+.tutor-answer-card:focus-within .tutor-answer-actions {
+  opacity: 1;
+}
+
+.tutor-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 3px 9px;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.tutor-action-btn:hover:not(:disabled) {
+  color: var(--accent-strong);
+  background: var(--surface-tint);
+}
+
+@media (max-width: 560px) {
+  .evidence-triple {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .triple-predicate {
+    text-align: left;
+  }
+}
 </style>
