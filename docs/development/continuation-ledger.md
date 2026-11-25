@@ -471,3 +471,18 @@
   - 后端单测：`mvn -pl learning-service -am package`（JDK 21）**178 tests run, 0 failures, 0 errors, 0 skipped**（含新增 `TutorSessionControllerTest` MockMvc `@Valid` 校验测试与 `TutorSessionServiceTest` 多级提示持久化测试）；
   - 前端验证：`npx vitest run` **56 个测试文件、204 个测试用例全部通过**；`node scripts/scan-vue-classes.mjs --check` **1218** 处模板类全匹配；`npm run build` 耗时 `1.55s`；`node scripts/authenticated-ui-smoke.mjs` **170/170** 场景通过且 `.ui-visual-review` 已彻底清理；
   - 真机 MySQL + 网关全链路实测（经 `8080 -> 8081 -> MySQL 8`）：新建会话依次写入并读回 `['RANKED', 'TUTOR_HINT_1', 'TUTOR_HINT_2', 'TUTOR_HINT_3']` 全部 `201/200` 成功（临时验证账号与测试数据已清理归零）。
+
+### 分步提示二三级表格化与 Markdown 排版升级记录（2026-11-25）
+
+- **问题背景**：分步学习提示第 2 级原本将三元组以扁平文本卡片堆叠展示，信息扫读效率一般；第 3 级与普通助教回复在缺少完整 Markdown 区块解析时易出现 `**...**` 原文外露、标题/列表/引用/表格层次不清的问题。
+- **核心改动**：
+  - `frontend/src/components/HintEvidenceTable.vue` & `frontend/src/components/TutorMessageList.vue`：抽出可复用三元组表格组件（`核心实体` 可点跳转 `.hint-entity-link`、`图谱关系` 徽标 `.hint-relation-pill`、`关联结论 / 对象`，表头与单元格满足 `1px solid var(--border-default)` 边框与 `9px 12px` 内边距），在第 2 级直出区与第 3 级独立历史兜底折叠面板中统一复用，并清理失效卡片面板样式。
+  - `frontend/src/domain/markdown.ts` & `frontend/src/components/MarkdownContent.vue` & `frontend/src/styles-design-system.css`：升级 `parseInlineMarkdown` / `parseSimpleMarkdown` / `renderSimpleMarkdown` 纯数据结构解析，安全渲染三/四级标题、行内加粗/斜体/代码、有序与无序列表、`>` 引用块、`---`/`***` 分割线与管道表格，无任何 `v-html` 注入；四份全局 CSS 合计 **65,229 B**（`styles-design-system.css` 30,169 B、`styles.css` 20,374 B、`styles-learning.css` 11,389 B、`styles-graph.css` 3,297 B），全仓 `!important` 为 **0**。
+  - `backend/ai-service/src/main/java/edu/wfust/learning/ai/TutorHintService.java`：优化第 3 级 `completeAnswer` 系统提示词（严格保留“只根据给出的课程证据”事实约束），引导 LLM 输出 `### 核心结论`、关键术语加粗、`### 要点解析` 列表及示例引用块等标准 Markdown 结构，并补充单测覆盖。
+- **实测验证结果（最终改动后）**：
+  - 后端单测（JDK 21 `mvn -pl ai-service -am package`）：**106 tests run, 0 failures, 0 errors, 0 skipped**，`BUILD SUCCESS`。
+  - 前端单测（`npx vitest run`）：**56 passed (56)** 个测试文件、**206 passed (206)** 条用例全部通过。
+  - 模板类名 AST 扫描（`node scripts/scan-vue-classes.mjs --check`）：共检查 **1226** 处模板类用法，**0** 缺失。
+  - 前端生产构建（`npm run build`）：**1.66s** 完成构建。
+  - Playwright 真实鉴权 UI 冒烟（`node scripts/authenticated-ui-smoke.mjs`）：**170/170** 全部通过，已清理 `frontend/.ui-visual-review` 临时目录。
+  - 真实网关联动实测（`POST http://127.0.0.1:8080/api/ai/tutor/hint`，`level=3` 提问“数据流图中的加工应该如何规范命名？”）：基于重启后的 `ai-service`（`8082` 端口）返回规范 Markdown（包含 `### 核心结论`、术语加粗、`- ` 列表与 `> 示例：...` 引用块）。

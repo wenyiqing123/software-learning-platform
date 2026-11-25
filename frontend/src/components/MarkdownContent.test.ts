@@ -26,4 +26,29 @@ describe('MarkdownContent', () => {
     expect(wrapper.get('[role="status"]').text()).toBe('复制失败')
     expect(wrapper.get('code').text()).toBe('const value = 2;')
   })
+
+  it('renders formatted bold text, inline code, blockquotes, ordered lists, and tables via safe Vue nodes', () => {
+    const wrapper = mount(MarkdownContent, {
+      props: {
+        content: [
+          '### 核心结论',
+          '',
+          '采用 **动宾短语** 描述 `加工` 逻辑。',
+          '',
+          '> 提示：禁止使用纯名词短语。',
+          '',
+          '| 对象 | 规则 |',
+          '| --- | --- |',
+          '| 加工 | 动宾短语 |',
+        ].join('\n'),
+      },
+    })
+
+    expect(wrapper.get('h4').text()).toBe('核心结论')
+    expect(wrapper.get('strong').text()).toBe('动宾短语')
+    expect(wrapper.get('p code').text()).toBe('加工')
+    expect(wrapper.get('blockquote.markdown-quote').text()).toContain('禁止使用纯名词短语')
+    expect(wrapper.findAll('table.markdown-table th').map(th => th.text())).toEqual(['对象', '规则'])
+    expect(wrapper.findAll('table.markdown-table td').map(td => td.text())).toEqual(['加工', '动宾短语'])
+  })
 })

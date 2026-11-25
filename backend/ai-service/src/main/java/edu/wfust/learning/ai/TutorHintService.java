@@ -66,7 +66,13 @@ public class TutorHintService {
     private String completeAnswer(String question, List<TutorHintResponse.HintEvidence> evidence) {
         String triples = evidence.stream().map(item -> "[" + item.subject() + " | " + item.predicate() + " | " + item.object() + "]")
                 .collect(Collectors.joining("\n"));
-        String system = "你是软件工程课程助教。只根据给出的课程证据回答问题；证据不足时明确说明。输出完整、简洁、适合学习者复习的答案和一句解释，不要编造证据。";
+        String system = """
+                你是软件工程课程助教。只根据给出的课程证据回答问题；证据不足时明确说明，严禁编造证据。
+                请使用清晰美观的 Markdown 格式输出适合学习者复习的完整解析：
+                - 证据充分时，可依次使用 `### 核心结论`（加粗关键术语与命名规范）与 `### 要点解析`（用 `- ` 分条或 `> ` 引用说明依据与示例，仅使用所给证据中的内容）；
+                - 证据不足时，明确说明缺少的知识点，并用列表梳理已有证据中的可复习要点；
+                - 控制篇幅简洁准确，不要堆砌无关套话，不要扩展证据之外的事实。
+                """.strip();
         var response = model.call("问题：" + question + "\n课程证据：\n" + triples, system);
         String answer = response.getResult().getOutput().getText();
         return answer == null || answer.isBlank() ? "模型没有生成可用解析，请回到课程正文核对。" : answer;

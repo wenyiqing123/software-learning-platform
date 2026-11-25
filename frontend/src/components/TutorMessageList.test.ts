@@ -177,15 +177,19 @@ describe('TutorMessageList', () => {
       },
     })
 
-    // 同轮已有第2级时：第1级不渲染折叠证据，第2级直出结构化卡片（非重复文本列表），第3级不重复渲染折叠证据
+    // 同轮已有第2级时：第1级不渲染折叠证据，第2级直出三列表格（非重复文本列表），第3级不重复渲染折叠证据
     expect(wrapper.findAll('.evidence-block')).toHaveLength(0)
     expect(wrapper.findAll('.hint-evidence-direct')).toHaveLength(1)
+    expect(wrapper.findAll('table.hint-evidence-table th').map(th => th.text())).toEqual(['核心实体', '图谱关系', '关联结论 / 对象'])
+    expect(wrapper.findAll('table.hint-evidence-table tbody tr')).toHaveLength(1)
     expect(wrapper.text()).not.toContain('相关课程证据：')
     expect(wrapper.text()).toContain('已定位 1 条课程图谱证据')
     expect(wrapper.text()).toContain('动宾短语')
 
-    await wrapper.get('.hint-graph-jump').trigger('click')
+    await wrapper.get('.hint-entity-link').trigger('click')
     expect(wrapper.emitted('open-graph')?.[0]).toEqual(['加工'])
+    await wrapper.get('.hint-graph-jump').trigger('click')
+    expect(wrapper.emitted('open-graph')?.[1]).toEqual(['加工'])
 
     // 若独立存在第3级且本轮未曾展示第2级，保留默认折叠的来源胶囊
     const standaloneLevel3 = mount(TutorMessageList, {

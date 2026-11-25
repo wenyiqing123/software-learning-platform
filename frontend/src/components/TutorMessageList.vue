@@ -3,6 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { ArrowDown, ArrowRight, BookOpen, CircleAlert, Copy, Database, GraduationCap, Lightbulb, Network, RefreshCw, Sparkles } from '@lucide/vue'
 import MarkdownContent from './MarkdownContent.vue'
 import TutorAnswerCard from './TutorAnswerCard.vue'
+import HintEvidenceTable from './HintEvidenceTable.vue'
 import { expandedHintLevelsInTurn, stripLegacyModePrefix, type TutorAnswerResult, type TutorChatMessage, type TutorQuickPrompt } from '../domain/tutorChat'
 
 const DEFAULT_PROMPTS: TutorQuickPrompt[] = [
@@ -157,7 +158,7 @@ defineExpose({ scrollToBottom })
                   <span>分步学习提示 · 第 {{ hintOf(message)!.level }} 级</span>
                 </div>
 
-                <!-- 第 2 级有结构化图谱证据时直接展示卡片列表，避免重复正文与折叠块 -->
+                <!-- 第 2 级有结构化图谱证据时直接以三列表格呈现，直观清晰且无重复 -->
                 <div
                   v-if="hintOf(message)!.level === 2 && hintOf(message)!.evidence?.length"
                   class="hint-evidence-direct"
@@ -177,17 +178,10 @@ defineExpose({ scrollToBottom })
                       <span>在图谱中查看</span>
                     </button>
                   </div>
-                  <div class="hint-evidence-panel">
-                    <div
-                      v-for="ev in hintOf(message)!.evidence"
-                      :key="ev.subject + ev.predicate + ev.object"
-                      class="hint-evidence-item"
-                    >
-                      <span>{{ ev.subject }}</span>
-                      <i>— {{ ev.predicate }} —</i>
-                      <span>{{ ev.object }}</span>
-                    </div>
-                  </div>
+                  <HintEvidenceTable
+                    :evidence="hintOf(message)!.evidence"
+                    @open-graph="emit('open-graph', $event)"
+                  />
                 </div>
 
                 <!-- 第 1 级 / 第 3 级（或无结构化证据降级时的第 2 级）显示正文 -->
@@ -204,16 +198,11 @@ defineExpose({ scrollToBottom })
                     <Database :size="14" class="evidence-capsule-icon" />
                     <span>查看本提示依据的 {{ hintOf(message)!.evidence.length }} 条图谱证据</span>
                   </summary>
-                  <div class="hint-evidence-panel">
-                    <div
-                      v-for="ev in hintOf(message)!.evidence"
-                      :key="ev.subject + ev.predicate + ev.object"
-                      class="hint-evidence-item"
-                    >
-                      <span>{{ ev.subject }}</span>
-                      <i>— {{ ev.predicate }} —</i>
-                      <span>{{ ev.object }}</span>
-                    </div>
+                  <div class="hint-evidence-collapsed-body">
+                    <HintEvidenceTable
+                      :evidence="hintOf(message)!.evidence"
+                      @open-graph="emit('open-graph', $event)"
+                    />
                   </div>
                 </details>
 
@@ -612,26 +601,8 @@ defineExpose({ scrollToBottom })
   background: var(--accent-soft);
 }
 
-.hint-evidence-panel {
-  padding: 10px 12px;
-  background: var(--surface-soft);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-sm);
-  display: grid;
-  gap: 6px;
-}
-
-.hint-evidence-item {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  gap: 8px;
-  font-size: 12.5px;
-  overflow-wrap: anywhere;
-}
-
-.hint-evidence-item i {
-  color: var(--accent-strong);
-  font-style: normal;
+.hint-evidence-collapsed-body {
+  margin-top: 8px;
 }
 
 .tutor-hint-next-row {

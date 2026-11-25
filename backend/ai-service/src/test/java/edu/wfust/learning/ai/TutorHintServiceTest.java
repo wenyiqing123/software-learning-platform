@@ -47,7 +47,7 @@ class TutorHintServiceTest {
         var result = service.hint(new TutorHintRequest("加工如何命名", 3));
         assertThat(result.content()).contains("动宾短语");
         assertThat(result.source()).isEqualTo("GRAPH_GROUNDED_MODEL");
-        verify(model).call(contains("数据流图"), contains("只根据给出的课程证据"));
+        verify(model).call(contains("数据流图"), argThat(sys -> sys.contains("只根据给出的课程证据") && sys.contains("Markdown")));
     }
 
     @Test void noEvidenceNeverCallsModelAndDisclosesInsufficientEvidence() {
