@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { PanelLeftOpen, Plus } from '@lucide/vue'
+import { GraduationCap, MessageSquare, PanelLeftOpen, Plus } from '@lucide/vue'
 import { useRoute, useRouter } from 'vue-router'
 import { apiError, learningApi } from '../api/client'
 import type { TutorSession } from '../api/tutor'
@@ -20,12 +20,36 @@ import LearningContextActions from '../components/LearningContextActions.vue'
 import TutorConversationList from '../components/TutorConversationList.vue'
 import TutorMessageList from '../components/TutorMessageList.vue'
 import TutorComposer from '../components/TutorComposer.vue'
+import FeynmanTeachBackPanel from '../components/FeynmanTeachBackPanel.vue'
+
+type TutorActivity = 'chat' | 'feynman'
 
 const route = useRoute()
 const router = useRouter()
 
 const queryValue = (value: unknown) => typeof value === 'string' ? value : Array.isArray(value) ? String(value[0] || '') : ''
 const initialEntity = queryValue(route.query.entity)
+const activeActivity = ref<TutorActivity>(queryValue(route.query.activity) === 'feynman' ? 'feynman' : 'chat')
+
+watch(
+  () => route.query.activity,
+  (next) => {
+    const mode = queryValue(next)
+    if (mode === 'feynman' || mode === 'chat') {
+      activeActivity.value = mode
+    }
+  },
+)
+
+const resolvedCourseId = computed(() => {
+  const raw = queryValue(route.query.courseId)
+  return raw && /^[1-9]\d*$/.test(raw) ? Number(raw) : undefined
+})
+
+const initialFeynmanTopic = computed(() => {
+  const entity = queryValue(route.query.entity).trim()
+  return entity || resolvedPointName.value.trim()
+})
 
 function hasRouteLearningContext(): boolean {
   return Boolean(
@@ -557,10 +581,10 @@ function toggleSidebarDesktop() {
       </div>
 
       <div class="tutor-main-pane">
-        <!-- 无边框透明画布顶行：空态只显示右侧上下文捷径；有消息时展示会话标题与语义描述 -->
+        <!-- 无边框透明画布顶行：支持“自由答疑 / 费曼自检”双学习活动切换与上下文捷径 -->
         <header
           class="tutor-canvas-header"
-          :class="{ 'is-empty-state': !messages.length && !loading && !hintLoading && !error }"
+          :class="{ 'is-empty-state': activeActivity === 'chat' && !messages.length && !loading && !hintLoading && !error }"
         >
           <div class="tutor-canvas-left">
             <button
@@ -575,7 +599,7 @@ function toggleSidebarDesktop() {
               <PanelLeftOpen :size="16" />
             </button>
             <button
-              v-if="sidebarCollapsed"
+              v-if="sidebarCollapsed && activeActivity === 'chat'"
               type="button"
               class="tutor-topbar-new-btn"
               title="新建学习对话"
@@ -585,7 +609,33 @@ function toggleSidebarDesktop() {
               <Plus :size="14" />
               <span>新对话</span>
             </button>
-            <div v-if="messages.length || loading || hintLoading || error" class="tutor-topbar-titles">
+            <div class="tutor-activity-tabs" role="tablist" aria-label="助教学习活动切换">
+              <button
+                type="button"
+                role="tab"
+                class="tutor-activity-tab"
+                :class="{ active: activeActivity === 'chat' }"
+                :aria-selected="activeActivity === 'chat'"
+                data-testid="tutor-activity-chat"
+                @click="activeActivity = 'chat'"
+              >
+                <MessageSquare :size="14" aria-hidden="true" />
+                <span>自由答疑</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                class="tutor-activity-tab"
+                :class="{ active: activeActivity === 'feynman' }"
+                :aria-selected="activeActivity === 'feynman'"
+                data-testid="tutor-activity-feynman"
+                @click="activeActivity = 'feynman'"
+              >
+                <GraduationCap :size="14" aria-hidden="true" />
+                <span>费曼自检</span>
+              </button>
+            </div>
+            <div v-if="activeActivity === 'chat' && (messages.length || loading || hintLoading || error)" class="tutor-topbar-titles">
               <h1 class="tutor-heading-title">
                 {{ activeSessionTitle || 'AI 学习助教' }}
               </h1>
@@ -600,39 +650,50 @@ function toggleSidebarDesktop() {
           </div>
         </header>
 
-        <TutorMessageList
-          ref="messageListRef"
-          :messages="messages"
-          :streaming-answer="streamingAnswer"
-          :streaming-evidence="streamingEvidence"
-          :loading="loading"
-          :error="error"
-          :retry-question="failedQuestion"
-          :quick-prompts="quickPrompts"
-          :hint-loading="hintLoading"
-          @retry="retryQuestion"
-          @copy="copyAnswer"
-          @regenerate="regenerateQuestion"
-          @request-hint="requestHint"
-          @open-graph="openGraph"
-          @quick-prompt="selectQuickPrompt"
-        />
-
-        <div class="tutor-composer-dock">
-          <TutorComposer
-            ref="composerRef"
-            :question="question"
+        <template v-if="activeActivity === 'chat'">
+          <TutorMessageList
+            ref="messageListRef"
+            :messages="messages"
+            :streaming-answer="streamingAnswer"
+            :streaming-evidence="streamingEvidence"
             :loading="loading"
+            :error="error"
+            :retry-question="failedQuestion"
+            :quick-prompts="quickPrompts"
             :hint-loading="hintLoading"
-            :step-hint-enabled="stepHintEnabled"
-            :context="context"
-            @update:question="question = $event"
-            @update:step-hint-enabled="stepHintEnabled = $event"
-            @submit="submit()"
-            @stop="stopGenerating"
-            @dismiss-context="contextDismissed = true"
+            @retry="retryQuestion"
+            @copy="copyAnswer"
+            @regenerate="regenerateQuestion"
+            @request-hint="requestHint"
+            @open-graph="openGraph"
+            @quick-prompt="selectQuickPrompt"
           />
-        </div>
+
+          <div class="tutor-composer-dock">
+            <TutorComposer
+              ref="composerRef"
+              :question="question"
+              :loading="loading"
+              :hint-loading="hintLoading"
+              :step-hint-enabled="stepHintEnabled"
+              :context="context"
+              @update:question="question = $event"
+              @update:step-hint-enabled="stepHintEnabled = $event"
+              @submit="submit()"
+              @stop="stopGenerating"
+              @dismiss-context="contextDismissed = true"
+            />
+          </div>
+        </template>
+
+        <KeepAlive>
+          <FeynmanTeachBackPanel
+            v-if="activeActivity === 'feynman'"
+            :initial-knowledge-point="initialFeynmanTopic"
+            :course-id="resolvedCourseId"
+            @open-graph="openGraph"
+          />
+        </KeepAlive>
       </div>
     </section>
   </div>
@@ -772,6 +833,39 @@ function toggleSidebarDesktop() {
 
 .tutor-topbar-new-btn:hover:not(:disabled) {
   border-color: var(--border-focus);
+}
+
+.tutor-activity-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  background: var(--surface-tint);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.tutor-activity-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 3px 10px;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.tutor-activity-tab.active {
+  color: var(--accent-strong);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+  font-weight: 600;
 }
 
 .tutor-composer-dock {

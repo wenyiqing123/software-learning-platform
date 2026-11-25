@@ -46,6 +46,7 @@
 | POST | /ai/ask | question、mode；可带有界 historyMessages/historyEntities |
 | POST | /ai/micro-lesson | 内部微课生成接口；使用直接输出 system prompt 和 2048 token 专用上限，避免推理型模型耗尽默认 1024 token 后正文为空 |
 | POST | /ai/tutor/hint | question、level(1–3)、可选历史；一级思考方向、二级课程证据、三级完整解析；无证据时安全响应 |
+| POST | /ai/feynman/evaluate | knowledgePoint(非空、<=100字)、studentExplanation(10–2000字)、可选 courseId；**严格仅限 STUDENT 角色**（ADMIN 返回 403、未登录 401）；只读检索图谱并对比返回 coveredPoints、missingTriples（仅真实证据子集）、misconceptions、followUpQuestion 与 evidenceTriples；图谱离线返回 503 KNOWLEDGE_UNAVAILABLE，绝不泄露后台系统提示词 |
 | POST | /ai/ask/stream | 相同输入，SSE状态、证据、文本片段与完成结果 |
 | POST | /ai/compare | question、includeAblations；共享检索证据，保持生成配置一致 |
 | GET | /ai/dependencies | 默认模型与Python依赖状态，以及 RANKED 专用模型的开关、配置状态和模型ID；不返回 Key、地址或凭据。`rankedModelStatus=CONFIGURED` 仅表示配置完整，不代表远端推理服务健康 |
@@ -73,7 +74,7 @@
 
 ### 学习助手多会话对话
 
-`/tutor` 仅允许 `STUDENT` 角色访问。页面复用 `/tutor/sessions` 会话列表和 `/tutor/sessions/{id}/messages` 历史消息，通过 `PATCH /tutor/sessions/{id}` 重命名；所有读写、重命名和删除操作都按 JWT 当前用户校验 `ai_session.user_id`。
+`/tutor` 仅允许 `STUDENT` 角色访问，并在顶栏支持“自由答疑”与“费曼自检”（`/tutor?activity=feynman&entity=...`）双活动切换。自由答疑继续复用 `/tutor/sessions` 会话列表和 `/tutor/sessions/{id}/messages` 历史消息，通过 `PATCH /tutor/sessions/{id}` 重命名；费曼自检调用 `POST /ai/feynman/evaluate` 仅展示真实图谱对照辅助建议与合规免责小字，绝不将对照诊断结果写入正式考核分数。所有读写、重命名和删除操作都按 JWT 当前用户校验 `ai_session.user_id`。
 
 `POST /ai/ask/stream`、`POST /ai/ask` 与 `POST /ai/tutor/hint` 保持向后兼容，新增可选 `entities` 字符串列表（最多 10 个，供学习助教带入当前焦点实体，配合别名补全、有界 2 跳桥接扩展与相关性重排提升召回准确性；实验对照与消融路径保持原基线不变）。SSE 事件保持兼容：`status` 表示生成阶段，`knowledge` 返回真实实体/三元组证据，`delta` 返回增量回答，`done` 返回完成结果，`error` 返回结构化失败。学习助手支持停止生成和失败重试；中断或失败的回答不会被当作有效成功答案。课程/图谱页面可通过 `courseId`、`sectionId`、`knowledgePointId`、`entity` 查询参数进入助教，参数只用于显示学习上下文、注入可选 `entities` 和构造有限历史，不会把隐藏系统提示词发送到浏览器或保存到消息 metadata。
 | GET / POST | /admin/courses | 查询全部课程 / 创建课程 |

@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -26,6 +27,11 @@ public class AiExceptionHandler {
     @ExceptionHandler({MethodArgumentNotValidException.class, ConstraintViolationException.class, HttpMessageNotReadableException.class})
     ResponseEntity<ErrorResponse> invalid(Exception exception) {
         return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(new ErrorResponse("INVALID_AI_REQUEST", "问题或问答模式无效。", true));
+    }
+    @ExceptionHandler(AccessDeniedException.class)
+    ResponseEntity<ErrorResponse> forbidden(AccessDeniedException exception) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).contentType(MediaType.APPLICATION_JSON)
+                .body(new ErrorResponse("FORBIDDEN", "当前账号无权执行该操作。", true));
     }
     @ExceptionHandler(RuntimeException.class)
     ResponseEntity<ErrorResponse> unexpected(RuntimeException exception) {

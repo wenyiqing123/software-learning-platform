@@ -58,6 +58,10 @@ export function tutorHref(context: LearningContext) {
   return { path: '/tutor', query: query(context, { entity: true, section: true, point: true }) }
 }
 
+export function feynmanHref(context: LearningContext) {
+  return { path: '/tutor', query: { ...query(context, { entity: true, section: true, point: true }), activity: 'feynman' } }
+}
+
 export function courseHref(context: LearningContext) {
   return { path: '/courses', query: query(context, { section: true, point: true }) }
 }

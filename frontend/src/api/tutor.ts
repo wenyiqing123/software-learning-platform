@@ -1,10 +1,12 @@
 import { api, refreshAccessToken } from './http'
 import { SseDecoder } from '../domain/sse'
-import type { TutorHintResult } from './types'
+import type { FeynmanEvaluateRequest, FeynmanEvaluateResponse, TutorHintResult } from './types'
 
 export interface TutorSession { id: number; title: string; createdAt?: string; updatedAt?: string }
 
 export const ask = (question: string, mode: string) => api.post('/ai/ask', { question, mode }).then((r) => r.data)
+export const evaluateFeynmanExplanation = (payload: FeynmanEvaluateRequest) =>
+  api.post<FeynmanEvaluateResponse>('/ai/feynman/evaluate', payload).then((r) => r.data)
 export const tutorHint = (
   question: string,
   level: number,

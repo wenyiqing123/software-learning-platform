@@ -80,6 +80,7 @@ class GatewayRouteConfigurationTest {
         assertThat(matchingRoute(routeDefinitions, "/api/ai/ask/stream").getId()).isEqualTo("ai-service");
         assertThat(matchingRoute(routeDefinitions, "/api/ai/micro-lesson").getId()).isEqualTo("ai-service");
         assertThat(matchingRoute(routeDefinitions, "/api/ai/tutor/hint").getId()).isEqualTo("ai-service");
+        assertThat(matchingRoute(routeDefinitions, "/api/ai/feynman/evaluate").getId()).isEqualTo("ai-service");
         assertThat(matchingRoute(routeDefinitions, "/api/ai/dependencies").getId()).isEqualTo("ai-service");
         assertThat(matchingRoute(routeDefinitions, "/api/ai/matrix-health").getId()).isEqualTo("ai-service");
     }

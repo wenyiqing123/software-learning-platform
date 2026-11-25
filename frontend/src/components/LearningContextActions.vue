@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { ArrowLeft, BookOpen, BrainCircuit, Network } from '@lucide/vue'
-import { graphHref, practiceHref, returnHref, tutorHref, type LearningContext } from '../domain/learningContext'
+import { ArrowLeft, BookOpen, BrainCircuit, GraduationCap, Network } from '@lucide/vue'
+import { feynmanHref, graphHref, practiceHref, returnHref, tutorHref, type LearningContext } from '../domain/learningContext'
 
 interface Props {
   context?: LearningContext | null
@@ -74,6 +74,13 @@ const shouldShowReturn = computed(() => {
         :to="tutorHref(safeContext)"
       >
         <BrainCircuit :size="14" />向助教提问
+      </RouterLink>
+      <RouterLink
+        v-if="currentView !== 'tutor'"
+        class="context-action context-feynman-link"
+        :to="feynmanHref(safeContext)"
+      >
+        <GraduationCap :size="14" />费曼自检
       </RouterLink>
       <RouterLink
         v-if="currentView !== 'practice'"
@@ -163,6 +170,10 @@ const shouldShowReturn = computed(() => {
 }
 
 .context-tutor-link {
+  color: var(--accent);
+}
+
+.context-feynman-link {
   color: var(--accent);
 }
 

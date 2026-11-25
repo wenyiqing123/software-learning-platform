@@ -194,6 +194,17 @@ function apiResponse(url, role, scenario, method) {
   ])
   if (path.startsWith('/api/learning/notes')) return json(scenario === 'course-notes' ? [{ id: 1, sectionId: 32, title: '先画系统边界', content: '先列出外部实体，再检查每条输入和输出。', tags: ['数据流图'] }] : [])
   if (path.startsWith('/api/learning/bookmarks')) return json({ bookmarked: false })
+  if (path === '/api/ai/feynman/evaluate') return json({
+    knowledgePoint: '需求分析',
+    coveredPoints: ['明确说明了需求分析旨在确定系统边界与业务目标'],
+    missingTriples: [{ subject: '需求分析', predicate: '输出', object: '软件需求规格说明书', score: 0.92 }],
+    misconceptions: ['注意区分 **需求分析** 与系统概要设计阶段。'],
+    followUpQuestion: '需求分析完成后会输出哪份核心文档用于约定验收条件？',
+    evidenceTriples: [
+      { subject: '需求分析', predicate: '输出', object: '软件需求规格说明书', score: 0.92 },
+      { subject: '需求分析', predicate: '使用', object: '数据流图DFD', score: 0.85 },
+    ],
+  })
   if (path === '/api/ai/dependencies') return json({ configured: true, pythonKnowledgeStatus: 'UP', rankedModelEnabled: false, rankedModelConfigured: false, rankedModelStatus: 'DISABLED' })
   if (path === '/api/system/status') return json({ checkedAt: new Date().toISOString(), dependencies: [{ key: 'mysql', label: 'MySQL', status: 'UP', impact: '' }, { key: 'python', label: 'Python Bridge', status: 'UP', impact: '' }] })
   if (path.startsWith('/api/ai/')) return json({ answer: '演示回答', mode: 'DIRECT', hasEvidence: true, triples: [], entities: [], error: null })
@@ -335,6 +346,18 @@ const visualScenarios = {
         return Boolean(d?.hasAttribute('open') && highlighted?.classList.contains('is-highlighted'))
       })
       await page.getByText('需求规格说明书').first().waitFor()
+    } },
+    { route: '/tutor?activity=feynman&courseId=3&entity=%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90', name: 'feynman-teachback', async check(page) {
+      if (await page.locator('.tutor-mode-selector, .compare-toggle, .tutor-aside').count()) throw new Error('Legacy mode selector leaked in feynman mode')
+      await page.getByTestId('feynman-panel').waitFor()
+      const topicVal = await page.getByTestId('feynman-topic-input').inputValue()
+      if (!topicVal.includes('需求分析')) throw new Error(`Feynman panel did not prefill entity: ${topicVal}`)
+      await page.getByTestId('feynman-explanation-input').fill('需求分析主要是搞清楚用户需要系统完成哪些核心业务目标和边界条件。')
+      await page.getByTestId('feynman-submit-btn').click()
+      await page.getByTestId('feynman-result').waitFor()
+      await page.getByTestId('feynman-disclaimer').waitFor()
+      const details = page.getByTestId('feynman-evidence-details')
+      if (await details.evaluate(el => el.open)) throw new Error('Feynman evidence details should be collapsed by default')
     } },
     { route: '/practice', name: 'practice-selected', check: page => page.locator('.answer-option').nth(1).click() },
     { route: '/practice', name: 'practice-diagnosis', async check(page) {

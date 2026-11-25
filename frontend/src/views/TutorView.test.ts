@@ -11,6 +11,7 @@ const learning = vi.hoisted(() => ({
   streamAsk: vi.fn(),
   sessionMessages: vi.fn(),
   tutorHint: vi.fn(),
+  evaluateFeynmanExplanation: vi.fn(),
   deleteSession: vi.fn(),
   knowledgePoints: vi.fn(),
 }))
@@ -428,5 +429,25 @@ describe('TutorView', () => {
     await flushPromises()
     expect(contextWrapper.find('.tutor-sidebar-pane.is-collapsed').exists()).toBe(true)
     contextWrapper.unmount()
+  })
+
+  it('switches between free chat and feynman teach-back panel and prefills entity from query without auto-submitting', async () => {
+    const wrapper = await mountPage('/tutor?activity=feynman&courseId=3&entity=数据流图')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="feynman-panel"]').exists()).toBe(true)
+    expect(learning.evaluateFeynmanExplanation).not.toHaveBeenCalled()
+    expect((wrapper.get('[data-testid="feynman-topic-input"]').element as HTMLInputElement).value).toBe('数据流图')
+    expect(wrapper.find('.tutor-mode-selector').exists()).toBe(false)
+
+    // 切换回自由答疑视图并再切回费曼自检保持草稿状态
+    await wrapper.get('[data-testid="feynman-explanation-input"]').setValue('数据流图用于表达系统内部的数据流动与加工转换。')
+    await wrapper.get('[data-testid="tutor-activity-chat"]').trigger('click')
+    expect(wrapper.find('#question-input').exists()).toBe(true)
+
+    await wrapper.get('[data-testid="tutor-activity-feynman"]').trigger('click')
+    expect((wrapper.get('[data-testid="feynman-explanation-input"]').element as HTMLTextAreaElement).value)
+      .toBe('数据流图用于表达系统内部的数据流动与加工转换。')
+    wrapper.unmount()
   })
 })

@@ -17,7 +17,9 @@ import org.springframework.web.context.support.AnnotationConfigWebApplicationCon
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class AiSecurityConfigTest {
@@ -47,10 +49,22 @@ class AiSecurityConfigTest {
     @Test void matrixHealthIsIntentionallyPublicForLocalStartupChecks() throws Exception {
         mvc.perform(get("/api/ai/matrix-health")).andExpect(status().isOk());
     }
+    @Test void feynmanEvaluateRequiresStudentRole() throws Exception {
+        mvc.perform(post("/api/ai/feynman/evaluate")).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/ai/feynman/evaluate").header("Authorization", "Bearer admin-jwt"))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/api/ai/feynman/evaluate").header("Authorization", "Bearer student-jwt"))
+                .andExpect(status().isOk());
+    }
 
     @org.springframework.boot.test.context.TestConfiguration @EnableWebSecurity @EnableWebMvc @Import(AiSecurityConfig.class)
     static class TestConfiguration {
-        @Bean AiJwtFilter jwtFilter() { return new AiJwtFilter(mock(AiJwtService.class)); }
+        @Bean AiJwtFilter jwtFilter() {
+            AiJwtService jwt = mock(AiJwtService.class);
+            when(jwt.parse("admin-jwt")).thenReturn(io.jsonwebtoken.Jwts.claims().subject("1").add("role", "ADMIN").build());
+            when(jwt.parse("student-jwt")).thenReturn(io.jsonwebtoken.Jwts.claims().subject("9").add("role", "STUDENT").build());
+            return new AiJwtFilter(jwt);
+        }
         @Bean ErrorEndpoint endpoint() { return new ErrorEndpoint(); }
     }
 
@@ -61,5 +75,6 @@ class AiSecurityConfigTest {
         }
         @GetMapping("/api/ai/guarded") String guarded() { return "guarded"; }
         @GetMapping("/api/ai/matrix-health") String matrixHealth() { return "ok"; }
+        @PostMapping("/api/ai/feynman/evaluate") String feynman() { return "ok"; }
     }
 }

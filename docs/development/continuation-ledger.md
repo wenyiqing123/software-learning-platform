@@ -552,3 +552,17 @@
   - 后端三模块 Maven 全量回归（JDK 21，`mvn -f backend/pom.xml test "-Dsurefire.failIfNoSpecifiedTests=false"`）：`learning-service` **192** tests run、`ai-service` **106** tests run、`learning-gateway` **5** tests run，全部 0 failures、0 errors、0 skipped。
   - 前端全量单测（`npx vitest run --maxWorkers=2`）：**60 passed (60)** 个文件、**233 passed (233)** 条用例全部通过（新增 `masteryRetention.test.ts`，扩充 `MasteryMapView.test.ts`、`PrerequisitePathPanel.test.ts`、`DashboardView.test.ts`、`RecommendationsView.test.ts`，含 `design-system-contract.test.ts` 与 `compliance-guard.test.ts`）。
   - AST 样式与构建检查：`node scripts/scan-vue-classes.mjs --check` **1480** 处类名用法 **0 missing classes**；`frontend/src/` 全仓 `!important` 为 **0**；`npm run build` 耗时 **4.37s**，**0 error、0 chunk warning**；Playwright `authenticated-ui-smoke.mjs` **178/178** 全路由双视口通过并已删除 `.ui-visual-review` 临时目录。
+
+### 费曼“以教促学”图谱对照自检落地记录（2026-11-25）
+
+- **范围与红线**：继续在 `feat/learning-enhancements` 分支完成最终增强功能，未触碰既有内联图谱引用、Mermaid 图表、双值掌握度（V17）以及外部 Mecha-QA、Python Bridge、NebulaGraph 与模型权重；`/tutor` 仍严格隐藏 `DIRECT`/`TRIPLES`/`RANKED` 实验模式选择器与后台系统提示词正文，并明确展示非正式成绩评定免责说明。
+- **后端改动（`ai-service` & `learning-gateway`）**：
+  - `AiSecurityConfig.java` 启用 `@EnableMethodSecurity` 并配置 `/api/ai/feynman/**` 仅允许 `ROLE_STUDENT` 访问；`FeynmanController.java` 类级叠加 `@PreAuthorize("hasRole('STUDENT')")`；`AiExceptionHandler.java` 在全局 `RuntimeException` 兜底前新增 `AccessDeniedException` 处理器，确保越权请求返回 `403 FORBIDDEN` JSON。
+  - 新增 `FeynmanEvaluateRequest.java`、`FeynmanEvaluateResponse.java`（零 `prompt`/`systemPrompt` 字段）与 `FeynmanEvaluationService.java`：通过 `KnowledgeRetrievalEnhancer` 只读检索课程知识图谱三元组，图谱/Bridge 不可用时透传 `KnowledgeServiceUnavailableException` 返回 `503 KNOWLEDGE_UNAVAILABLE`；图谱返回 0 条三元组时诚实返回空证据结构而不调用大模型；解析模型 JSON 时兼容围栏与尾逗号并在解析失败时退回纯文本结构化兜底，同时严格过滤 `missingTriples` 仅保留真实检索三元组；新增 `FeynmanEvaluationServiceTest.java`、`FeynmanControllerTest.java`，并扩展 `AiSecurityConfigTest.java`（实测 401/403/200）与 `GatewayRouteConfigurationTest.java`（网关路由匹配 `/api/ai/feynman/evaluate`）。
+- **前端改动**：
+  - 更新 `types.ts`、`tutor.ts`（`evaluateFeynmanExplanation`）、`learningContext.ts`（`feynmanHref`）与 `LearningContextActions.vue`（新增学生端费曼自检快捷入口并在 `currentView === 'tutor'` 时去重）。
+  - 新建 `FeynmanTeachBackPanel.vue` 与单测 `FeynmanTeachBackPanel.test.ts`（3 条），支持知识点快选、10–2000 字防输入法误触提交、失败保留草稿重试、覆盖点/遗漏三元组跳转 `/knowledge?entity=...`/Markdown 误区修正/`基于追问继续完善讲解`模板追加、默认折叠 `details.evidence-block` 与底部小字合规声明；改造 `TutorView.vue`（顶栏“自由答疑 / 费曼自检”双活动切换、`<KeepAlive>` 跨切换保留草稿、`/tutor?activity=feynman&entity=...` 深链接预填）并扩充 `TutorView.test.ts`（共 13 条）与 `LearningContextActions.test.ts`。
+- **全量验证结果（最终代码定稿后）**：
+  - 后端三模块 Maven 全量回归（JDK 21，`mvn -f backend/pom.xml test "-Dsurefire.failIfNoSpecifiedTests=false"`）：`learning-service` **192** tests run、`ai-service` **113** tests run、`learning-gateway` **5** tests run，合计 **310** 条用例全部 0 failures、0 errors、0 skipped。
+  - 前端全量单测（`npx vitest run --maxWorkers=2`）：**61 passed (61)** 个文件、**237 passed (237)** 条用例全部通过。
+  - AST 样式与构建检查：`node scripts/scan-vue-classes.mjs --check` **53** 个文件 **1552** 处用法 **0 missing classes**；`frontend/src/` 全仓 `!important` 为 **0**；`npm run build` 耗时 **2.90s**，**0 error、0 chunk warning**；Playwright `authenticated-ui-smoke.mjs` **180/180** 全场景双视口通过并已删除 `.ui-visual-review` 临时目录。

@@ -70,6 +70,11 @@ describe('LearningContextActions', () => {
     expect(tutorLink.attributes('href')).toContain('courseId=1')
     expect(tutorLink.attributes('href')).toContain('entity=' + encodeURIComponent('数据流图DFD'))
 
+    const feynmanLink = wrapper.find('.context-feynman-link')
+    expect(feynmanLink.exists()).toBe(true)
+    expect(feynmanLink.attributes('href')).toContain('activity=feynman')
+    expect(feynmanLink.attributes('href')).toContain('entity=' + encodeURIComponent('数据流图DFD'))
+
     const practiceLink = wrapper.find('.context-practice-link')
     expect(practiceLink.exists()).toBe(true)
     expect(practiceLink.attributes('href')).toContain('courseId=1')
@@ -115,12 +120,13 @@ describe('LearningContextActions', () => {
     expect(graphWrapper.find('.context-tutor-link').exists()).toBe(true)
     expect(graphWrapper.find('.context-practice-link').exists()).toBe(true)
 
-    // 在 tutor 页面：隐藏 tutor 链接
+    // 在 tutor 页面：隐藏 tutor 与 feynman 链接
     const tutorWrapper = mount(LearningContextActions, {
       global: { plugins: [router] },
       props: { context, currentView: 'tutor' },
     })
     expect(tutorWrapper.find('.context-tutor-link').exists()).toBe(false)
+    expect(tutorWrapper.find('.context-feynman-link').exists()).toBe(false)
     expect(tutorWrapper.find('.context-graph-link').exists()).toBe(true)
     expect(tutorWrapper.find('.context-practice-link').exists()).toBe(true)
 
