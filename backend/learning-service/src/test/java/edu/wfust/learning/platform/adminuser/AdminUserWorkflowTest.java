@@ -180,6 +180,7 @@ class AdminUserWorkflowTest {
               user_id BIGINT NOT NULL,
               knowledge_point_id BIGINT NOT NULL,
               mastery_score DECIMAL(5,2) NOT NULL DEFAULT 0,
+              peak_mastery DECIMAL(5,2) NOT NULL DEFAULT 0,
               attempt_count INT NOT NULL DEFAULT 0,
               correct_count INT NOT NULL DEFAULT 0,
               last_studied_at TIMESTAMP NULL

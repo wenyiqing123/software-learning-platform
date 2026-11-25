@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { ArrowRight, CircleAlert, CircleCheck, LoaderCircle, RotateCcw } from '@lucide/vue'
+import { ArrowRight, CircleAlert, CircleCheck, Clock3, LoaderCircle, RotateCcw } from '@lucide/vue'
 import { learningApi, type KnowledgePoint, type PrerequisitePath } from '../api/client'
+import {
+  effectiveMasteryPercent,
+  normalizeReviewUrgency,
+  peakMasteryPercent,
+  retentionAlertLabel,
+  RETENTION_RULE_SUMMARY,
+} from '../domain/masteryRetention'
 
 const props = defineProps<{ courseId?: number; initialTargetId?: number }>()
 const emit = defineEmits<{ targetChange: [graphEntity: string] }>()
@@ -98,17 +105,33 @@ onMounted(async () => { await loadPoints(); await loadPath() })
               <strong>{{ node.name }}</strong>
               <span v-if="node.id === path.targetId" class="path-target-badge" aria-label="当前目标知识点">★ 当前目标</span>
               <span class="path-status"><CircleCheck v-if="node.status === 'MASTERED'" :size="13" />{{ statusText(node.status) }}</span>
+              <span
+                v-if="retentionAlertLabel(node)"
+                class="path-retention-badge"
+                :class="'urgency-' + normalizeReviewUrgency(node).toLowerCase()"
+                :data-testid="`path-retention-alert-${node.id}`"
+              >
+                <Clock3 :size="12" aria-hidden="true" />
+                {{ retentionAlertLabel(node) }}
+              </span>
             </div>
-            <div class="path-node-meta"><span>系统掌握度 {{ Math.round(node.mastery) }}%</span><span v-if="node.prerequisiteIds.length">先修 {{ node.prerequisiteIds.length }} 项</span><span v-else>基础节点</span></div>
+            <div class="path-node-meta">
+              <span>当前保持度 {{ effectiveMasteryPercent(node) }}%</span>
+              <span>历史峰值 {{ peakMasteryPercent(node) }}%<template v-if="peakMasteryPercent(node) >= 60">（峰值达标已解锁）</template></span>
+              <span v-if="node.prerequisiteIds.length">先修 {{ node.prerequisiteIds.length }} 项</span>
+              <span v-else>基础节点</span>
+            </div>
             <div class="path-node-actions">
               <RouterLink :to="courseHref(node)" :aria-label="'学习' + node.name + '课程内容'">课程阅读</RouterLink>
               <RouterLink :to="practiceHref(node)" :aria-label="'练习' + node.name">专项练习</RouterLink>
               <RouterLink :to="graphHref(node)" :aria-label="'查看' + node.name + '图谱'">查看图谱</RouterLink>
+              <RouterLink v-if="retentionAlertLabel(node)" to="/review" :aria-label="'去复习' + node.name">间隔复习</RouterLink>
             </div>
           </div>
           <ArrowRight v-if="index < path.nodes.length - 1" class="path-arrow" :size="16" />
         </li>
       </ol>
+      <p class="path-retention-rule" data-testid="path-retention-rule"><Clock3 :size="14" aria-hidden="true" /><span>{{ RETENTION_RULE_SUMMARY }}</span></p>
     </template>
   </section>
 </template>
@@ -132,6 +155,11 @@ onMounted(async () => { await loadPoints(); await loadPath() })
 .path-node-heading strong{font-size:15px}
 .path-target-badge{display:inline-flex;align-items:center;padding:2px 8px;color:var(--accent-strong);background:var(--accent-soft);border:1px solid var(--border-focus);border-radius:var(--radius-pill);font-size:11px;font-weight:600}
 .path-status{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;color:var(--text-muted);background:var(--surface-tint);border-radius:var(--radius-pill);font-size:12px}
+.path-retention-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:var(--radius-pill);font-size:11.5px;font-weight:600}
+.path-retention-badge.urgency-fading{color:#8a5300;background:var(--warning-soft)}
+.path-retention-badge.urgency-due{color:var(--danger);background:var(--danger-soft)}
+.path-retention-rule{display:flex;align-items:flex-start;gap:8px;margin:0;padding:10px 12px;color:var(--text-muted);background:var(--surface-tint);border-radius:var(--radius-sm);font-size:12.5px;line-height:1.55}
+.path-retention-rule svg{flex:none;margin-top:2px;color:var(--accent-strong)}
 .path-target{background:var(--surface-soft);border-radius:var(--radius-sm);box-shadow:inset 2px 0 var(--accent)}
 .path-mastered .path-status{color:var(--accent-strong);background:var(--accent-soft)}
 .path-in_progress .path-status,.path-in-progress .path-status{color:var(--warning-strong, #8a5300);background:var(--warning-soft)}

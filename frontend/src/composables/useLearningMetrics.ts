@@ -1,9 +1,31 @@
 import { onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue'
 import { learningApi } from '../api/client'
+import type { ReviewUrgency } from '../api/types'
 
-export interface KnowledgePointMetric { id: number; courseId?: number; name: string; graphEntity: string; mastery?: number | null; sortOrder: number }
+export interface KnowledgePointMetric {
+  id: number
+  courseId?: number
+  name: string
+  graphEntity: string
+  mastery?: number | null
+  peakMastery?: number | null
+  effectiveMastery?: number | null
+  daysSinceLastPractice?: number | null
+  reviewUrgency?: ReviewUrgency
+  sortOrder: number
+}
 export interface DailyActivity { day: string; attempts: number }
-export interface OverviewMetric { mastery: number; completed: number; wrongCount: number; accuracy: number; activity: DailyActivity[] }
+export interface OverviewMetric {
+  mastery: number
+  completed: number
+  wrongCount: number
+  accuracy: number
+  activity: DailyActivity[]
+  peakMastery?: number | null
+  effectiveMastery?: number | null
+  daysSinceLastPractice?: number | null
+  reviewUrgency?: ReviewUrgency
+}
 
 const points = ref<KnowledgePointMetric[]>([])
 const overview = ref<OverviewMetric | null>(null)

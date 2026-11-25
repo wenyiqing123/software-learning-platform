@@ -29,6 +29,7 @@ async function renderPanel() {
       { path: '/knowledge', component: { template: '<div />' } },
       { path: '/courses', component: { template: '<div />' } },
       { path: '/practice', component: { template: '<div />' } },
+      { path: '/review', component: { template: '<div />' } },
     ],
   })
   await router.push('/knowledge')
@@ -95,6 +96,52 @@ describe('prerequisite learning path', () => {
     expect(wrapper.find('.path-target-badge').exists()).toBe(true)
     expect(wrapper.find('.path-target-badge').text()).toContain('当前目标')
     expect(wrapper.find('.path-target').classes()).toContain('path-blocked')
+    wrapper.unmount()
+  })
+
+  it('shows peak-locked prerequisite unlock note and forgetting alert badges', async () => {
+    api.learningPath.mockResolvedValueOnce({
+      targetId: 2,
+      courseId: 1,
+      cycleDetected: false,
+      nodes: [
+        {
+          id: 1,
+          courseId: 1,
+          chapterId: 10,
+          name: '需求分析',
+          graphEntity: '需求分析',
+          mastery: 70,
+          peakMastery: 80,
+          effectiveMastery: 35,
+          daysSinceLastPractice: 14,
+          reviewUrgency: 'DUE',
+          prerequisiteIds: [],
+          status: 'MASTERED',
+        },
+        {
+          id: 2,
+          courseId: 1,
+          chapterId: 10,
+          name: '系统设计',
+          graphEntity: '系统设计',
+          mastery: 0,
+          peakMastery: 0,
+          effectiveMastery: 0,
+          daysSinceLastPractice: 0,
+          reviewUrgency: 'FRESH',
+          prerequisiteIds: [1],
+          status: 'UP_NEXT',
+        },
+      ],
+    })
+
+    const wrapper = await renderPanel()
+    expect(wrapper.get('[data-testid="path-retention-alert-1"]').text()).toContain('遗忘预警 · 已隔 14 天')
+    expect(wrapper.text()).toContain('当前保持度 35%')
+    expect(wrapper.text()).toContain('历史峰值 80%（峰值达标已解锁）')
+    expect(wrapper.get('a[aria-label="去复习需求分析"]').attributes('href')).toBe('/review')
+    expect(wrapper.get('[data-testid="path-retention-rule"]').text()).toContain('历史峰值')
     wrapper.unmount()
   })
 })

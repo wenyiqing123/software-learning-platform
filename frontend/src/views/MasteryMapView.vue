@@ -2,9 +2,16 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Graph } from '@antv/g6'
-import { ArrowRight, CircleAlert, Network, RotateCcw } from '@lucide/vue'
+import { ArrowRight, CircleAlert, Clock3, Network, RotateCcw } from '@lucide/vue'
 import { api, apiError, learningApi, type MasteryMap, type MasteryMapNode } from '../api/client'
 import { bindGraphViewportSync, graphViewportPadding, type GraphViewportInstance } from '../domain/graphViewport'
+import {
+  effectiveMasteryPercent,
+  normalizeReviewUrgency,
+  peakMasteryPercent,
+  retentionAlertLabel,
+  RETENTION_RULE_SUMMARY,
+} from '../domain/masteryRetention'
 import SectionHeading from '../components/SectionHeading.vue'
 import VisualizationViewport from '../components/VisualizationViewport.vue'
 import GraphEvidenceDrawer from '../components/GraphEvidenceDrawer.vue'
@@ -90,6 +97,7 @@ async function loadCourses() {
 }
 function practice(node: MasteryMapNode) { void router.push({ path: '/practice', query: { knowledgePointId: String(node.id) } }) }
 function study(node: MasteryMapNode) { void router.push({ path: '/courses', query: { courseId: String(node.courseId), knowledgePointId: String(node.id) } }) }
+function review() { void router.push({ path: '/review' }) }
 onMounted(async () => { await loadCourses(); await load() })
 onBeforeUnmount(destroyGraph)
 </script>
@@ -110,13 +118,56 @@ onBeforeUnmount(destroyGraph)
         <template #overlay>
           <article v-if="selectedNode" class="fullscreen-node-card">
             <div class="fullscreen-node-head"><strong>{{ selectedNode.name }}</strong><span class="fullscreen-node-tag" :class="{ 'is-warning': selectedNode.status === 'IN_PROGRESS' || selectedNode.status === 'UP_NEXT', 'is-danger': selectedNode.status === 'BLOCKED' }">{{ statusLabel(selectedNode.status) }}</span></div>
-            <p class="fullscreen-node-meta">掌握度 {{ Math.round(selectedNode.mastery) }}% · {{ selectedNode.correctCount }} / {{ selectedNode.attemptCount }} 次答对</p>
-            <div class="fullscreen-node-actions"><button class="text-button" type="button" @click="study(selectedNode)">课程阅读<ArrowRight :size="13" /></button><button class="text-button" type="button" @click="practice(selectedNode)">专项练习<ArrowRight :size="13" /></button></div>
+            <p class="fullscreen-node-meta">
+              当前保持度 {{ effectiveMasteryPercent(selectedNode) }}% · 历史峰值 {{ peakMasteryPercent(selectedNode) }}% · {{ selectedNode.correctCount }} / {{ selectedNode.attemptCount }} 次答对
+            </p>
+            <p v-if="retentionAlertLabel(selectedNode)" class="fullscreen-node-meta">
+              <span class="retention-alert-badge" :class="'urgency-' + normalizeReviewUrgency(selectedNode).toLowerCase()"><Clock3 :size="12" aria-hidden="true" />{{ retentionAlertLabel(selectedNode) }}</span>
+            </p>
+            <div class="fullscreen-node-actions"><button class="text-button" type="button" @click="study(selectedNode)">课程阅读<ArrowRight :size="13" /></button><button class="text-button" type="button" @click="practice(selectedNode)">专项练习<ArrowRight :size="13" /></button><button v-if="retentionAlertLabel(selectedNode) || selectedNode.dueReviewCount > 0" class="text-button" type="button" @click="review()">间隔复习<ArrowRight :size="13" /></button></div>
           </article>
         </template>
       </VisualizationViewport>
       <GraphEvidenceDrawer v-model="evidenceOpen" :node="selectedNode?.name || ''" title="掌握图谱证据" empty-text="掌握图谱只使用当前账户的 MySQL 学习记录和课程先修配置；本视图不伪造 NebulaGraph 证据。" />
-      <section class="mastery-node-list"><article v-for="node in map.nodes" :key="node.id" class="mastery-node" :class="[statusClass(node.status), { selected: selectedNodeId === node.id }]" @click="selectedNodeId = node.id; evidenceOpen = true"><div class="mastery-node-main"><div class="mastery-node-top"><span class="eyebrow">{{ node.graphEntity }}</span><strong>{{ statusLabel(node.status) }}</strong></div><h2>{{ node.name }}</h2><div class="mastery-progress"><i :style="{ width: node.mastery + '%' }"></i></div><div class="mastery-meta"><span>掌握度 {{ Math.round(node.mastery) }}%</span><span>{{ node.correctCount }} / {{ node.attemptCount }} 次答对</span><span v-if="node.dueReviewCount">待复习 {{ node.dueReviewCount }}</span></div><LearningContextActions compact :context="{ courseId: node.courseId, knowledgePointId: node.id, entity: node.graphEntity }" /></div><div class="mastery-actions"><button class="text-button" :data-testid="`mastery-study-${node.id}`" @click.stop="study(node)">课程阅读<ArrowRight :size="13" /></button><button class="text-button" :data-testid="`mastery-practice-${node.id}`" @click.stop="practice(node)">专项练习<ArrowRight :size="13" /></button></div></article></section>
+      <p class="mastery-retention-rule" data-testid="mastery-retention-rule"><Clock3 :size="14" aria-hidden="true" /><span>{{ RETENTION_RULE_SUMMARY }}</span></p>
+      <section class="mastery-node-list">
+        <article v-for="node in map.nodes" :key="node.id" class="mastery-node" :class="[statusClass(node.status), { selected: selectedNodeId === node.id }]" @click="selectedNodeId = node.id; evidenceOpen = true">
+          <div class="mastery-node-main">
+            <div class="mastery-node-top">
+              <span class="eyebrow">{{ node.graphEntity }}</span>
+              <div class="mastery-node-badges">
+                <span
+                  v-if="retentionAlertLabel(node)"
+                  class="retention-alert-badge"
+                  :class="'urgency-' + normalizeReviewUrgency(node).toLowerCase()"
+                  :data-testid="`mastery-retention-alert-${node.id}`"
+                >
+                  <Clock3 :size="12" aria-hidden="true" />
+                  {{ retentionAlertLabel(node) }}
+                </span>
+                <strong>{{ statusLabel(node.status) }}</strong>
+              </div>
+            </div>
+            <h2>{{ node.name }}</h2>
+            <div class="mastery-progress" :aria-label="`${node.name} 当前保持度 ${effectiveMasteryPercent(node)}%，历史峰值 ${peakMasteryPercent(node)}%`">
+              <span class="mastery-progress-peak" :style="{ width: peakMasteryPercent(node) + '%' }"></span>
+              <i :style="{ width: effectiveMasteryPercent(node) + '%' }"></i>
+            </div>
+            <div class="mastery-meta">
+              <span>当前保持度 {{ effectiveMasteryPercent(node) }}%</span>
+              <span>历史峰值 {{ peakMasteryPercent(node) }}%</span>
+              <span>{{ node.correctCount }} / {{ node.attemptCount }} 次答对</span>
+              <span v-if="node.dueReviewCount">待复习 {{ node.dueReviewCount }}</span>
+            </div>
+            <LearningContextActions compact :context="{ courseId: node.courseId, knowledgePointId: node.id, entity: node.graphEntity }" />
+          </div>
+          <div class="mastery-actions">
+            <button class="text-button" :data-testid="`mastery-study-${node.id}`" @click.stop="study(node)">课程阅读<ArrowRight :size="13" /></button>
+            <button class="text-button" :data-testid="`mastery-practice-${node.id}`" @click.stop="practice(node)">专项练习<ArrowRight :size="13" /></button>
+            <button v-if="retentionAlertLabel(node) || node.dueReviewCount > 0" class="text-button mastery-review-btn" :data-testid="`mastery-review-${node.id}`" @click.stop="review()">间隔复习<ArrowRight :size="13" /></button>
+          </div>
+        </article>
+      </section>
     </template>
   </div>
 </template>
@@ -137,15 +188,23 @@ onBeforeUnmount(destroyGraph)
 .mastery-node:first-child{border-top:0}
 .mastery-node:hover{background:var(--surface-soft)}
 .mastery-node.selected{background:var(--accent-soft);box-shadow:inset 3px 0 var(--accent)}
-.mastery-node-top,.mastery-meta,.mastery-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px}
+.mastery-node-top,.mastery-node-badges,.mastery-meta,.mastery-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px}
 .mastery-node-top{justify-content:space-between}
+.mastery-node-badges{gap:6px}
 .mastery-node-top .eyebrow{margin:0}
 .mastery-node-top strong{padding:3px 8px;color:var(--warning);background:var(--warning-soft);border-radius:var(--radius-pill);font-size:12px}
 .mastery-mastered .mastery-node-top strong{color:var(--accent-strong);background:var(--accent-soft)}
 .mastery-blocked .mastery-node-top strong{color:var(--danger);background:var(--danger-soft)}
+.retention-alert-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:var(--radius-pill);font-size:11.5px;font-weight:600}
+.retention-alert-badge.urgency-fading{color:#8a5300;background:var(--warning-soft)}
+.retention-alert-badge.urgency-due{color:var(--danger);background:var(--danger-soft)}
+.mastery-retention-rule{display:flex;align-items:flex-start;gap:8px;margin:0;padding:10px 14px;color:var(--text-muted);background:var(--surface-tint);border-radius:var(--radius-sm);font-size:12.5px;line-height:1.55}
+.mastery-retention-rule svg{flex:none;margin-top:2px;color:var(--accent-strong)}
 .mastery-node h2{margin:4px 0 8px;font-size:16px}
-.mastery-progress{height:6px;overflow:hidden;background:var(--surface-tint);border-radius:var(--radius-pill)}
-.mastery-progress i{display:block;height:100%;background:var(--accent);border-radius:inherit}
+.mastery-progress{position:relative;height:6px;overflow:hidden;background:var(--surface-tint);border-radius:var(--radius-pill)}
+.mastery-progress-peak{position:absolute;inset:0 auto 0 0;height:100%;background:color-mix(in srgb,var(--accent) 26%,transparent);border-radius:inherit}
+.mastery-progress i{position:relative;z-index:1;display:block;height:100%;background:var(--accent);border-radius:inherit}
 .mastery-meta{margin-top:8px;color:var(--text-muted);font-size:12px}
+.mastery-review-btn{color:#8a5300}
 @media(max-width:700px){.mastery-summary{width:100%;margin-left:0}.mastery-node{grid-template-columns:minmax(0,1fr)}.mastery-canvas{min-height:320px}}
 </style>

@@ -11,6 +11,7 @@ public class KnowledgeMasteryEntity {
     private Long userId;
     private Long knowledgePointId;
     private java.math.BigDecimal masteryScore;
+    private java.math.BigDecimal peakMastery;
     private Integer attemptCount;
     private Integer correctCount;
     private java.time.LocalDateTime lastStudiedAt;
@@ -22,6 +23,8 @@ public class KnowledgeMasteryEntity {
     public void setKnowledgePointId(Long knowledgePointId) { this.knowledgePointId = knowledgePointId; }
     public java.math.BigDecimal getMasteryScore() { return masteryScore; }
     public void setMasteryScore(java.math.BigDecimal masteryScore) { this.masteryScore = masteryScore; }
+    public java.math.BigDecimal getPeakMastery() { return peakMastery; }
+    public void setPeakMastery(java.math.BigDecimal peakMastery) { this.peakMastery = peakMastery; }
     public Integer getAttemptCount() { return attemptCount; }
     public void setAttemptCount(Integer attemptCount) { this.attemptCount = attemptCount; }
     public Integer getCorrectCount() { return correctCount; }

@@ -540,3 +540,15 @@
   - AST 类名与规范检查：`node scripts/scan-vue-classes.mjs --check` 共检查 **1455** 处模板类用法、**0 missing classes**；`frontend/src/` 全仓 `!important` 为 **0**；`backend/` 改动文件数 **0**。
   - 生产构建（`npm run build`）：耗时 **2.59s** 通过，**0 error、0 chunk warning**（`mermaid-elk` 1,463.38 kB、`mermaid-core` 1,307.51 kB、`mermaid-layout` 766.80 kB、`mermaid-math` 258.97 kB，均在按需动态加载路径中）。
   - Playwright 真实鉴权 UI 冒烟（`node scripts/authenticated-ui-smoke.mjs`）：更新 `tutor-history` 覆盖 Mermaid SVG 与 `[1]` 点击联动断言，**176/176** 场景全绿通过，`.ui-visual-review` 临时目录已彻底删除。
+
+### 双值掌握度与遗忘预警落地记录（2026-11-25）
+
+- **范围与学术边界**：继续在 `feat/learning-enhancements` 分支推进（严守只做双值掌握度与遗忘预警边界，未触碰费曼自检、已落地的内联图谱引用/Mermaid 组件、外部 Mecha-QA、Python Bridge、NebulaGraph 及模型权重）。所有衰减采用可解释确定性半衰期公式（`HALF_LIFE_DAYS = 14`，`<= 1` 天不衰减），杜绝黑盒预测与 BKT/DKT 等越界表述；接口新字段全部以可选字段向后兼容追加。
+- **后端改动（`learning-service`）**：
+  - Flyway `V17__knowledge_mastery_peak.sql` 为 `knowledge_mastery` 增加 `peak_mastery DECIMAL(5,2)` 并对旧行执行 `UPDATE knowledge_mastery SET peak_mastery = mastery_score WHERE peak_mastery IS NULL` 自动回填；更新 `KnowledgeMasteryEntity`、`KnowledgeMasteryMapper.recordAttempt` 与 `KnowledgeMasteryConsumer` 单调维护 `peakMastery = max(existingPeak, newMastery)`；新增 `KnowledgeMasteryPeakMigrationTest` 验证从 V16 升级到 V17 幂等回填与默认写入兼容。
+  - 新增 `MasteryRetentionPolicy.java`（注入 `Clock`，输出 `currentMastery`、`peakMastery`、`effectiveMastery`、`daysSinceLastPractice`、`reviewUrgency = FRESH|FADING|DUE`）及单元测试 `MasteryRetentionPolicyTest`；改造 `PrerequisitePathService` 与 `MasteryMapService` 严格按 `max(peakMastery, masteryScore) >= 60` 判定先修解锁，并在 `MasteryMapService`、`PrerequisitePathService`、`DashboardController`、`CourseController` 与 `RecommendationService` 追加双值字段，将 `FADING`/`DUE` 遗忘预警平滑融合进可解释推荐评分与推荐理由。
+- **前端改动**：更新 `types.ts`、`useLearningMetrics.ts` 及新建 `domain/masteryRetention.ts`，在 `MasteryMapView.vue`、`PrerequisitePathPanel.vue`、`DashboardView.vue` 与 `RecommendationsView.vue` 展示“当前保持度 / 历史峰值”、`FADING`/`DUE` 非纯颜色语义徽章、14 天半衰期可解释规则说明及 `/practice`、`/review` 一键巩固入口。
+- **全量验证结果**：
+  - 后端三模块 Maven 全量回归（JDK 21，`mvn -f backend/pom.xml test "-Dsurefire.failIfNoSpecifiedTests=false"`）：`learning-service` **192** tests run、`ai-service` **106** tests run、`learning-gateway` **5** tests run，全部 0 failures、0 errors、0 skipped。
+  - 前端全量单测（`npx vitest run --maxWorkers=2`）：**60 passed (60)** 个文件、**233 passed (233)** 条用例全部通过（新增 `masteryRetention.test.ts`，扩充 `MasteryMapView.test.ts`、`PrerequisitePathPanel.test.ts`、`DashboardView.test.ts`、`RecommendationsView.test.ts`，含 `design-system-contract.test.ts` 与 `compliance-guard.test.ts`）。
+  - AST 样式与构建检查：`node scripts/scan-vue-classes.mjs --check` **1480** 处类名用法 **0 missing classes**；`frontend/src/` 全仓 `!important` 为 **0**；`npm run build` 耗时 **4.37s**，**0 error、0 chunk warning**；Playwright `authenticated-ui-smoke.mjs` **178/178** 全路由双视口通过并已删除 `.ui-visual-review` 临时目录。

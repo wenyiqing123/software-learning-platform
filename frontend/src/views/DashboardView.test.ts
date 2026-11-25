@@ -58,4 +58,42 @@ describe('DashboardView', () => {
     expect(wrapper.text()).toContain('答题记录暂不可用')
     wrapper.unmount()
   })
+
+  it('renders dual-value retention alerts with quick review links and explainable rule copy', async () => {
+    learning.overview.mockResolvedValue({
+      completed: 8,
+      mastery: 70,
+      peakMastery: 85,
+      effectiveMastery: 44,
+      daysSinceLastPractice: 14,
+      reviewUrgency: 'DUE',
+      wrongCount: 1,
+      accuracy: 80,
+      activity: [],
+    })
+    learning.knowledgePoints.mockResolvedValue([
+      {
+        id: 11,
+        courseId: 3,
+        name: '需求分析',
+        graphEntity: '需求分析',
+        mastery: 70,
+        peakMastery: 85,
+        effectiveMastery: 44,
+        daysSinceLastPractice: 14,
+        reviewUrgency: 'DUE',
+        sortOrder: 1,
+      },
+    ])
+
+    const { wrapper } = await mountPage()
+    expect(wrapper.text()).toContain('当前保持 44% · 历史峰值 85%')
+    const alertBox = wrapper.get('[data-testid="dashboard-retention-alerts"]')
+    expect(alertBox.text()).toContain('遗忘预警 · 已隔 14 天')
+    expect(alertBox.text()).toContain('需求分析')
+    expect(alertBox.get('a[href*="/practice"]').text()).toContain('定向复习')
+    expect(alertBox.get('a[href="/review"]').text()).toContain('间隔复习')
+    expect(wrapper.get('[data-testid="dashboard-retention-rule"]').text()).toContain('半衰期 14 天')
+    wrapper.unmount()
+  })
 })

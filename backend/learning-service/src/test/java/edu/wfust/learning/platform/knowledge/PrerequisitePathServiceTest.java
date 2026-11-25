@@ -11,6 +11,10 @@ import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 class PrerequisitePathServiceTest {
+    private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-11-25T10:00:00Z"), ZoneId.of("Asia/Shanghai"));
     private final CourseMapper courses = mock(CourseMapper.class);
     private final KnowledgePointMapper points = mock(KnowledgePointMapper.class);
     private final KnowledgeMasteryMapper mastery = mock(KnowledgeMasteryMapper.class);
@@ -84,8 +89,32 @@ class PrerequisitePathServiceTest {
         assertThatThrownBy(() -> service().path(92L, 9L)).isInstanceOf(ResponseStatusException.class);
     }
 
+    @Test
+    void keepsPrerequisiteUnlockedByPeakMasteryEvenWhenEffectiveRetentionDecayedBelowThreshold() {
+        var prereq = point(1L, 1L, "需求分析", null, 1);
+        var target = point(2L, 1L, "数据流图", "[1]", 2);
+        when(points.selectById(2L)).thenReturn(target);
+        when(courses.selectById(1L)).thenReturn(course(1L, true));
+        when(points.selectList(any())).thenReturn(List.of(prereq, target));
+
+        var prereqRow = score(1L, 45);
+        prereqRow.setPeakMastery(BigDecimal.valueOf(75));
+        prereqRow.setLastStudiedAt(LocalDateTime.now(FIXED_CLOCK).minusDays(14));
+        when(mastery.selectList(any())).thenReturn(List.of(prereqRow));
+
+        var path = service().path(2L, 9L);
+
+        assertThat(path.nodes().get(0).status()).isEqualTo("MASTERED");
+        assertThat(path.nodes().get(0).peakMastery()).isEqualTo(75.0);
+        assertThat(path.nodes().get(0).effectiveMastery()).isEqualTo(22.5);
+        assertThat(path.nodes().get(0).daysSinceLastPractice()).isEqualTo(14L);
+        assertThat(path.nodes().get(0).reviewUrgency()).isEqualTo("DUE");
+        // 先修峰值 75 >= 60，目标知识点保持 UP_NEXT 解锁态而非 BLOCKED
+        assertThat(path.nodes().get(1).status()).isEqualTo("UP_NEXT");
+    }
+
     private PrerequisitePathService service() {
-        return new PrerequisitePathService(courses, points, mastery, json);
+        return new PrerequisitePathService(courses, points, mastery, json, FIXED_CLOCK);
     }
 
     private CourseEntity course(Long id, boolean enabled) {

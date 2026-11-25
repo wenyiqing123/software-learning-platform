@@ -14,10 +14,10 @@
 | GET | /courses | 启用的课程 |
 | GET | /courses/{courseId}/study | 章节、小节正文、目标、资源和本人完成状态 |
 | PUT | /courses/{courseId}/study/sections/{sectionId}/progress | completed；身份来自令牌 |
-| GET | /knowledge/points | 可选 courseId；个人掌握度 |
+| GET | /knowledge/points | 可选 courseId；个人掌握度与可选双值保持字段（peakMastery、effectiveMastery、daysSinceLastPractice、reviewUrgency） |
 | GET | /knowledge/graph?entity=... | nodes、edges、evidence、available；2D G6 与 3D Three.js 共用该只读响应，离线503 |
-| GET | /knowledge/learning-path?targetId=... | 当前用户的传递先修路径；节点含 mastery/status/prerequisiteIds，循环关系有界返回并标记 cycleDetected |
-| GET | /knowledge/mastery-map?courseId=... | 当前用户的知识点掌握图谱；返回节点掌握度、答题统计、到期复习数量、先修状态和边；不写入图空间 |
+| GET | /knowledge/learning-path?targetId=... | 当前用户的传递先修路径；先修解锁严格以历史峰值 `max(peakMastery, mastery)` 为准；节点含 mastery/status/prerequisiteIds 及可选 peakMastery/effectiveMastery/daysSinceLastPractice/reviewUrgency，循环关系有界返回并标记 cycleDetected |
+| GET | /knowledge/mastery-map?courseId=... | 当前用户的知识点掌握图谱；返回节点掌握度、答题统计、到期复习数量、先修状态、边与可选双值保持字段（peakMastery/effectiveMastery/daysSinceLastPractice/reviewUrgency）；不写入图空间 |
 | GET | /quizzes | 可选 knowledgePointId；不返回答案 |
 | POST | /quizzes/{id}/submit | answer: 字符串数组；返回 correct、correctAnswer、explanation |
 | POST | /quizzes/{id}/diagnosis | selected: 本次选择的选项键；只返回管理员已配置且与所选干扰项匹配的错因、课程小节和类似题，不根据一次错误答案臆测原因 |
@@ -31,8 +31,8 @@
 | GET | /study-plans/today | 读取或生成本人今日计划 |
 | POST | /study-plans | budgetMinutes(5–240)，生成/重新生成本人今日计划 |
 | PUT | /study-plans/tasks/{taskId} | action=COMPLETE 或 SKIP；完成需有课程阅读/正确答题/正确复习记录 |
-| GET | /dashboard/overview | 掌握度、总答题、正确率、未掌握错题、最近七日答题次数 |
-| GET | /recommendations | 知识点、优先级、推荐类型、解释；五分钟缓存、MySQL快照 |
+| GET | /dashboard/overview | 掌握度、总答题、正确率、未掌握错题、最近七日答题次数及可选汇总双值保持字段（peakMastery、effectiveMastery、daysSinceLastPractice、reviewUrgency） |
+| GET | /recommendations | 知识点、优先级、推荐类型、解释及可选保持度/预警字段；结合基于半衰期（14 天）的 FADING/DUE 遗忘预警纳入可解释排序与理由；五分钟缓存、MySQL快照 |
 | GET | /reports/learning?days=7&courseId=... | 当前用户阶段性学习报告；days 为1–30，按课程返回阅读、练习、复习、计划、每日活动、章节和知识点数据 |
 | GET | /reports/learning/export?days=7&courseId=... | 同口径 UTF-8 CSV 导出；仅导出当前用户可见汇总 |
 | GET | /learning/notes?sectionId=... | 当前用户的课程小节笔记；可选知识点筛选，结果按最近更新时间排序 |
@@ -123,7 +123,7 @@ ROUGE-L 使用小写 Unicode 字母/数字字符序列的最长公共子序列F1
 
 - `GET /admin/experiments/fixed-suite` 为管理员提供只读的固定实验套件 manifest，包含 8 个由系统预置的典型案例（仅含 `caseId`、`question`、`sourceSection` 与 `knowledgePoint`），不含答案 key，也不构成教师审核过的参考答案 corpus。
 - 批次实验队列仅驻留浏览器内存（browser-only batch queue），逐项调用真实 `POST /experiments/run` 并独立保存，失败继续推进；队列与进度不声称服务端持久队列或刷新恢复；现有 compare endpoint 超时时间最长支持 600s。
-- 数据库 Flyway 迁移已应用至 V16（`V16__experiment_group_task_order.sql`，支持组间评估顺序可空字段），历史迁移严格不可变，本平台未实现也不声明 V17 迁移。
+- 数据库 Flyway 迁移已应用至 V17（`V17__knowledge_mastery_peak.sql` 为 `knowledge_mastery` 增加单调历史峰值 `peak_mastery` 并向旧行自动回填，包含 V16 为实验组增加的评估顺序可空字段），历史 V1–V17 迁移严格不可变，未来扩展预留 V18+。
 
 ## 最终合规守卫
 

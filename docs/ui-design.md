@@ -208,3 +208,8 @@
 
 - **纯前端句子级图谱引用联动**：新增确定性对齐引擎 `frontend/src/domain/citationAlignment.ts`，按 `[1..N]` 真实三元组跳过 Markdown 代码块/行内代码/URL 匹配正文句子实体，在 `MarkdownContent.vue` 句末渲染学术风上标引用按钮 `[k]` 与悬浮三元组预览 tooltip（`主体 — 关系 — 客体`）；在 `TutorAnswerCard.vue` 呈现客观实体覆盖概览（`回复提及了 X/Y 条已检索图谱证据中的实体`，不出现“正确率/置信度”等不当措辞），点击 `[k]` 自动展开折叠的图谱证据面板、平滑滚动定位并短暂高亮第 `k` 条三元组（保留前往 `/knowledge?entity=...` 跳转入口）；无三元组时零虚构标注，严格零后台系统提示词与模式标签泄露。
 - **跨模块懒加载 Mermaid 交互图表**：扩展 `domain/markdown.ts` 识别 `mermaid` 代码块及其流式闭合状态（`closed?: boolean`）；新建 `MermaidDiagram.vue` 统一服务 AI 助教、课程正文（`CourseView.vue` 已接入 `MarkdownContent`）与证据微课（`MicroLessonView.vue`），未闭合时展示稳定代码占位、闭合后按需 `await import('mermaid')` 渲染，强制 `securityLevel: 'strict'` + SVG DOM 清理与浅色设计系统配色，提供**图表/源码切换**、**复制源码**、**弹窗放大与缩放重置**及**下载 SVG**，语法错误自动诚实降级并提示`图表语法暂无法渲染，已切换为源码视图`；欢迎页 2×2 卡片第 3 项更新为软件工程流程图示例提问；`vite.config.ts` 按需拆分为 `mermaid-elk`（1,463.38 kB）、`mermaid-core`（1,307.51 kB）、`mermaid-layout`（766.80 kB）、`mermaid-math`（258.97 kB）及按需加载图种子包，构建 0 error、0 chunk warning，全仓保持 `0 !important`（四份全局 CSS 合计 66,159 B）。
+
+### 双值掌握度（历史峰值解锁 + 可解释时间衰减保持度）与遗忘预警（2026-11-25）
+
+- **统一双值呈现与共享渲染辅助（`domain/masteryRetention.ts`）**：提取共享前端辅助模块（兼容缺省旧字段安全回退），在 `MasteryMapView.vue`（节点双进度条：底影历史峰值 + 前景当前保持度、全屏节点卡片、清单条目）、`PrerequisitePathPanel.vue`（`历史峰值 X%（峰值达标已解锁）` 说明与当前保持度）、`DashboardView.vue`（概览指标副标题与知识点记忆风险提醒条）及 `RecommendationsView.vue`（推荐头部预警徽章与保持/峰值提示）统一落地，保持全仓 `0 !important` 与 `0 missing classes`。
+- **非纯颜色语义预警与一键复习直达**：针对 `FADING` / `DUE` 知识点显示带图标与天数的文字徽章（`待巩固 · 已隔 N 天` / `遗忘预警 · 已隔 N 天`），并在掌握图谱、先修路径、首页与推荐视图提供直达 `/practice?knowledgePointId=...`（定向复习）与 `/review`（间隔复习）的便捷入口；各界面显式附带可解释规则说明（“基于距上次有效学习天数的可解释遗忘衰减规则：间隔 ≤ 1 天不衰减，超过 1 天按常数半衰期 14 天估算当前保持度；先修解锁门槛 60% 严格以历史峰值为准，不因久未复习而回退锁死”），严禁机器学习/BKT/DKT 等越界措辞。

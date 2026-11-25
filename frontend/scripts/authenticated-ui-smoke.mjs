@@ -42,7 +42,21 @@ const courseSections = ['需求分析', '数据流图', '需求规格说明书']
   ],
   resources: [{ title: '需求建模参考', url: 'https://example.org/requirements', description: '对比目标、约束与验收条件。' }],
 }))
-const coursePoints = courseSections.map((section, index) => ({ id: section.knowledgePointId, courseId: 3, chapterId: 1, name: section.title, graphEntity: section.graphEntity, mastery: [85, 42, 0][index], sortOrder: index + 1 }))
+const retentionByPoint = [
+  { peakMastery: 85, effectiveMastery: 43, daysSinceLastPractice: 14, reviewUrgency: 'DUE' },
+  { peakMastery: 62, effectiveMastery: 48, daysSinceLastPractice: 6, reviewUrgency: 'FADING' },
+  { peakMastery: 0, effectiveMastery: 0, daysSinceLastPractice: 0, reviewUrgency: 'FRESH' },
+]
+const coursePoints = courseSections.map((section, index) => ({
+  id: section.knowledgePointId,
+  courseId: 3,
+  chapterId: 1,
+  name: section.title,
+  graphEntity: section.graphEntity,
+  mastery: [85, 42, 0][index],
+  ...retentionByPoint[index],
+  sortOrder: index + 1,
+}))
 const evidence = [
   { subject: '需求分析', predicate: '输出', object: '需求规格说明书', score: 0.92 },
   { subject: '需求分析', predicate: '使用', object: '数据流图', score: 0.81 },
@@ -85,7 +99,7 @@ const adminDraft = { id: 14, courseId: 3, sectionId: 31, title: '从业务问题
 function apiResponse(url, role, scenario, method) {
   const path = new URL(url).pathname
   if (path === '/api/auth/me') return json({ id: role === 'ADMIN' ? 1 : 2, username: role === 'ADMIN' ? 'smoke-admin' : 'smoke-student', displayName: role === 'ADMIN' ? '封版巡检管理员' : '封版巡检学生', role })
-  if (path === '/api/dashboard/overview') return json({ mastery: 42, completed: 4, wrongCount: 2, accuracy: 75, activity: [] })
+  if (path === '/api/dashboard/overview') return json({ mastery: 42, peakMastery: 74, effectiveMastery: 46, daysSinceLastPractice: 6, reviewUrgency: 'DUE', completed: 4, wrongCount: 2, accuracy: 75, activity: [] })
   if (path === '/api/knowledge/points') return json(coursePoints)
   if (path === '/api/courses') return json([course])
   if (path === '/api/admin/courses') return json([{ id: 3, code: 'SE', name: '软件工程', term: '2026 秋季', description: '课程阅读与练习', graphSpaceId: 1, enabled: true }])
@@ -234,9 +248,19 @@ const visualScenarios = {
       const after = await sample()
       if (before.every((color, i) => color === after[i])) throw new Error('3D viewport did not react to dragging')
     } },
-    { route: '/knowledge?view=path&knowledgePointId=13', name: 'prerequisite-path', check: page => page.getByTestId('path-node').first().waitFor() },
+    { route: '/dashboard', name: 'dashboard-retention', async check(page) {
+      await page.getByTestId('dashboard-retention-alerts').waitFor()
+      await page.getByTestId('dashboard-retention-rule').waitFor()
+    } },
+    { route: '/knowledge?view=path&knowledgePointId=13', name: 'prerequisite-path', async check(page) {
+      await page.getByTestId('path-node').first().waitFor()
+      await page.getByTestId('path-retention-rule').waitFor()
+      await page.getByTestId('path-retention-alert-11').waitFor()
+    } },
     { route: '/mastery-map', name: 'mastery-data', async check(page) {
       await page.locator('.mastery-canvas canvas').first().waitFor()
+      await page.getByTestId('mastery-retention-rule').waitFor()
+      await page.getByTestId('mastery-retention-alert-11').waitFor()
       await page.getByRole('button', { name: '全屏图谱', exact: true }).click()
       await page.waitForFunction(() => {
         const vp = document.querySelector('.visualization-viewport')

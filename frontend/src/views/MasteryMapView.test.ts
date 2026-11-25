@@ -19,6 +19,7 @@ async function mountPage() {
     { path: '/mastery-map', component: MasteryMapView },
     { path: '/courses', component: { template: '<div />' } },
     { path: '/practice', component: { template: '<div />' } },
+    { path: '/review', component: { template: '<div />' } },
   ] })
   await router.push('/mastery-map')
   await router.isReady()
@@ -57,6 +58,45 @@ describe('personal mastery map', () => {
     await wrapper.get('[data-testid="mastery-practice-2"]').trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.fullPath).toBe('/practice?knowledgePointId=2')
+    wrapper.unmount()
+  })
+
+  it('displays dual-value retention, forgetting alerts, and spaced-review shortcut', async () => {
+    learning.masteryMap.mockResolvedValueOnce({
+      courseId: 1,
+      courseName: '软件工程',
+      nodes: [
+        {
+          id: 1,
+          courseId: 1,
+          chapterId: 1,
+          name: '需求分析',
+          graphEntity: '需求分析',
+          mastery: 80,
+          peakMastery: 85,
+          effectiveMastery: 40,
+          daysSinceLastPractice: 14,
+          reviewUrgency: 'DUE',
+          attemptCount: 5,
+          correctCount: 4,
+          dueReviewCount: 1,
+          status: 'MASTERED',
+          prerequisiteIds: [],
+        },
+      ],
+      edges: [],
+    })
+    const { wrapper, router } = await mountPage()
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="mastery-retention-rule"]').text()).toContain('半衰期 14 天')
+    expect(wrapper.text()).toContain('当前保持度 40%')
+    expect(wrapper.text()).toContain('历史峰值 85%')
+    expect(wrapper.get('[data-testid="mastery-retention-alert-1"]').text()).toContain('遗忘预警 · 已隔 14 天')
+
+    await wrapper.get('[data-testid="mastery-review-1"]').trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe('/review')
     wrapper.unmount()
   })
 })

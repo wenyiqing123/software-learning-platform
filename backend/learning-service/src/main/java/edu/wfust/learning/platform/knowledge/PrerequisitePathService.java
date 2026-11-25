@@ -7,12 +7,14 @@ import edu.wfust.learning.platform.entity.KnowledgePointEntity;
 import edu.wfust.learning.platform.mapper.CourseMapper;
 import edu.wfust.learning.platform.mapper.KnowledgeMasteryMapper;
 import edu.wfust.learning.platform.mapper.KnowledgePointMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -24,19 +26,28 @@ import java.util.Set;
 
 @Service
 public class PrerequisitePathService {
-    private static final double MASTERY_THRESHOLD = 60.0;
+    private static final double MASTERY_THRESHOLD = MasteryRetentionPolicy.MASTERED_THRESHOLD;
 
     private final CourseMapper courses;
     private final KnowledgePointMapper points;
     private final KnowledgeMasteryMapper mastery;
     private final ObjectMapper json;
+    private final Clock clock;
+    private final MasteryRetentionPolicy retentionPolicy = new MasteryRetentionPolicy();
 
     public PrerequisitePathService(CourseMapper courses, KnowledgePointMapper points,
                                   KnowledgeMasteryMapper mastery, ObjectMapper json) {
+        this(courses, points, mastery, json, MasteryRetentionPolicy.DEFAULT_CLOCK);
+    }
+
+    @Autowired
+    public PrerequisitePathService(CourseMapper courses, KnowledgePointMapper points,
+                                  KnowledgeMasteryMapper mastery, ObjectMapper json, Clock clock) {
         this.courses = courses;
         this.points = points;
         this.mastery = mastery;
         this.json = json;
+        this.clock = clock == null ? MasteryRetentionPolicy.DEFAULT_CLOCK : clock;
     }
 
     public LearningPath path(Long targetId, Long userId) {
@@ -63,19 +74,22 @@ public class PrerequisitePathService {
         boolean[] cycleDetected = {false};
         visit(targetId, prerequisites, byId, visitState, new HashSet<>(), orderedIds, cycleDetected);
 
-        Map<Long, Double> masteryByPoint = new HashMap<>();
+        Map<Long, MasteryRetentionPolicy.RetentionSnapshot> retentionByPoint = new HashMap<>();
         for (KnowledgeMasteryEntity row : mastery.selectList(
                 new QueryWrapper<KnowledgeMasteryEntity>().eq("user_id", userId))) {
-            masteryByPoint.put(row.getKnowledgePointId(), score(row));
+            retentionByPoint.put(row.getKnowledgePointId(), retentionPolicy.evaluate(row, clock));
         }
 
         List<PathNode> pathNodes = orderedIds.stream().map(id -> {
             KnowledgePointEntity point = byId.get(id);
-            double value = masteryByPoint.getOrDefault(id, 0.0);
+            MasteryRetentionPolicy.RetentionSnapshot snapshot =
+                    retentionByPoint.getOrDefault(id, MasteryRetentionPolicy.RetentionSnapshot.EMPTY);
             List<Long> required = prerequisites.getOrDefault(id, List.of());
-            String status = status(value, required, masteryByPoint);
+            String status = status(snapshot, required, retentionByPoint);
             return new PathNode(point.getId(), point.getCourseId(), point.getChapterId(), point.getName(),
-                    point.getGraphEntity(), value, required, status);
+                    point.getGraphEntity(), snapshot.currentMastery(), required, status,
+                    snapshot.peakMastery(), snapshot.effectiveMastery(), snapshot.daysSinceLastPractice(),
+                    snapshot.reviewUrgency().name());
         }).toList();
         return new LearningPath(targetId, target.getCourseId(), pathNodes, cycleDetected[0]);
     }
@@ -125,17 +139,18 @@ public class PrerequisitePathService {
         orderedIds.add(pointId);
     }
 
-    private String status(double value, List<Long> required, Map<Long, Double> masteryByPoint) {
-        if (value >= MASTERY_THRESHOLD) return "MASTERED";
-        if (value > 0) return "IN_PROGRESS";
-        boolean missingPrerequisite = required.stream()
-                .anyMatch(id -> masteryByPoint.getOrDefault(id, 0.0) < MASTERY_THRESHOLD);
+    private String status(MasteryRetentionPolicy.RetentionSnapshot snapshot, List<Long> required,
+                          Map<Long, MasteryRetentionPolicy.RetentionSnapshot> retentionByPoint) {
+        // 先修解锁严格使用历史峰值（max(peakMastery, currentMastery)），确保已解锁章节不因遗忘回落重新锁死
+        double unlockLevel = Math.max(snapshot.peakMastery(), snapshot.currentMastery());
+        if (unlockLevel >= MASTERY_THRESHOLD) return "MASTERED";
+        if (unlockLevel > 0) return "IN_PROGRESS";
+        boolean missingPrerequisite = required.stream().anyMatch(id -> {
+            MasteryRetentionPolicy.RetentionSnapshot req =
+                    retentionByPoint.getOrDefault(id, MasteryRetentionPolicy.RetentionSnapshot.EMPTY);
+            return Math.max(req.peakMastery(), req.currentMastery()) < MASTERY_THRESHOLD;
+        });
         return missingPrerequisite ? "BLOCKED" : "UP_NEXT";
-    }
-
-    private double score(KnowledgeMasteryEntity row) {
-        if (row == null || row.getMasteryScore() == null) return 0.0;
-        return Math.max(0.0, Math.min(100.0, row.getMasteryScore().doubleValue()));
     }
 
     private void notFound() {
@@ -145,5 +160,13 @@ public class PrerequisitePathService {
     public record LearningPath(Long targetId, Long courseId, List<PathNode> nodes, boolean cycleDetected) { }
 
     public record PathNode(Long id, Long courseId, Long chapterId, String name, String graphEntity,
-                           double mastery, List<Long> prerequisiteIds, String status) { }
+                           double mastery, List<Long> prerequisiteIds, String status,
+                           Double peakMastery, Double effectiveMastery, Long daysSinceLastPractice,
+                           String reviewUrgency) {
+        public PathNode(Long id, Long courseId, Long chapterId, String name, String graphEntity,
+                        double mastery, List<Long> prerequisiteIds, String status) {
+            this(id, courseId, chapterId, name, graphEntity, mastery, prerequisiteIds, status,
+                    mastery, mastery, 0L, "FRESH");
+        }
+    }
 }

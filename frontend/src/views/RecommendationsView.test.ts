@@ -11,6 +11,7 @@ async function mountPage() {
     { path: '/recommendations', component: RecommendationsView },
     { path: '/practice', component: { template: '<div />' } },
     { path: '/knowledge', component: { template: '<div />' } },
+    { path: '/review', component: { template: '<div />' } },
   ] })
   await router.push('/recommendations')
   await router.isReady()
@@ -47,6 +48,29 @@ describe('RecommendationsView', () => {
     await wrapper.findAll('button').at(-1)!.trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.path).toBe('/practice')
+    wrapper.unmount()
+  })
+
+  it('displays forgetting risk alert badge and review shortcut for decaying topics', async () => {
+    learning.recommendations.mockResolvedValueOnce([
+      {
+        id: 11,
+        knowledgePointId: 11,
+        title: '需求分析',
+        reason: '距上次练习已 14 天，当前记忆保持估值回落至 40%（历史峰值 80%），建议优先复习。',
+        kind: '遗忘预警',
+        score: 79.2,
+        knowledgePoint: '需求分析',
+        peakMastery: 80,
+        effectiveMastery: 40,
+        daysSinceLastPractice: 14,
+        reviewUrgency: 'DUE',
+      },
+    ])
+    const { wrapper } = await mountPage()
+    expect(wrapper.text()).toContain('遗忘预警 · 已隔 14 天')
+    expect(wrapper.text()).toContain('保持 40% / 峰值 80%')
+    expect(wrapper.get('a[href="/review"]').text()).toContain('间隔复习')
     wrapper.unmount()
   })
 })
