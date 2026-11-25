@@ -414,3 +414,15 @@
   - `npm run build`：Vite 生产构建耗时 `1.55s` 通过。
   - `node scripts/authenticated-ui-smoke.mjs`：170/170 全量视觉巡检通过（已目视确认 `1440×900` 与 `1280×800` 截图并清理 `.ui-visual-review`）。
   - 全局 CSS：`styles-design-system.css`（28,734 B）、`styles.css`（18,564 B）、`styles-learning.css`（11,389 B）、`styles-graph.css`（3,297 B），合计 **61,984 B**，`frontend/src/` 全仓 `!important` 为 `0`。
+
+### 顶栏缩展按钮左移、同步可点击面包屑与对话级分步提示开关记录（2026-11-25）
+
+- **顶栏收缩按钮左移**：`.topbar` 左侧 `padding` 收紧为 `12px`，使 `[data-testid="sidebar-collapse-toggle"]` 紧靠左侧导航分割线（移动端 `< 620px` 仍恢复对称间距），并增加细竖分隔线 `.topbar-divider`。
+- **可点击同步三级面包屑**：在 `App.vue` 基于 `studentNavGroups`、`STUDENT_SECTIONS` 与 `adminItems` 同源推导三级导航路径（`学习空间 / 主菜单分组 / 当前页面 ▾`，管理员为 `管理空间 / 管理工作台 / 当前页面 ▾`），空间链接回首页、分组链接切分组入口、末级按钮 `[data-testid="breadcrumb-page-switcher"]` 弹出同分组页面菜单 `[data-testid="breadcrumb-menu"]` 实现一键切页（支持点击空白处、路由跳转及 `Escape` 自动关闭）。
+- **AI 助教“分步提示”对话级开关**：将 `TutorComposer.vue` 原单次触发按钮改造为切换开关 `[data-testid="tutor-hint-toggle"]`（`role="switch"` + `:aria-checked`），`TutorView.vue` 按 `sessionId` 维度管理开关状态并同步 `localStorage`（`slp-tutor-step-hint-sessions`）；开启后当前对话所有提交提问均持续走 `/api/ai/tutor/hint` 分步引导并展示 `TutorMessageList.vue` 加载占位与重试支持，切换或新建对话独立隔离。
+- **全套实测记录**：
+  - `npx vitest run`：56 个测试文件、198 个测试用例全部通过（含 `AppRoleNavigation.test.ts`、`TutorComposer.test.ts`、`TutorHints.test.ts`、`TutorView.test.ts` 与 `design-system-contract.test.ts`）。
+  - `node scripts/scan-vue-classes.mjs --check`：1209 处模板 class 全部匹配（0 个缺失 class）。
+  - `npm run build`：Vite 生产构建耗时 `1.72s` 通过。
+  - `node scripts/authenticated-ui-smoke.mjs`：170/170 全量视觉巡检通过（已目视核查 `/tutor`、`/dashboard` 与管理员 `/admin/content` 截图并清理 `.ui-visual-review`）。
+  - 全局 CSS：`styles-design-system.css`（28,734 B）、`styles.css`（20,374 B）、`styles-learning.css`（11,389 B）、`styles-graph.css`（3,297 B），合计 **63,794 B**，`frontend/src/` 全仓 `!important` 为 `0`。

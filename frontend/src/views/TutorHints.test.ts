@@ -24,6 +24,7 @@ async function mountTutor() {
 
 beforeEach(() => {
   vi.resetAllMocks()
+  localStorage.removeItem('slp-tutor-step-hint-sessions')
   learning.sessions.mockResolvedValue([])
   learning.createSession.mockResolvedValue({ id: 1, title: '提示会话' })
   learning.tutorHint.mockResolvedValue({
@@ -35,16 +36,24 @@ beforeEach(() => {
     nextLevelAvailable: true,
     source: 'GRAPH_DIRECTION',
   })
-  learning.saveMessage.mockResolvedValue({ id: 1, role: 'ASSISTANT', content: '提示', mode: 'TUTOR_HINT_1', metadata: {} })
+  learning.saveMessage.mockImplementation(async (_id: number, payload: any) => ({ id: Date.now(), ...payload }))
 })
 
 describe('tutor layered hints', () => {
-  it('requests the first hint from composer and displays evidence in chat flow without exposing a prompt', async () => {
+  it('enables session step-hint toggle and routes submitted questions through hint flow without exposing a prompt', async () => {
     const wrapper = await mountTutor()
     await flushPromises()
+
+    const hintToggle = wrapper.get('[data-testid="tutor-hint-toggle"]')
+    await hintToggle.trigger('click')
+    expect(hintToggle.attributes('aria-checked')).toBe('true')
+    expect(learning.tutorHint).not.toHaveBeenCalled()
+
     await wrapper.get('#question-input').setValue('加工如何命名')
-    await wrapper.get('[data-testid="tutor-hint-trigger"]').trigger('click')
+    await wrapper.get('[data-testid="tutor-send"]').trigger('click')
     await flushPromises()
+
+    expect(learning.streamAsk).not.toHaveBeenCalled()
     expect(learning.tutorHint).toHaveBeenCalledWith('加工如何命名', 1, [], [])
     expect(wrapper.text()).toContain('分步学习提示 · 第 1 级')
     expect(wrapper.text()).toContain('思考方向')

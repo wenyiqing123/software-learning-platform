@@ -4,6 +4,7 @@ import { PanelLeftOpen, Plus } from '@lucide/vue'
 import { useRoute, useRouter } from 'vue-router'
 import { apiError, learningApi } from '../api/client'
 import type { TutorSession } from '../api/tutor'
+import type { TutorHintResult } from '../api/types'
 import {
   LOCKED_TUTOR_MODE,
   stripLegacyModePrefix,
@@ -52,6 +53,56 @@ const sessionId = ref<number | null>(null)
 const messages = ref<TutorChatMessage[]>([])
 const historyError = ref('')
 const hintLoading = ref(false)
+const failedAsHint = ref(false)
+
+const STEP_HINT_STORAGE_KEY = 'slp-tutor-step-hint-sessions'
+
+function loadStepHintSessions(): Record<number, boolean> {
+  if (typeof window === 'undefined') return {}
+  try {
+    const raw = window.localStorage.getItem(STEP_HINT_STORAGE_KEY)
+    if (!raw) return {}
+    const parsed = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object') return {}
+    const clean: Record<number, boolean> = {}
+    for (const [key, value] of Object.entries(parsed)) {
+      const id = Number(key)
+      if (Number.isInteger(id) && id > 0 && typeof value === 'boolean') {
+        clean[id] = value
+      }
+    }
+    return clean
+  } catch {
+    return {}
+  }
+}
+
+function persistStepHintSessions(map: Record<number, boolean>) {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(STEP_HINT_STORAGE_KEY, JSON.stringify(map))
+  } catch {
+    // 忽略存储配额限制或隐私模式写入失败
+  }
+}
+
+const draftStepHint = ref(false)
+const sessionStepHints = ref<Record<number, boolean>>(loadStepHintSessions())
+const stepHintEnabled = computed<boolean>({
+  get() {
+    if (sessionId.value) return Boolean(sessionStepHints.value[sessionId.value])
+    return draftStepHint.value
+  },
+  set(enabled: boolean) {
+    if (sessionId.value) {
+      const next = { ...sessionStepHints.value, [sessionId.value]: enabled }
+      sessionStepHints.value = next
+      persistStepHintSessions(next)
+      return
+    }
+    draftStepHint.value = enabled
+  },
+})
 
 const sidebarCollapsed = ref(shouldCollapseSidebarByDefault())
 const mobileDrawerOpen = ref(false)
@@ -160,6 +211,7 @@ onBeforeUnmount(stopGenerating)
 async function selectSession() {
   error.value = ''
   failedQuestion.value = ''
+  failedAsHint.value = false
   streamingAnswer.value = ''
   streamingEvidence.value = null
   messages.value = []
@@ -180,8 +232,10 @@ function selectSessionById(id: number) {
 function newSession() {
   abortController?.abort()
   sessionId.value = null
+  draftStepHint.value = false
   messages.value = []
   failedQuestion.value = ''
+  failedAsHint.value = false
   error.value = ''
   streamingAnswer.value = ''
   streamingEvidence.value = null
@@ -190,10 +244,16 @@ function newSession() {
 }
 
 async function deleteSession() {
-  if (!sessionId.value || loading.value) return
+  if (!sessionId.value || loading.value || hintLoading.value) return
+  const targetId = sessionId.value
   try {
-    await learningApi.deleteSession(sessionId.value)
-    sessions.value = sessions.value.filter(s => s.id !== sessionId.value)
+    await learningApi.deleteSession(targetId)
+    sessions.value = sessions.value.filter(s => s.id !== targetId)
+    if (sessionStepHints.value[targetId] !== undefined) {
+      const { [targetId]: _removed, ...rest } = sessionStepHints.value
+      sessionStepHints.value = rest
+      persistStepHintSessions(rest)
+    }
     newSession()
   } catch (e) {
     historyError.value = apiError(e)
@@ -218,54 +278,79 @@ async function copyAnswer(value?: string) {
   if (value) await window.navigator.clipboard?.writeText(value)
 }
 
+async function ensureActiveSession(titleSource: string): Promise<number> {
+  if (sessionId.value) return sessionId.value
+  const pendingStepHint = draftStepHint.value
+  const created = await learningApi.createSession(titleSource.slice(0, 100)) as TutorSession
+  sessions.value = [created, ...sessions.value]
+  sessionId.value = created.id
+  const next = { ...sessionStepHints.value, [created.id]: pendingStepHint }
+  sessionStepHints.value = next
+  persistStepHintSessions(next)
+  draftStepHint.value = false
+  return created.id
+}
+
+async function appendUserPrompt(activeSessionId: number, prompt: string, clearComposerInput: boolean) {
+  const userMessage = await learningApi.saveMessage(activeSessionId, {
+    role: 'USER',
+    content: prompt,
+    mode: LOCKED_TUTOR_MODE,
+  })
+  messages.value.push(userMessage as TutorChatMessage)
+  if (clearComposerInput) {
+    question.value = ''
+  }
+}
+
+function buildHistoryContext() {
+  const lastMsg = messages.value[messages.value.length - 1]
+  const historySource = lastMsg?.role === 'USER' ? messages.value.slice(0, -1) : messages.value
+  const historyMessages = historySource.slice(-10).map(message => message.content.slice(0, 2000))
+  const historyEntities = messages.value
+    .filter(message => message.role === 'ASSISTANT')
+    .flatMap(message => message.metadata?.results?.flatMap(result => result.entities?.map(entity => entity.canonicalName) || []) || [])
+    .slice(-20)
+  return { historyMessages, historyEntities }
+}
+
+async function saveAndPushHintMessage(activeSessionId: number, data: TutorHintResult) {
+  const hintContent = `第${data.level}级学习提示：${data.content}`
+  try {
+    const saved = await learningApi.saveMessage(activeSessionId, {
+      role: 'ASSISTANT',
+      content: hintContent,
+      mode: `TUTOR_HINT_${data.level}`,
+      metadata: { hint: data },
+    }) as TutorChatMessage
+    messages.value.push({
+      ...saved,
+      metadata: saved?.metadata && Object.keys(saved.metadata).length ? saved.metadata : { hint: data },
+    })
+  } catch (cause) {
+    historyError.value = apiError(cause, '提示已生成，但历史记录保存失败')
+    messages.value.push({
+      role: 'ASSISTANT',
+      content: hintContent,
+      mode: `TUTOR_HINT_${data.level}`,
+      metadata: { hint: data },
+    })
+  }
+}
+
 async function requestHint(promptOverride?: string, level = 1) {
   const prompt = (promptOverride ?? question.value).trim()
   if (!prompt || hintLoading.value || loading.value) return
   hintLoading.value = true
   error.value = ''
   try {
-    const historyMessages = messages.value.slice(-10).map(message => message.content.slice(0, 2000))
-    const historyEntities = messages.value
-      .filter(message => message.role === 'ASSISTANT')
-      .flatMap(message => message.metadata?.results?.flatMap(result => result.entities?.map(entity => entity.canonicalName) || []) || [])
-      .slice(-20)
-
+    const { historyMessages, historyEntities } = buildHistoryContext()
     const data = await learningApi.tutorHint(prompt, level, historyMessages, historyEntities)
-    if (!sessionId.value) {
-      const created = await learningApi.createSession(prompt.slice(0, 100)) as TutorSession
-      sessions.value = [created, ...sessions.value]
-      sessionId.value = created.id
-    }
+    const activeSessionId = await ensureActiveSession(prompt)
     if (!promptOverride && question.value.trim() === prompt) {
-      const userMessage = await learningApi.saveMessage(sessionId.value!, {
-        role: 'USER',
-        content: prompt,
-        mode: LOCKED_TUTOR_MODE,
-      })
-      messages.value.push(userMessage as TutorChatMessage)
-      question.value = ''
+      await appendUserPrompt(activeSessionId, prompt, true)
     }
-    const hintContent = `第${data.level}级学习提示：${data.content}`
-    try {
-      const saved = await learningApi.saveMessage(sessionId.value!, {
-        role: 'ASSISTANT',
-        content: hintContent,
-        mode: `TUTOR_HINT_${data.level}`,
-        metadata: { hint: data },
-      }) as TutorChatMessage
-      messages.value.push({
-        ...saved,
-        metadata: saved?.metadata && Object.keys(saved.metadata).length ? saved.metadata : { hint: data },
-      })
-    } catch (cause) {
-      historyError.value = apiError(cause, '提示已生成，但历史记录保存失败')
-      messages.value.push({
-        role: 'ASSISTANT',
-        content: hintContent,
-        mode: `TUTOR_HINT_${data.level}`,
-        metadata: { hint: data },
-      })
-    }
+    await saveAndPushHintMessage(activeSessionId, data)
   } catch (cause) {
     error.value = apiError(cause, '提示暂时不可用，请检查图谱与模型服务')
   } finally {
@@ -273,44 +358,59 @@ async function requestHint(promptOverride?: string, level = 1) {
   }
 }
 
-async function submit(options: { retry?: boolean; prompt?: string } = {}) {
+async function submitStepHint(prompt: string, retrying: boolean, fromExplicitPrompt: boolean) {
+  hintLoading.value = true
+  error.value = ''
+  failedQuestion.value = ''
+  failedAsHint.value = false
+  messageListRef.value?.scrollToBottom(false)
+
+  try {
+    const activeSessionId = await ensureActiveSession(prompt)
+    if (!retrying) {
+      await appendUserPrompt(activeSessionId, prompt, !fromExplicitPrompt)
+    }
+    const { historyMessages, historyEntities } = buildHistoryContext()
+    const data = await learningApi.tutorHint(prompt, 1, historyMessages, historyEntities)
+    await saveAndPushHintMessage(activeSessionId, data)
+  } catch (cause) {
+    error.value = apiError(cause, '提示暂时不可用，请检查图谱与模型服务')
+    failedQuestion.value = prompt
+    failedAsHint.value = true
+  } finally {
+    hintLoading.value = false
+  }
+}
+
+async function submit(options: { retry?: boolean; prompt?: string; forceHint?: boolean } = {}) {
   const prompt = (options.prompt ?? question.value).trim()
-  if (!prompt || loading.value) return
+  if (!prompt || loading.value || hintLoading.value) return
   const retrying = Boolean(options.retry)
+  const useStepHint = options.forceHint !== undefined
+    ? options.forceHint
+    : (retrying ? failedAsHint.value : stepHintEnabled.value)
+
+  if (useStepHint) {
+    await submitStepHint(prompt, retrying, Boolean(options.prompt))
+    return
+  }
 
   loading.value = true
   error.value = ''
   failedQuestion.value = ''
+  failedAsHint.value = false
   streamingAnswer.value = ''
   streamingEvidence.value = null
   abortController = new AbortController()
   messageListRef.value?.scrollToBottom(false)
 
   try {
-    if (!sessionId.value) {
-      const created = await learningApi.createSession(prompt.slice(0, 100)) as TutorSession
-      sessions.value = [created, ...sessions.value]
-      sessionId.value = created.id
-    }
+    const activeSessionId = await ensureActiveSession(prompt)
     if (!retrying) {
-      const userMessage = await learningApi.saveMessage(sessionId.value!, {
-        role: 'USER',
-        content: prompt,
-        mode: LOCKED_TUTOR_MODE,
-      })
-      messages.value.push(userMessage as TutorChatMessage)
-      if (!options.prompt) {
-        question.value = ''
-      }
+      await appendUserPrompt(activeSessionId, prompt, !options.prompt)
     }
 
-    const lastMsg = messages.value[messages.value.length - 1]
-    const historySource = lastMsg?.role === 'USER' ? messages.value.slice(0, -1) : messages.value
-    const historyMessages = historySource.slice(-10).map(m => m.content.slice(0, 2000))
-    const historyEntities = messages.value
-      .filter(m => m.role === 'ASSISTANT')
-      .flatMap(m => m.metadata?.results?.flatMap(r => r.entities?.map(e => e.canonicalName) || []) || [])
-      .slice(-20)
+    const { historyMessages, historyEntities } = buildHistoryContext()
 
     const data = await learningApi.streamAsk(
       prompt,
@@ -330,7 +430,7 @@ async function submit(options: { retry?: boolean; prompt?: string } = {}) {
 
     if (content.trim()) {
       try {
-        const saved = await learningApi.saveMessage(sessionId.value!, {
+        const saved = await learningApi.saveMessage(activeSessionId, {
           role: 'ASSISTANT',
           content: content.slice(0, 20000),
           mode: LOCKED_TUTOR_MODE,
@@ -378,8 +478,8 @@ function retryQuestion(prompt: string) {
 }
 
 function regenerateQuestion(prompt: string) {
-  if (!prompt.trim() || loading.value) return
-  void submit({ retry: true, prompt })
+  if (!prompt.trim() || loading.value || hintLoading.value) return
+  void submit({ retry: true, prompt, forceHint: false })
 }
 
 function selectQuickPrompt(prompt: string) {
@@ -431,7 +531,7 @@ function toggleSidebarDesktop() {
         <!-- 无边框透明画布顶行：空态只显示右侧上下文捷径；有消息时展示会话标题与语义描述 -->
         <header
           class="tutor-canvas-header"
-          :class="{ 'is-empty-state': !messages.length && !loading && !error }"
+          :class="{ 'is-empty-state': !messages.length && !loading && !hintLoading && !error }"
         >
           <div class="tutor-canvas-left">
             <button
@@ -456,7 +556,7 @@ function toggleSidebarDesktop() {
               <Plus :size="14" />
               <span>新对话</span>
             </button>
-            <div v-if="messages.length || loading || error" class="tutor-topbar-titles">
+            <div v-if="messages.length || loading || hintLoading || error" class="tutor-topbar-titles">
               <h1 class="tutor-heading-title">
                 {{ activeSessionTitle || 'AI 学习助教' }}
               </h1>
@@ -495,11 +595,12 @@ function toggleSidebarDesktop() {
             :question="question"
             :loading="loading"
             :hint-loading="hintLoading"
+            :step-hint-enabled="stepHintEnabled"
             :context="context"
             @update:question="question = $event"
+            @update:step-hint-enabled="stepHintEnabled = $event"
             @submit="submit()"
             @stop="stopGenerating"
-            @request-hint="requestHint()"
             @dismiss-context="contextDismissed = true"
           />
         </div>

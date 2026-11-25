@@ -114,6 +114,53 @@ describe('App role navigation', () => {
     }
   })
 
+  it('syncs clickable breadcrumbs with active menu hierarchy and switches pages directly', async () => {
+    session.user.value = { id: 2, username: 'student', displayName: '学生', role: 'STUDENT' }
+    const routes = [
+      { path: '/dashboard', component: { template: '<div />' } },
+      { path: '/courses', component: { template: '<div />' } },
+      { path: '/knowledge', component: { template: '<div />' } },
+      { path: '/mastery-map', component: { template: '<div />' } },
+      { path: '/tutor', component: { template: '<div />' } },
+      { path: '/micro-lessons', component: { template: '<div />' } },
+    ]
+    const router = createRouter({ history: createMemoryHistory(), routes })
+    await router.push('/tutor?courseId=3')
+    await router.isReady()
+    const wrapper = mount(App, { global: { plugins: [router] } })
+    await flushPromises()
+
+    const breadcrumb = wrapper.get('.breadcrumb')
+    expect(breadcrumb.text()).toContain('学习空间')
+    expect(breadcrumb.text()).toContain('图谱与助教')
+    expect(breadcrumb.text()).toContain('AI 学习助教')
+
+    await wrapper.get('[data-testid="breadcrumb-page-switcher"]').trigger('click')
+    await flushPromises()
+    const menu = wrapper.get('[data-testid="breadcrumb-menu"]')
+    expect(menu.text()).toContain('知识图谱')
+    expect(menu.text()).toContain('掌握图谱')
+    expect(menu.text()).toContain('证据微课')
+
+    const knowledgeLink = menu.findAll('a').find(link => link.text().includes('知识图谱'))
+    expect(knowledgeLink).toBeDefined()
+    await knowledgeLink!.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe('/knowledge')
+    expect(wrapper.get('.breadcrumb').text()).toContain('知识图谱')
+    expect(wrapper.find('[data-testid="breadcrumb-menu"]').exists()).toBe(false)
+
+    await router.push('/courses')
+    await flushPromises()
+    expect(wrapper.get('.breadcrumb').text()).toContain('概览与课程')
+    expect(wrapper.get('.breadcrumb').text()).toContain('课程阅读')
+
+    await wrapper.get('.breadcrumb-root').trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe('/dashboard')
+    wrapper.unmount()
+  })
+
   it('highlights the corresponding top-level group for each subroute', async () => {
     session.user.value = { id: 2, username: 'student', displayName: '学生', role: 'STUDENT' }
     const routes = [

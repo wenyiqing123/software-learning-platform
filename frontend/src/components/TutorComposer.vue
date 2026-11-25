@@ -7,24 +7,31 @@ const props = withDefaults(defineProps<{
   question: string
   loading: boolean
   hintLoading?: boolean
+  stepHintEnabled?: boolean
   context?: TutorContextChip[]
 }>(), {
   hintLoading: false,
+  stepHintEnabled: false,
   context: () => [],
 })
 
 const emit = defineEmits<{
   'update:question': [value: string]
+  'update:stepHintEnabled': [value: boolean]
   submit: []
   stop: []
-  'request-hint': []
   'dismiss-context': []
 }>()
 
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const isComposing = ref(false)
-const canSubmit = computed(() => !props.loading && Boolean(props.question.trim()))
-const canHint = computed(() => !props.loading && !props.hintLoading && Boolean(props.question.trim()))
+const isBusy = computed(() => props.loading || props.hintLoading)
+const canSubmit = computed(() => !isBusy.value && Boolean(props.question.trim()))
+const placeholderText = computed(() => (
+  props.stepHintEnabled
+    ? '已开启分步提示，输入问题后将优先引导思考方向（Enter 发送，Shift + Enter 换行）'
+    : '向助教提问，如：软件需求规格说明书包含哪些内容？（Enter 发送，Shift + Enter 换行）'
+))
 
 function adjustHeight() {
   const el = textareaRef.value
@@ -74,8 +81,8 @@ defineExpose({
         :value="question"
         rows="1"
         maxlength="2000"
-        placeholder="向助教提问，如：软件需求规格说明书包含哪些内容？（Enter 发送，Shift + Enter 换行）"
-        :disabled="loading"
+        :placeholder="placeholderText"
+        :disabled="isBusy"
         @input="onInput"
         @compositionstart="isComposing = true"
         @compositionend="isComposing = false"
@@ -104,14 +111,20 @@ defineExpose({
 
           <button
             type="button"
-            class="tutor-hint-chip"
-            data-testid="tutor-hint-trigger"
-            title="先获取思考方向提示，不直接展示完整答案"
-            :disabled="!canHint"
-            @click="emit('request-hint')"
+            role="switch"
+            class="tutor-hint-switch"
+            :class="{ 'is-active': stepHintEnabled }"
+            data-testid="tutor-hint-toggle"
+            :aria-checked="Boolean(stepHintEnabled)"
+            :title="stepHintEnabled ? '分步提示已开启：当前对话提问都将先给出分步思考提示，点击可关闭' : '开启分步提示：开启后当前对话的提问都将分步引导思考'"
+            :disabled="isBusy"
+            @click="emit('update:stepHintEnabled', !stepHintEnabled)"
           >
-            <Lightbulb :size="14" />
-            <span>{{ hintLoading ? '正在生成提示…' : '分步提示' }}</span>
+            <Lightbulb :size="14" aria-hidden="true" />
+            <span>分步提示</span>
+            <span class="tutor-hint-switch-track" aria-hidden="true">
+              <span class="tutor-hint-switch-thumb"></span>
+            </span>
           </button>
         </div>
 
@@ -273,12 +286,12 @@ defineExpose({
   background: color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
-.tutor-hint-chip {
+.tutor-hint-switch {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   min-height: 30px;
-  padding: 4px 10px;
+  padding: 4px 8px 4px 10px;
   color: var(--text-muted);
   background: var(--surface-soft);
   border: 1px solid var(--border-soft);
@@ -286,12 +299,54 @@ defineExpose({
   font-size: 12px;
   font-weight: 550;
   cursor: pointer;
+  transition: color var(--motion), background-color var(--motion), border-color var(--motion);
 }
 
-.tutor-hint-chip:hover:not(:disabled) {
+.tutor-hint-switch:hover:not(:disabled) {
   color: var(--accent-strong);
   background: var(--accent-soft);
   border-color: var(--border-default);
+}
+
+.tutor-hint-switch.is-active {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  border-color: var(--border-focus);
+  font-weight: 600;
+}
+
+.tutor-hint-switch:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.tutor-hint-switch-track {
+  position: relative;
+  width: 24px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--border-strong);
+  transition: background-color var(--motion);
+  flex-shrink: 0;
+}
+
+.tutor-hint-switch.is-active .tutor-hint-switch-track {
+  background: var(--accent);
+}
+
+.tutor-hint-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--surface);
+  transition: transform var(--motion);
+}
+
+.tutor-hint-switch.is-active .tutor-hint-switch-thumb {
+  transform: translateX(10px);
 }
 
 .tutor-composer-right {

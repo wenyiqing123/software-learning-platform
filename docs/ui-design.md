@@ -181,10 +181,10 @@
   - 右侧对话流限宽 `760px` 居中阅读：用户提问为右对齐浅底紧凑气泡，助教回复采用去外框的纯净编辑排版；2×2 欢迎卡片精简为“标签 + 问句”双层轻结构，底部输入胶囊上方配备柔光渐隐遮罩；知识图谱三元组默认折叠收纳为“已参考 N 条课程图谱证据”引用来源胶囊并支持一键跳转图谱；
   - 支持智能吸底滚动、用户上滑暂停抢滚与圆形“回到底部”按钮、以及复制全文、重新生成、分步学习引导、前往图谱等轻量操作；原底部独立的分层提示大面板平滑融入消息流与输入胶囊；
   - 底部为圆角悬浮胶囊输入框，支持多行自动增高、`Enter` 发送 / `Shift+Enter` 换行、严格 IME 中文组合态防误发送保护、可关闭的学习上下文胶囊标签及停止生成按钮；
-  - 四份全局 CSS 当前字节数：`styles-design-system.css`（28,734 B）、`styles.css`（18,564 B）、`styles-learning.css`（11,389 B）、`styles-graph.css`（3,297 B），合计 **61,984 B**，全仓 `!important` 严格为 0。
+  - 四份全局 CSS 当前字节数：`styles-design-system.css`（28,734 B）、`styles.css`（20,374 B）、`styles-learning.css`（11,389 B）、`styles-graph.css`（3,297 B），合计 **63,794 B**，全仓 `!important` 严格为 0。
 
 ### 导航精简与 `/tutor` 沉浸态自动收起补充（2026-11-25）
 
 - **单行顶栏与二级子导航整合**：移除学生端顶部横向二级导航条（`.student-sections-strip`），将 `STUDENT_SECTIONS` 分组子项整合至左侧主导航栏；展开态在当前激活分组下方呈现 `.nav-sublist` 竖线缩进子项，同时保持主菜单顶层 `.nav-item` 仍为 5 项。
-- **进入 `/tutor` 自动收缩为主图标轨 + 悬浮弹层（方案 2）**：进入 AI 学习助教页自动切换为 `.app-shell.is-sidebar-collapsed`（`72px` 图标轨）并隐藏重复的左侧 `.help-box` 引导卡片，离开 `/tutor` 自动恢复原状；顶栏保留手动展开/收起按钮（`[data-testid="sidebar-collapse-toggle"]`）及不重复的面包屑（`学习空间 / 图谱与助教`）。收缩态悬停或聚焦主导航图标时，通过 `<Teleport to="body">` 弹出全局无作用域样式弹层（`[data-testid="sidebar-flyout-menu"]`），支持查看并切换分组下的全部子页面。
-- **对话画布无边框一体页头**：移除原先带底部分割线的 `.tutor-topbar`，改为与白色对话区无缝融合的 `.tutor-canvas-header`；空状态（Welcome View）仅在左上按需保留会话展开/新建与右上紧凑的 `<LearningContextActions>` 上下文按钮组，居中展示唯一 `<h1>`（`AI 学习助教`）与引导卡片，消除双页头与视觉分割感。
+- **进入 `/tutor` 自动收缩为主图标轨 + 悬浮弹层（方案 2）**：进入 AI 学习助教页自动切换为 `.app-shell.is-sidebar-collapsed`（`72px` 图标轨）并隐藏重复的左侧 `.help-box` 引导卡片，离开 `/tutor` 自动恢复原状；缩展控制按钮（`[data-testid="sidebar-collapse-toggle"]`）左移紧靠侧边栏边缘（`.topbar` 左侧内边距 `12px`），搭配与左侧菜单同源实时同步的可点击三级面包屑（空间根 / 主菜单分组 / 当前页快捷切页下拉 `[data-testid="breadcrumb-page-switcher"]`）。收缩态悬停或聚焦主导航图标时，通过 `<Teleport to="body">` 弹出全局无作用域样式弹层（`[data-testid="sidebar-flyout-menu"]`），支持查看并切换分组下的全部子页面。
+- **对话画布无边框一体页头与会话级“分步提示”开关**：移除原先带底部分割线的 `.tutor-topbar`，改为与白色对话区无缝融合的 `.tutor-canvas-header`；空状态（Welcome View）仅在左上按需保留会话展开/新建与右上紧凑的 `<LearningContextActions>` 上下文按钮组，居中展示唯一 `<h1>`（`AI 学习助教`）与引导卡片，消除双页头与视觉分割感。输入区“分步提示”升级为当前对话级开关按钮（`[data-testid="tutor-hint-toggle"]`，`role="switch"`），开启后在当前会话连续提问均持续走分步引导提示流，切换或新建对话自动隔离记忆状态。

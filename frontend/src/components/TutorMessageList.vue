@@ -89,7 +89,7 @@ function scrollToBottom(smooth = true) {
 }
 
 watch(
-  () => [props.messages.length, props.streamingAnswer, props.loading, props.error],
+  () => [props.messages.length, props.streamingAnswer, props.loading, props.hintLoading, props.error],
   async () => {
     if (isUserScrolledUp.value) return
     await nextTick()
@@ -105,7 +105,7 @@ defineExpose({ scrollToBottom })
     <div ref="scrollContainer" class="tutor-message-scroll" @scroll="onScroll">
       <div class="tutor-thread-container">
         <!-- 居中现代空态欢迎页与 2x2 建议提问卡片 -->
-        <div v-if="!messages.length && !loading && !error" class="tutor-welcome">
+        <div v-if="!messages.length && !loading && !hintLoading && !error" class="tutor-welcome">
           <div class="tutor-welcome-badge" aria-hidden="true">
             <GraduationCap :size="24" />
           </div>
@@ -240,6 +240,19 @@ defineExpose({ scrollToBottom })
           </div>
         </div>
 
+        <!-- 分步提示生成中占位提示 -->
+        <div v-if="hintLoading && !loading" class="tutor-message-row is-assistant is-streaming" aria-live="polite">
+          <div class="tutor-assistant-avatar" aria-hidden="true">
+            <Sparkles :size="15" />
+          </div>
+          <div class="tutor-assistant-body">
+            <div class="tutor-streaming-pill">
+              <span class="streaming-dot" aria-hidden="true"></span>
+              <span>正在结合课程知识图谱生成分步思考提示…</span>
+            </div>
+          </div>
+        </div>
+
         <!-- 诚实错误或中断提示 -->
         <div v-if="error" class="tutor-message-error" role="alert">
           <CircleAlert :size="16" class="error-icon" />
@@ -260,7 +273,7 @@ defineExpose({ scrollToBottom })
 
     <!-- 用户主动上滑时浮现的回到底部按钮 -->
     <button
-      v-show="isUserScrolledUp && (messages.length > 0 || loading)"
+      v-show="isUserScrolledUp && (messages.length > 0 || loading || hintLoading)"
       type="button"
       class="tutor-scroll-bottom-btn"
       data-testid="tutor-scroll-bottom"

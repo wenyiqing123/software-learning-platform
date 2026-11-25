@@ -37,6 +37,7 @@ async function mountPage(path = '/tutor') {
 describe('TutorView', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    localStorage.removeItem('slp-tutor-step-hint-sessions')
     Object.defineProperty(window, 'innerWidth', { configurable: true, writable: true, value: 1440 })
     learning.sessions.mockResolvedValue([])
     learning.createSession.mockResolvedValue({ id: 1, title: '学习会话' })
@@ -175,15 +176,25 @@ describe('TutorView', () => {
         },
       },
     ])
-    learning.tutorHint.mockResolvedValueOnce({
-      question: '如何划分用例？',
-      level: 1,
-      content: '思考参与者与系统的交互目标。',
-      hasEvidence: false,
-      evidence: [],
-      nextLevelAvailable: true,
-      source: 'MODEL',
-    })
+    learning.tutorHint
+      .mockResolvedValueOnce({
+        question: '如何划分用例？',
+        level: 1,
+        content: '思考参与者与系统的交互目标。',
+        hasEvidence: false,
+        evidence: [],
+        nextLevelAvailable: true,
+        source: 'MODEL',
+      })
+      .mockResolvedValueOnce({
+        question: '用例之间包含什么关系？',
+        level: 1,
+        content: '区分包含、扩展与泛化三种关系。',
+        hasEvidence: false,
+        evidence: [],
+        nextLevelAvailable: true,
+        source: 'MODEL',
+      })
 
     const wrapper = await mountPage()
     await flushPromises()
@@ -204,14 +215,54 @@ describe('TutorView', () => {
     expect(wrapper.text()).toContain('已参考 1 条课程图谱证据')
     expect(wrapper.text()).not.toContain('TRIPLES')
 
-    // 胶囊内置“分步提示”按钮触发分级提示进对话流
+    // 开启当前对话的分步提示开关，连续提问均生效，新建对话或切换后独立隔离
+    const hintToggle = wrapper.get('[data-testid="tutor-hint-toggle"]')
+    expect(hintToggle.attributes('aria-checked')).toBe('false')
+    await hintToggle.trigger('click')
+    expect(hintToggle.attributes('aria-checked')).toBe('true')
+
     await wrapper.get('#question-input').setValue('如何划分用例？')
-    await wrapper.get('[data-testid="tutor-hint-trigger"]').trigger('click')
+    await wrapper.get('[data-testid="tutor-send"]').trigger('click')
     await flushPromises()
 
     expect(learning.tutorHint).toHaveBeenCalledWith('如何划分用例？', 1, expect.any(Array), expect.any(Array))
+    expect(learning.streamAsk).not.toHaveBeenCalled()
     expect(wrapper.text()).toContain('思考参与者与系统的交互目标。')
     expect(wrapper.text()).toContain('分步学习提示 · 第 1 级')
+    expect(hintToggle.attributes('aria-checked')).toBe('true')
+
+    // 同一对话下再次提问，开关仍持续生效
+    await wrapper.get('#question-input').setValue('用例之间包含什么关系？')
+    await wrapper.get('[data-testid="tutor-send"]').trigger('click')
+    await flushPromises()
+
+    expect(learning.tutorHint).toHaveBeenCalledTimes(2)
+    expect(learning.tutorHint).toHaveBeenLastCalledWith('用例之间包含什么关系？', 1, expect.any(Array), expect.any(Array))
+    expect(learning.streamAsk).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('区分包含、扩展与泛化三种关系。')
+
+    // 新建对话默认关闭开关，提问走普通图谱增强直答流
+    await wrapper.get('[data-testid="tutor-new-session"]').trigger('click')
+    await flushPromises()
+    expect(hintToggle.attributes('aria-checked')).toBe('false')
+    await wrapper.get('#question-input').setValue('需求分析包含哪些阶段？')
+    await wrapper.get('[data-testid="tutor-send"]').trigger('click')
+    await flushPromises()
+    expect(learning.streamAsk).toHaveBeenCalledTimes(1)
+
+    // 切回原会话 10 自动恢复该对话的开启状态，关闭后再问回归直答流
+    const targetSessionBtn = wrapper.findAll('.tutor-session-select').find(btn => btn.text().includes('初次会话'))
+    expect(targetSessionBtn).toBeDefined()
+    await targetSessionBtn!.trigger('click')
+    await flushPromises()
+    expect(hintToggle.attributes('aria-checked')).toBe('true')
+
+    await hintToggle.trigger('click')
+    expect(hintToggle.attributes('aria-checked')).toBe('false')
+    await wrapper.get('#question-input').setValue('关闭后直接解答')
+    await wrapper.get('[data-testid="tutor-send"]').trigger('click')
+    await flushPromises()
+    expect(learning.streamAsk).toHaveBeenCalledTimes(2)
     wrapper.unmount()
   })
 

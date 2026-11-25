@@ -55,13 +55,25 @@ describe('TutorComposer', () => {
     expect(wrapper.find('[data-testid="tutor-stop"]').exists()).toBe(true)
   })
 
-  it('emits request-hint and dismiss-context actions', async () => {
-    const wrapper = mount(TutorComposer, { props: { ...baseProps, question: '加工是什么' } })
+  it('renders step-hint switch control cleanly and emits toggle + dismiss-context actions', async () => {
+    const wrapper = mount(TutorComposer, { props: { ...baseProps, question: '', stepHintEnabled: false } })
 
-    await wrapper.get('[data-testid="tutor-hint-trigger"]').trigger('click')
+    const hintSwitch = wrapper.get('[data-testid="tutor-hint-toggle"]')
+    expect(hintSwitch.attributes('role')).toBe('switch')
+    expect(hintSwitch.attributes('aria-checked')).toBe('false')
+    expect(hintSwitch.attributes('disabled')).toBeUndefined()
+
+    await hintSwitch.trigger('click')
+    expect(wrapper.emitted('update:stepHintEnabled')).toEqual([[true]])
+
+    await wrapper.setProps({ stepHintEnabled: true })
+    expect(hintSwitch.attributes('aria-checked')).toBe('true')
+    expect(hintSwitch.classes()).toContain('is-active')
+
+    await hintSwitch.trigger('click')
+    expect(wrapper.emitted('update:stepHintEnabled')).toEqual([[true], [false]])
+
     await wrapper.get('.tutor-context-close').trigger('click')
-
-    expect(wrapper.emitted('request-hint')).toHaveLength(1)
     expect(wrapper.emitted('dismiss-context')).toHaveLength(1)
   })
 })
