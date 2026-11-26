@@ -2,6 +2,7 @@
 import { onMounted, reactive, ref, watch } from 'vue'
 import { Bookmark, ChevronDown, FilePlus2, Pencil, Save, Trash2, X } from '@lucide/vue'
 import { api, apiError, type LearningBookmark, type LearningNote } from '../api/client'
+import ConfirmDialog from './ConfirmDialog.vue'
 
 const props = defineProps<{ sectionId: number; knowledgePointId?: number; startCollapsed?: boolean }>()
 const notes = ref<LearningNote[]>([])
@@ -11,6 +12,7 @@ const saving = ref(false)
 const error = ref('')
 const notice = ref('')
 const editingId = ref<number | null>(null)
+const confirmDeleteNote = ref<LearningNote | null>(null)
 const collapsed = ref(Boolean(props.startCollapsed))
 const draft = reactive({ title: '', content: '', tags: '' })
 
@@ -42,9 +44,20 @@ async function save() {
   finally { saving.value = false }
 }
 async function remove(note: LearningNote) {
-  if (saving.value || !window.confirm('删除这条笔记？删除后无法恢复。')) return
+  if (saving.value) return
+  confirmDeleteNote.value = note
+}
+async function executeRemove() {
+  const note = confirmDeleteNote.value
+  if (!note || saving.value) return
   saving.value = true; error.value = ''; notice.value = ''
-  try { await api.delete('/learning/notes/' + note.id); if (editingId.value === note.id) resetDraft(); await load(); notice.value = '笔记已删除' }
+  try {
+    await api.delete('/learning/notes/' + note.id)
+    if (editingId.value === note.id) resetDraft()
+    confirmDeleteNote.value = null
+    await load()
+    notice.value = '笔记已删除'
+  }
   catch (cause) { error.value = failure(cause) }
   finally { saving.value = false }
 }
@@ -71,6 +84,16 @@ onMounted(() => void load())
     <form class="notes-editor" @submit.prevent="save"><div class="notes-editor-top"><strong>{{ editingId ? '编辑笔记' : '添加一条笔记' }}</strong><button v-if="editingId" type="button" class="icon-button" aria-label="取消编辑笔记" @click="resetDraft"><X :size="15" /></button></div><input v-model="draft.title" aria-label="笔记标题" maxlength="160" placeholder="标题（可选）" /><textarea v-model="draft.content" aria-label="笔记内容" rows="3" maxlength="10000" placeholder="记录你的理解、疑问或易错点"></textarea><div class="notes-editor-bottom"><input v-model="draft.tags" aria-label="笔记标签" placeholder="标签，用逗号分隔" /><button class="button button-dark button-small" type="submit" aria-label="保存笔记" :disabled="saving || !draft.content.trim()"><Save :size="14" />保存</button></div></form>
     <div v-if="loading" class="notes-empty">正在读取学习记录…</div><div v-else-if="!notes.length" class="notes-empty"><FilePlus2 :size="20" /><span>还没有笔记，写下本节最重要的一个理解。</span></div><div v-else class="notes-list"><article v-for="note in notes" :key="note.id" class="note-item"><div class="note-item-heading"><strong>{{ note.title || '未命名笔记' }}</strong><div><button class="icon-button" :aria-label="'编辑笔记 ' + note.id" @click="edit(note)"><Pencil :size="14" /></button><button class="icon-button" :aria-label="'删除笔记 ' + note.id" @click="remove(note)"><Trash2 :size="14" /></button></div></div><p>{{ note.content }}</p><div class="note-tags"><span v-for="tag in note.tags" :key="tag">#{{ tag }}</span></div></article></div>
     </div>
+    <ConfirmDialog
+      :open="Boolean(confirmDeleteNote)"
+      title="删除笔记"
+      :message="`删除「${confirmDeleteNote?.title || '未命名笔记'}」？删除后无法恢复。`"
+      confirm-label="确认删除"
+      tone="danger"
+      :busy="saving"
+      @cancel="confirmDeleteNote = null"
+      @confirm="executeRemove"
+    />
   </section>
 </template>
 

@@ -29,7 +29,6 @@ describe('learning report page', () => {
     expect(wrapper.text()).toContain('75%')
     expect(wrapper.text()).toContain('需求分析')
     await wrapper.get('[data-testid="report-days"]').setValue('14')
-    await wrapper.get('button[aria-label="刷新学习报告"]').trigger('click')
     await flushPromises()
     expect(learning.learningReport).toHaveBeenLastCalledWith(14, undefined)
     wrapper.unmount()

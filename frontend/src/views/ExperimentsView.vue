@@ -602,7 +602,7 @@ defineExpose({
             class="batch-item-row"
             :class="b.status.toLowerCase()"
           >
-            <span class="batch-status-badge">{{ b.status }}</span>
+            <span class="batch-status-badge">{{ ({ PENDING: '待运行', RUNNING: '运行中', SUCCESS: '成功', FAILED: '失败' } as Record<string, string>)[b.status] || b.status }}</span>
             <span class="batch-case-id">{{ b.caseId }}</span>
             <span class="batch-item-question">{{ b.question }}</span>
             <span v-if="b.error" class="batch-item-error">{{ b.error }}</span>
@@ -1097,7 +1097,7 @@ defineExpose({
 }
 
 .case-meta-tag {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
   background: var(--surface-soft);
   padding: 2px 6px;
@@ -1167,8 +1167,9 @@ defineExpose({
 
 .batch-item-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 8px 12px;
   padding: 8px 12px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-soft);
@@ -1193,7 +1194,7 @@ defineExpose({
 
 .batch-status-badge {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 4px;
@@ -1203,11 +1204,13 @@ defineExpose({
 .batch-case-id {
   font-family: var(--font-mono);
   font-weight: 600;
-  min-width: 120px;
+  flex-shrink: 0;
+  min-width: 100px;
 }
 
 .batch-item-question {
-  flex: 1;
+  flex: 1 1 200px;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

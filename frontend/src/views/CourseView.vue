@@ -134,6 +134,15 @@ function evaluateWindowScrollRead() {
     void persistCompleted(section, true, 'scroll')
   }
 }
+function onWindowWheel(event: WheelEvent) {
+  if (event.deltaY <= 0) return
+  const metrics = getWindowScrollMetrics()
+  const section = active.value
+  if (!metrics || metrics.maxScroll > 2 || metrics.scrollHeight <= 0 || loading.value || error.value || !section || saving.value) return
+  if (!section.completed && !suppressedAutoReadIds.has(section.id)) {
+    void persistCompleted(section, true, 'scroll')
+  }
+}
 function onWindowScroll() {
   if (typeof window.requestAnimationFrame === 'function') {
     if (scrollRafId !== null) return
@@ -148,20 +157,31 @@ function onWindowScroll() {
   }
   evaluateWindowScrollRead()
 }
+const outlineOpen = ref(typeof window === 'undefined' ? true : window.innerWidth > 760)
 watch(activeId, (next, prev) => {
   autoReadNotice.value = ''
   const metrics = getWindowScrollMetrics()
   lastScrollTop = metrics?.scrollTop ?? 0
   requireDownwardScroll = prev !== null && next !== prev && (metrics?.scrollTop ?? 0) > 0
+  if (typeof window !== 'undefined' && window.innerWidth <= 760) outlineOpen.value = false
 })
 watch(() => route.query.courseId, value => { const next = Number(value); if (next > 0 && next !== courseId.value) { courseId.value = next; void loadCourse(next) } })
 watch(() => route.query.sectionId, value => { const next = Number(value); if (sections.value.some(s => s.id === next)) activeId.value = next })
+watch(() => route.query.knowledgePointId, value => {
+  const nextKp = Number(value)
+  if (nextKp > 0) {
+    const match = sections.value.find(s => s.knowledgePointId === nextKp)
+    if (match) activeId.value = match.id
+  }
+})
 onMounted(() => {
   window.addEventListener('scroll', onWindowScroll, { passive: true })
+  window.addEventListener('wheel', onWindowWheel, { passive: true })
   void loadCourses()
 })
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', onWindowScroll)
+  window.removeEventListener('wheel', onWindowWheel)
   if (scrollRafId !== null && typeof window.cancelAnimationFrame === 'function') {
     window.cancelAnimationFrame(scrollRafId)
     scrollRafId = null
@@ -189,7 +209,7 @@ onBeforeUnmount(() => {
       <FeedbackState v-if="!sections.length" empty empty-title="本课程的阅读内容正在准备中。" empty-text="可先查看课程知识关系。" empty-action-label="浏览知识图谱" @action="router.push({ path: '/knowledge', query: { courseId } })" />
       <div v-else class="study-layout">
         <div class="study-rail">
-          <details id="course-outline" class="study-outline" open aria-label="章节目录"><summary class="outline-heading"><h2>章节目录</h2><span>{{ sections.length }} 节</span></summary><div><section v-for="(chapter, index) in study.chapters" :key="chapter.id"><h3>{{ String(index + 1).padStart(2, '0') }} {{ chapter.name }}</h3><p>{{ chapter.description }}</p><button v-for="section in chapter.sections" :key="section.id" class="outline-item" :class="{ active: active?.id === section.id }" :aria-current="active?.id === section.id ? 'page' : undefined" :aria-controls="'section-' + section.id" @click="chooseSection(section)"><span class="outline-status" aria-hidden="true">{{ section.completed ? '✓' : '○' }}</span><span>{{ section.title }}<small>{{ section.completed ? '已完成阅读' : section.knowledgePointName }}</small></span></button></section></div></details>
+          <details id="course-outline" class="study-outline" :open="outlineOpen" @toggle="outlineOpen = ($event.target as HTMLDetailsElement).open" aria-label="章节目录"><summary class="outline-heading"><h2>章节目录</h2><span>{{ sections.length }} 节</span></summary><div><section v-for="(chapter, index) in study.chapters" :key="chapter.id"><h3>{{ String(index + 1).padStart(2, '0') }} {{ chapter.name }}</h3><p>{{ chapter.description }}</p><button v-for="section in chapter.sections" :key="section.id" class="outline-item" :class="{ active: active?.id === section.id }" :aria-current="active?.id === section.id ? 'page' : undefined" :aria-controls="'section-' + section.id" @click="chooseSection(section)"><span class="outline-status" aria-hidden="true">{{ section.completed ? '✓' : '○' }}</span><span>{{ section.title }}<small>{{ section.completed ? '已完成阅读' : section.knowledgePointName }}</small></span></button></section></div></details>
           <LearningNotesPanel v-if="active" :section-id="active.id" :knowledge-point-id="active.knowledgePointId" start-collapsed />
         </div>
         <article v-if="active" :id="'section-' + active.id" class="study-reading reading-flow" :aria-labelledby="'section-title-' + active.id">
@@ -253,7 +273,7 @@ onBeforeUnmount(() => {
 .study-notice{color:var(--danger);background:var(--danger-soft)}
 .study-empty{color:var(--text-muted);text-align:center;background:var(--surface);border:1px solid var(--border-default)}
 @media(min-width:761px){
-  .study-outline{position:sticky;top:calc(var(--topbar-height) + 16px);max-height:calc(100vh - var(--topbar-height) - 40px);overflow-y:auto}
+  .study-outline{position:sticky;top:calc(var(--topbar-height) + 16px);max-height:calc(100dvh - var(--topbar-height) - 40px);overflow-y:auto}
   .study-outline summary{cursor:default;pointer-events:none}
 }
 @media(max-width:760px){

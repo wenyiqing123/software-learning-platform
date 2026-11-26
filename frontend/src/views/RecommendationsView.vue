@@ -109,8 +109,8 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.rec-retention-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:var(--radius-pill);font-size:11.5px;font-weight:600}
-.rec-retention-badge.urgency-fading{color:#8a5300;background:var(--warning-soft)}
+.rec-retention-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:var(--radius-pill);font-size:12px;font-weight:600}
+.rec-retention-badge.urgency-fading{color:var(--warning-strong);background:var(--warning-soft)}
 .rec-retention-badge.urgency-due{color:var(--danger);background:var(--danger-soft)}
 .rec-retention-meta{color:var(--text-muted);font-size:12px;font-variant-numeric:tabular-nums}
 </style>

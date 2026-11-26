@@ -34,5 +34,23 @@ describe('LearningNotesPanel', () => {
     })
     expect(wrapper.text()).toContain('笔记已保存')
     wrapper.unmount()
+
+    http.get.mockImplementation(async (path: string) => {
+      if (path === '/learning/notes') return { data: [{ id: 7, sectionId: 101, title: '验收条件', content: '记录验收条件', tags: ['需求'] }] }
+      if (path === '/learning/bookmarks') return { data: { targetType: 'SECTION', targetId: 101, bookmarked: true } }
+      throw new Error('unexpected path: ' + path)
+    })
+    http.delete.mockResolvedValue({ data: {} })
+    const confirmSpy = vi.spyOn(window, 'confirm')
+    const wrapper2 = mount(LearningNotesPanel, { props: { sectionId: 101, knowledgePointId: 2 } })
+    await flushPromises()
+    await wrapper2.get('[aria-label="删除笔记 7"]').trigger('click')
+    await flushPromises()
+    expect(confirmSpy).not.toHaveBeenCalled()
+    expect(http.delete).not.toHaveBeenCalled()
+    ;(document.body.querySelector('[data-testid="confirm-dialog-confirm"]') as HTMLButtonElement | null)?.click()
+    await flushPromises()
+    expect(http.delete).toHaveBeenCalledWith('/learning/notes/7')
+    wrapper2.unmount()
   })
 })

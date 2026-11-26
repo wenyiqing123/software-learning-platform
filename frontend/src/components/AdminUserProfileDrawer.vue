@@ -11,11 +11,13 @@ const props = withDefaults(defineProps<{
   error?: string
   isSelf?: boolean
   revoking?: boolean
+  blockEscape?: boolean
 }>(), {
   loading: false,
   error: '',
   isSelf: false,
   revoking: false,
+  blockEscape: false,
 })
 
 const emit = defineEmits<{
@@ -32,7 +34,7 @@ watch(() => props.open, (opened) => {
 })
 
 function onKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape' && props.open) emit('close')
+  if (event.key === 'Escape' && props.open && !props.blockEscape) emit('close')
 }
 
 onMounted(() => window.addEventListener('keydown', onKeydown))

@@ -108,6 +108,8 @@ describe('ExperimentTaskAdminView', () => {
     expect(http.post).toHaveBeenCalledWith('/admin/experiment-tasks', expect.objectContaining({ title: '需求分析任务' }))
     await wrapper.get('button[aria-label="开放实验任务 9"]').trigger('click')
     await flushPromises()
+    ;(document.body.querySelector('[data-testid="confirm-dialog-confirm"]') as HTMLButtonElement | null)?.click()
+    await flushPromises()
     expect(http.put).toHaveBeenCalledWith('/admin/experiment-tasks/9/status', { status: 'OPEN' })
     wrapper.unmount()
   })
@@ -159,7 +161,10 @@ describe('ExperimentTaskAdminView', () => {
     await wrapper.get('button[aria-label="派发学生 9"]').trigger('click')
     await flushPromises()
 
-    expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('3 名'))
+    const confirmBtn = document.body.querySelector('[data-testid="confirm-dialog-confirm"]') as HTMLButtonElement | null
+    expect(document.body.textContent).toContain('3 名')
+    confirmBtn?.click()
+    await flushPromises()
     expect(http.post).toHaveBeenCalledWith('/admin/experiment-tasks/9/assign', {
       groupId: 31,
       userIds: [101, 102, 103]
@@ -208,6 +213,8 @@ describe('ExperimentTaskAdminView', () => {
     http.post.mockRejectedValueOnce({ response: { data: { message: '实验任务只能分配给学生账号' } } })
     await textarea.setValue('101, 102')
     await wrapper.get('button[aria-label="派发学生 9"]').trigger('click')
+    await flushPromises()
+    ;(document.body.querySelector('[data-testid="confirm-dialog-confirm"]') as HTMLButtonElement | null)?.click()
     await flushPromises()
 
     expect(wrapper.text()).toContain('只能分配给学生账号')

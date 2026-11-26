@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { api, apiError, type Course, type QuestionBankImportResult, type QuestionBankVersion } from '../api/client'
+import SectionHeading from '../components/SectionHeading.vue'
+import ConfirmDialog from '../components/ConfirmDialog.vue'
 import FeedbackState from '../components/FeedbackState.vue'
 import { useFormBaseline, useUnsavedChanges } from '../composables/useUnsavedChanges'
 
@@ -16,6 +18,7 @@ const notice = ref('')
 const error = ref('')
 const loading = ref(true)
 const working = ref(false)
+const confirmPublishVersionId = ref<number | null>(null)
 const props = withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false })
 
 const formDraft = computed(() => ({
@@ -72,10 +75,19 @@ async function importQuestions() {
   finally { working.value = false }
 }
 
-async function publishVersion(id: number) {
-  if (!window.confirm('发布后将归档当前课程的旧版本，并对学生开放新版本，确认继续吗？')) return
+function publishVersion(id: number) {
+  confirmPublishVersionId.value = id
+}
+async function executePublishVersion() {
+  const id = confirmPublishVersionId.value
+  if (!id || working.value) return
   working.value = true; error.value = ''; notice.value = ''
-  try { await api.put('/admin/question-bank/versions/' + id + '/publish'); notice.value = '题库版本已发布，旧版本已归档。'; await loadVersions() }
+  try {
+    await api.put('/admin/question-bank/versions/' + id + '/publish')
+    confirmPublishVersionId.value = null
+    notice.value = '题库版本已发布，旧版本已归档。'
+    await loadVersions()
+  }
   catch (cause) { error.value = apiError(cause, '题库版本发布失败。') }
   finally { working.value = false }
 }
@@ -99,7 +111,12 @@ onMounted(async () => { loading.value = true; await loadCourses(); await loadVer
 
 <template>
   <div class="page-stack question-bank-page">
-    <header class="page-heading"><div><p class="eyebrow">QUESTION BANK CONTROL</p><component :is="props.embedded ? 'h2' : 'h1'">题库导入与版本管理</component><p>先导入草稿并检查逐行结果，发布后才会将合法题目开放给学生。</p></div></header>
+    <SectionHeading
+      :embedded="props.embedded"
+      eyebrow="QUESTION BANK CONTROL"
+      title="题库导入与版本管理"
+      description="先导入草稿并检查逐行结果，发布后才会将合法题目开放给学生。"
+    />
     <div v-if="error" class="inline-notice" role="alert">{{ error }}</div>
     <div v-if="notice" class="inline-notice success" role="status">{{ notice }}</div>
     <FeedbackState v-if="loading" :loading="loading" loading-title="正在加载题库配置" loading-text="正在读取课程版本和导入状态，请稍候。" />
@@ -125,10 +142,20 @@ onMounted(async () => { loading.value = true; await loadCourses(); await loadVer
       <section v-if="importResult" class="import-result" aria-live="polite"><strong>本批次：共 {{ importResult.totalRows }} 条，成功 {{ importResult.successCount }} 条，错误 {{ importResult.errorCount }} 条</strong><ul><li v-for="item in importResult.errors" :key="item.rowNumber">第 {{ item.rowNumber }} 行：{{ item.message }}</li></ul></section>
       <section class="version-list"><div class="panel-heading"><div><p class="eyebrow">VERSION HISTORY</p><h2>版本记录</h2></div></div><div v-if="!versions.length" class="empty-state">暂无题库版本，请先创建导入草稿。</div><div v-else class="version-table"><div v-for="version in versions" :key="version.id" class="version-row"><div><strong>{{ version.versionName }}</strong><small>{{ version.sourceFilename || '未填写来源文件' }} · {{ version.questionCount }} 条题目</small></div><span :class="['status-tag', version.status.toLowerCase()]">{{ version.status === 'DRAFT' ? '草稿' : version.status === 'PUBLISHED' ? '已发布' : '已归档' }}</span><button v-if="version.status === 'DRAFT'" class="text-button" :aria-label="'发布题库版本 ' + version.id" :disabled="working || version.questionCount === 0" @click="publishVersion(version.id)">发布版本</button></div></div></section>
     </template>
+    <ConfirmDialog
+      :open="confirmPublishVersionId !== null"
+      title="发布题库版本"
+      message="发布后将归档当前课程的旧版本，并对学生开放新版本，确认继续吗？"
+      confirm-label="确认发布"
+      tone="default"
+      :busy="working"
+      @cancel="confirmPublishVersionId = null"
+      @confirm="executePublishVersion"
+    />
   </div>
 </template>
 
 <style scoped>
 .question-bank-toolbar,.question-bank-panel,.version-list,.import-result{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-sm)}
-.question-bank-toolbar{display:flex;gap:18px;flex-wrap:wrap;padding:15px 18px}.question-bank-toolbar label,.question-bank-panel label:not(.file-button){display:grid;gap:6px;color:var(--muted);font-size:11px}.question-bank-toolbar select,.question-bank-panel input:not([type=file]),.question-bank-panel textarea{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);color:var(--ink);font:inherit}.question-bank-toolbar select,.question-bank-panel input:not([type=file]){min-height:36px;padding:0 10px}.question-bank-columns{display:grid;grid-template-columns:minmax(260px,.7fr) minmax(420px,1.3fr);gap:16px}.question-bank-panel,.version-list{display:grid;gap:15px;padding:20px}.panel-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.panel-heading h2,.version-list h2{margin:0;color:var(--ink);font-size:15px}.question-bank-panel textarea{width:100%;max-height:240px;overflow-y:auto;resize:vertical;padding:10px;line-height:1.55}.primary-button{min-height:36px;border:0;border-radius:var(--radius-sm);padding:0 15px;background:var(--accent);color:var(--surface);cursor:pointer}.primary-button:disabled,.text-button:disabled{opacity:.5;cursor:not-allowed}.field-hint{margin:0;color:var(--muted);font-size:10px;line-height:1.6}.file-button{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border:1px solid var(--line);border-radius:var(--radius-sm);color:var(--ink);cursor:pointer}.file-button:focus-within{outline:2px solid var(--accent);outline-offset:2px}.file-button input{position:absolute;width:1px;height:1px;opacity:0}.import-result{padding:16px;color:var(--ink);font-size:12px}.import-result ul{margin:10px 0 0;padding-left:20px;color:var(--danger)}.version-list{margin-top:16px}.version-table{display:grid}.version-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:15px;padding:13px 0;border-top:1px solid var(--border-soft)}.version-row strong,.version-row small{display:block}.version-row small{margin-top:4px;color:var(--muted);font-size:10px}.status-tag{padding:4px 7px;border-radius:var(--radius-sm);font-size:10px}.status-tag.draft{background:var(--warning-soft);color:var(--warning)}.status-tag.published{background:var(--accent-soft);color:var(--accent)}.status-tag.archived{background:var(--surface-soft);color:var(--text-muted)}.text-button{border:0;background:transparent;color:var(--accent);cursor:pointer;font:inherit;font-size:11px}.success{border-color:var(--accent-soft);color:var(--accent)}@media(max-width:760px){.question-bank-columns{grid-template-columns:1fr}.version-row{grid-template-columns:1fr auto}.version-row .text-button{grid-column:1/-1;justify-self:start}}
+.question-bank-toolbar{display:flex;gap:18px;flex-wrap:wrap;padding:15px 18px}.question-bank-toolbar label,.question-bank-panel label:not(.file-button){display:grid;gap:6px;color:var(--text-muted);font-size:12px}.question-bank-toolbar select,.question-bank-panel input:not([type=file]),.question-bank-panel textarea{border:1px solid var(--border-default);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font:inherit}.question-bank-toolbar select,.question-bank-panel input:not([type=file]){min-height:36px;padding:0 10px}.question-bank-columns{display:grid;grid-template-columns:minmax(260px,.7fr) minmax(380px,1.3fr);gap:16px}.question-bank-panel,.version-list{display:grid;gap:15px;padding:20px}.panel-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.panel-heading h2,.version-list h2{margin:0;color:var(--text);font-size:15px}.question-bank-panel textarea{width:100%;max-height:240px;overflow-y:auto;resize:vertical;padding:10px;line-height:1.55}.primary-button{min-height:36px;border:0;border-radius:var(--radius-sm);padding:0 15px;background:var(--accent);color:var(--surface);cursor:pointer}.primary-button:hover:not(:disabled){background:var(--accent-strong)}.primary-button:disabled,.text-button:disabled{opacity:.5;cursor:not-allowed}.field-hint{margin:0;color:var(--text-muted);font-size:12px;line-height:1.6}.file-button{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border:1px solid var(--border-default);border-radius:var(--radius-sm);color:var(--text);cursor:pointer}.file-button:focus-within{outline:2px solid var(--accent);outline-offset:2px}.file-button input{position:absolute;width:1px;height:1px;opacity:0}.import-result{padding:16px;color:var(--text);font-size:12px}.import-result ul{margin:10px 0 0;padding-left:20px;color:var(--danger)}.version-list{margin-top:16px}.version-table{display:grid}.version-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:15px;padding:13px 0;border-top:1px solid var(--border-soft)}.version-row strong,.version-row small{display:block}.version-row small{margin-top:4px;color:var(--text-muted);font-size:12px}.status-tag{padding:4px 7px;border-radius:var(--radius-sm);font-size:12px}.status-tag.draft{background:var(--warning-soft);color:var(--warning)}.status-tag.published{background:var(--accent-soft);color:var(--accent)}.status-tag.archived{background:var(--surface-soft);color:var(--text-muted)}.text-button{border:0;background:transparent;color:var(--accent);cursor:pointer;font:inherit;font-size:12px}.success{border-color:var(--accent-soft);color:var(--accent)}@media(max-width:1020px){.question-bank-columns{grid-template-columns:1fr}}@media(max-width:760px){.version-row{grid-template-columns:1fr auto}.version-row .text-button{grid-column:1/-1;justify-self:start}}
 </style>

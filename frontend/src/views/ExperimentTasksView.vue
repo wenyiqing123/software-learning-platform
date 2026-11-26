@@ -130,7 +130,7 @@ onMounted(load)
 .task-card-heading small {
   margin-top: 5px;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .task-card p {
@@ -151,7 +151,7 @@ onMounted(load)
   color: var(--accent);
   background: var(--accent-soft);
   border-radius: var(--radius-sm);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .protocol-order {
@@ -170,7 +170,7 @@ onMounted(load)
 .status-tag {
   padding: 4px 8px;
   border-radius: var(--radius-sm);
-  font-size: 11px;
+  font-size: 12px;
   align-self: flex-start;
 }
 
@@ -208,14 +208,24 @@ onMounted(load)
 .primary-button {
   border: 0;
   background: var(--accent);
-  color: #fff;
+  color: var(--surface);
   font-weight: 500;
+}
+
+.primary-button:hover:not(:disabled) {
+  background: var(--accent-strong);
 }
 
 .secondary-button {
   border: 1px solid var(--border-default);
   background: var(--surface);
   color: var(--text-muted);
+}
+
+.secondary-button:hover:not(:disabled) {
+  background: var(--surface-tint);
+  color: var(--text);
+  border-color: var(--border-focus);
 }
 
 button:disabled {

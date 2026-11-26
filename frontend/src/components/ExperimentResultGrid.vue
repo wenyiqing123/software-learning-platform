@@ -114,9 +114,6 @@ function isRankedMode(mode?: string, resultKey?: string): boolean {
   gap: 12px;
   margin-top: 14px;
   font-variant-numeric: tabular-nums;
-  max-height: 800px;
-  overflow-y: auto;
-  padding-right: 4px;
 }
 
 .compare-result-card {
@@ -213,7 +210,7 @@ function isRankedMode(mode?: string, resultKey?: string): boolean {
   min-width: 0;
 }
 
-.result-failed .compare-result-details {
+.result-failed .compare-error {
   grid-row: span 2;
 }
 
@@ -251,7 +248,7 @@ function isRankedMode(mode?: string, resultKey?: string): boolean {
   overflow: auto;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 @media (max-width: 900px) {

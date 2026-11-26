@@ -38,7 +38,6 @@ describe('TeachingDashboardView', () => {
     expect(wrapper.findAll('.teaching-kpis article strong')[4].text()).toBe('2 次')
 
     await wrapper.get('[data-testid="dashboard-days"]').setValue('14')
-    await wrapper.get('button[aria-label="刷新教学看板"]').trigger('click')
     await flushPromises()
     expect(http.get).toHaveBeenLastCalledWith('/admin/teaching-dashboard', { params: { days: 14, courseId: 1 } })
     wrapper.unmount()

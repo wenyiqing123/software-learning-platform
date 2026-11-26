@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import { api, apiError, type Course, type MicroLessonDraft } from '../api/client'
+import ConfirmDialog from '../components/ConfirmDialog.vue'
 import FeedbackState from '../components/FeedbackState.vue'
+import SectionHeading from '../components/SectionHeading.vue'
 
 const props = withDefaults(defineProps<{
   embedded?: boolean
@@ -18,6 +20,7 @@ const courseId = ref<number>()
 const sectionId = ref<number>()
 const loading = ref(true)
 const working = ref(false)
+const confirmPublishLessonId = ref<number | null>(null)
 const error = ref('')
 const notice = ref('')
 
@@ -45,10 +48,19 @@ async function generate() {
   catch (cause) { error.value = apiError(cause, '证据微课生成失败。') }
   finally { working.value = false }
 }
-async function publish(id: number) {
-  if (!window.confirm('发布后学生将可以看到这份证据微课，确认继续吗？')) return
+function publish(id: number) {
+  confirmPublishLessonId.value = id
+}
+async function executePublish() {
+  const id = confirmPublishLessonId.value
+  if (!id || working.value) return
   working.value = true; error.value = ''; notice.value = ''
-  try { await api.put('/admin/micro-lessons/' + id + '/publish'); notice.value = '微课已发布，学生现在可以查看。'; await loadDrafts() }
+  try {
+    await api.put('/admin/micro-lessons/' + id + '/publish')
+    confirmPublishLessonId.value = null
+    notice.value = '微课已发布，学生现在可以查看。'
+    await loadDrafts()
+  }
   catch (cause) { error.value = apiError(cause, '微课发布失败。') }
   finally { working.value = false }
 }
@@ -58,13 +70,12 @@ onMounted(async () => { await loadCourses(); await loadSections(); await loadDra
 
 <template>
   <div class="page-stack micro-lesson-admin-page">
-    <header class="page-heading">
-      <div>
-        <p class="eyebrow">EVIDENCE-BOUND MICRO LESSON</p>
-        <component :is="props.embedded ? 'h2' : 'h1'">证据微课草稿</component>
-        <p>基于真实课程小节和知识图谱证据生成，审核发布后才对学生可见。</p>
-      </div>
-    </header>
+    <SectionHeading
+      :embedded="props.embedded"
+      eyebrow="EVIDENCE-BOUND MICRO LESSON"
+      title="证据微课草稿"
+      description="基于真实课程小节和知识图谱证据生成，审核发布后才对学生可见。"
+    />
     <div v-if="error" class="inline-notice" role="alert">{{ error }}</div>
     <div v-if="notice" class="inline-notice success" role="status">{{ notice }}</div>
     <FeedbackState v-if="loading" :loading="loading" loading-title="正在加载课程内容" loading-text="正在读取课程小节和微课草稿，请稍候。" />
@@ -111,6 +122,16 @@ onMounted(async () => { await loadCourses(); await loadSections(); await loadDra
         </article>
       </section>
     </template>
+    <ConfirmDialog
+      :open="confirmPublishLessonId !== null"
+      title="发布证据微课"
+      message="发布后学生将可以看到这份证据微课，确认继续吗？"
+      confirm-label="确认发布"
+      tone="default"
+      :busy="working"
+      @cancel="confirmPublishLessonId = null"
+      @confirm="executePublish"
+    />
   </div>
 </template>
 
@@ -135,18 +156,18 @@ onMounted(async () => { await loadCourses(); await loadSections(); await loadDra
 .micro-toolbar label {
   display: grid;
   gap: 8px;
-  color: var(--muted);
-  font-size: 11px;
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 .micro-toolbar select {
   min-height: 36px;
   min-width: 220px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
   padding: 0 10px;
   background: var(--surface);
-  color: var(--ink);
+  color: var(--text);
 }
 
 .primary-button {
@@ -184,8 +205,8 @@ onMounted(async () => { await loadCourses(); await loadSections(); await loadDra
 
 .micro-source small {
   margin-left: auto;
-  color: var(--muted);
-  font-size: 11px;
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 .draft-list {
@@ -232,8 +253,8 @@ onMounted(async () => { await loadCourses(); await loadSections(); await loadDra
 
 .draft-heading small {
   margin-top: 6px;
-  color: var(--muted);
-  font-size: 11px;
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 .draft-card p {
@@ -266,7 +287,7 @@ onMounted(async () => { await loadCourses(); await loadSections(); await loadDra
 .status-tag {
   padding: 4px 8px;
   border-radius: var(--radius-sm);
-  font-size: 11px;
+  font-size: 12px;
   align-self: flex-start;
 }
 

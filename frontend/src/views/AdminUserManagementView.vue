@@ -507,6 +507,7 @@ onBeforeUnmount(() => {
       :error="profileError"
       :is-self="profileUserId === currentUserId"
       :revoking="revokingTokens"
+      :block-escape="Boolean(confirmDialog || modalKind)"
       @close="profileOpen = false"
       @retry="reloadProfile"
       @revoke-tokens="requestRevokeTokens"
@@ -636,8 +637,8 @@ onBeforeUnmount(() => {
 .user-identity-cell,.user-status-cell,.user-learning-cell{display:grid;gap:3px}
 .user-name-line{display:flex;align-items:center;gap:8px}
 .user-identity-cell small,.user-status-cell small,.user-learning-cell small{color:var(--text-muted);font-size:12px}
-.self-badge{padding:1px 7px;color:var(--accent-strong);background:var(--accent-soft);border-radius:var(--radius-pill);font-size:11px;font-weight:600}
-.role-badge,.status-pill{display:inline-flex;width:fit-content;align-items:center;padding:2px 8px;border-radius:var(--radius-pill);font-size:11.5px;font-weight:600;white-space:nowrap}
+.self-badge{padding:1px 7px;color:var(--accent-strong);background:var(--accent-soft);border-radius:var(--radius-pill);font-size:12px;font-weight:600}
+.role-badge,.status-pill{display:inline-flex;width:fit-content;align-items:center;padding:2px 8px;border-radius:var(--radius-pill);font-size:12px;font-weight:600;white-space:nowrap}
 .role-badge.is-admin{color:var(--info);background:var(--info-soft)}
 .role-badge.is-student{color:var(--accent-strong);background:var(--accent-soft)}
 .status-pill.is-enabled{color:var(--accent-strong);background:var(--accent-soft)}

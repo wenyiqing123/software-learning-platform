@@ -34,17 +34,19 @@ onMounted(async () => { await loadCourses(); await load() })
       <div class="report-actions"><button class="button button-outline" aria-label="刷新学习报告" :disabled="loading" @click="load"><RotateCcw :size="15" />刷新</button><button class="button button-dark" :disabled="!report || exporting" @click="download"><Download :size="15" />{{ exporting ? '导出中…' : '导出 CSV' }}</button></div>
     </SectionHeading>
     <div v-if="error" class="inline-notice" role="alert"><CircleAlert :size="16" />{{ error }}<button class="text-button" @click="load">重试</button></div>
-    <section class="report-controls"><label><BarChart3 :size="15" />统计范围<select v-model.number="days" data-testid="report-days"><option :value="7">近 7 天</option><option :value="14">近 14 天</option><option :value="30">近 30 天</option></select></label><label><BookOpenCheck :size="15" />课程<select v-model.number="courseId" @change="load"><option :value="undefined">全部课程</option><option v-for="course in courses" :key="course.id" :value="course.id">{{ course.name }} · {{ course.term }}</option></select></label><span v-if="report" class="report-period">{{ report.from }} 至 {{ report.to }} · {{ report.courseName }}</span></section>
+    <section class="report-controls"><label><BarChart3 :size="15" />统计范围<select v-model.number="days" data-testid="report-days" @change="load"><option :value="7">近 7 天</option><option :value="14">近 14 天</option><option :value="30">近 30 天</option></select></label><label><BookOpenCheck :size="15" />课程<select v-model.number="courseId" @change="load"><option :value="undefined">全部课程</option><option v-for="course in courses" :key="course.id" :value="course.id">{{ course.name }} · {{ course.term }}</option></select></label><span v-if="report" class="report-period">{{ report.from }} 至 {{ report.to }} · {{ report.courseName }}</span></section>
     <FeedbackState v-if="loading" :loading="loading" loading-title="正在汇总学习记录" loading-text="正在读取阅读、练习、复习和计划数据，请稍候。" />
     <template v-else-if="report">
       <section class="report-kpis"><article><span>课程阅读</span><strong>{{ report.reading.completedSections }} / {{ report.reading.totalSections }}</strong><small>总完成率 {{ completionRate }}% · 本期新增 {{ report.reading.completedInPeriod }} 节</small></article><article><span>练习正确率</span><strong>{{ report.practice.accuracy }}%</strong><small>{{ report.practice.correct }} / {{ report.practice.attempts }} 次答题</small></article><article><span>复习正确率</span><strong>{{ report.reviews.accuracy }}%</strong><small>{{ report.reviews.correct }} / {{ report.reviews.reviews }} 次到期复习</small></article><article><span>计划执行</span><strong>{{ report.plans.completedMinutes }} / {{ report.plans.plannedMinutes }} 分钟</strong><small>{{ report.plans.completedTasks }} / {{ report.plans.totalTasks }} 个任务 · {{ planRate }}%</small></article></section>
       <section class="report-columns">
         <div class="report-panel">
           <div class="report-panel-heading"><h2 id="report-activity-title">每日学习活动</h2><Target :size="18" /></div>
-          <table v-if="report.dailyActivity.length" class="report-activity" aria-labelledby="report-activity-title">
-            <thead><tr><th scope="col">日期</th><th scope="col">答题</th><th scope="col">答对</th><th scope="col">读完</th></tr></thead>
-            <tbody><tr v-for="day in report.dailyActivity" :key="day.date"><td>{{ day.date }}</td><td>{{ day.attempts }}</td><td>{{ day.correct }}</td><td>{{ day.readingCompleted }}</td></tr></tbody>
-          </table>
+          <div v-if="report.dailyActivity.length" class="report-table-wrap">
+            <table class="report-activity" aria-labelledby="report-activity-title">
+              <thead><tr><th scope="col">日期</th><th scope="col">答题</th><th scope="col">答对</th><th scope="col">读完</th></tr></thead>
+              <tbody><tr v-for="day in report.dailyActivity" :key="day.date"><td>{{ day.date }}</td><td>{{ day.attempts }}</td><td>{{ day.correct }}</td><td>{{ day.readingCompleted }}</td></tr></tbody>
+            </table>
+          </div>
           <p v-else class="report-empty">当前范围内暂无学习活动。</p>
         </div>
         <div class="report-panel">
@@ -76,7 +78,8 @@ onMounted(async () => { await loadCourses(); await load() })
 .report-panel{padding:18px}
 .report-panel-heading{justify-content:space-between;margin-bottom:12px;color:var(--accent)}
 .report-panel-heading h2{margin:0;color:var(--text);font-size:16px}
-.report-activity{overflow:hidden}
+.report-table-wrap{overflow-x:auto}
+.report-activity{width:100%;min-width:320px;border-collapse:collapse}
 .report-activity :is(th,td):not(:first-child){text-align:right}
 .chapter-list,.knowledge-report-list{display:grid;gap:12px 20px}
 .chapter-list article,.knowledge-report-list article{display:grid;gap:6px;min-width:0}

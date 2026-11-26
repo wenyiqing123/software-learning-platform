@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { api, apiError, type AdminUserPage, type AdminUserSummary, type ExperimentGroup, type ExperimentTask } from '../api/client'
+import ConfirmDialog from '../components/ConfirmDialog.vue'
 import FeedbackState from '../components/FeedbackState.vue'
 import { useFormBaseline, useUnsavedChanges } from '../composables/useUnsavedChanges'
 
@@ -221,6 +222,28 @@ function parseStudentIds(input: string): { valid: boolean; ids: number[]; error?
   return { valid: true, ids }
 }
 
+interface PendingConfirm {
+  title: string
+  message: string
+  confirmLabel: string
+  tone: 'danger' | 'warning' | 'default'
+  run: () => Promise<void>
+}
+const pendingConfirm = ref<PendingConfirm | null>(null)
+const confirmBusy = ref(false)
+
+async function executeConfirm() {
+  if (!pendingConfirm.value || confirmBusy.value) return
+  const item = pendingConfirm.value
+  confirmBusy.value = true
+  try {
+    await item.run()
+    pendingConfirm.value = null
+  } finally {
+    confirmBusy.value = false
+  }
+}
+
 async function assignStudents(task: ExperimentTask) {
   const state = getActionState(task.id)
   error.value = ''
@@ -244,33 +267,44 @@ async function assignStudents(task: ExperimentTask) {
 
   const ids = parseRes.ids
   const confirmMsg = `确认派发实验任务？\n任务: ${task.title}\n实验组: ${targetGroup.name}\n评估顺序: ${targetGroup.taskOrder || '未设置'}\n学生数量: ${ids.length} 名`
-  if (!window.confirm(confirmMsg)) {
-    return
-  }
-
-  try {
-    await api.post('/admin/experiment-tasks/' + task.id + '/assign', {
-      groupId: targetGroup.id,
-      userIds: ids
-    })
-    notice.value = `成功为实验组「${targetGroup.name}」派发 ${ids.length} 名学生。`
-    state.assignStudentIdsText = ''
-    await loadGroups(task.id)
-    await load()
-  } catch (cause) {
-    // 失败保留原输入
-    error.value = apiError(cause, '派发学生失败。')
+  pendingConfirm.value = {
+    title: '确认派发实验任务',
+    message: confirmMsg,
+    confirmLabel: '确认派发',
+    tone: 'default',
+    run: async () => {
+      try {
+        await api.post('/admin/experiment-tasks/' + task.id + '/assign', {
+          groupId: targetGroup.id,
+          userIds: ids
+        })
+        notice.value = `成功为实验组「${targetGroup.name}」派发 ${ids.length} 名学生。`
+        state.assignStudentIdsText = ''
+        await loadGroups(task.id)
+        await load()
+      } catch (cause) {
+        // 失败保留原输入
+        error.value = apiError(cause, '派发学生失败。')
+      }
+    }
   }
 }
 
 async function setStatus(task: ExperimentTask, status: 'OPEN' | 'CLOSED') {
-  if (!window.confirm(status === 'OPEN' ? '开放该实验任务并允许参与者开始？' : '关闭该实验任务并停止新的参与？')) return
-  try {
-    await api.put('/admin/experiment-tasks/' + task.id + '/status', { status })
-    notice.value = status === 'OPEN' ? '实验任务已开放。' : '实验任务已关闭。'
-    await load()
-  } catch (cause) {
-    error.value = apiError(cause, '任务状态更新失败。')
+  pendingConfirm.value = {
+    title: status === 'OPEN' ? '开放实验任务' : '关闭实验任务',
+    message: status === 'OPEN' ? '开放该实验任务并允许参与者开始？' : '关闭该实验任务并停止新的参与？',
+    confirmLabel: status === 'OPEN' ? '确认开放' : '确认关闭',
+    tone: status === 'CLOSED' ? 'danger' : 'default',
+    run: async () => {
+      try {
+        await api.put('/admin/experiment-tasks/' + task.id + '/status', { status })
+        notice.value = status === 'OPEN' ? '实验任务已开放。' : '实验任务已关闭。'
+        await load()
+      } catch (cause) {
+        error.value = apiError(cause, '任务状态更新失败。')
+      }
+    }
   }
 }
 
@@ -444,6 +478,16 @@ onMounted(load)
         <div v-if="!tasks.length" class="empty-state">还没有实验任务。</div>
       </section>
     </template>
+    <ConfirmDialog
+      :open="Boolean(pendingConfirm)"
+      :title="pendingConfirm?.title || ''"
+      :message="pendingConfirm?.message || ''"
+      :confirm-label="pendingConfirm?.confirmLabel || '确认'"
+      :tone="pendingConfirm?.tone || 'default'"
+      :busy="confirmBusy"
+      @cancel="pendingConfirm = null"
+      @confirm="executeConfirm"
+    />
   </div>
 </template>
 
@@ -462,16 +506,16 @@ onMounted(load)
 .task-create label {
   display: grid;
   gap: 6px;
-  color: var(--muted);
-  font-size: 11px;
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 .task-create input,
 .task-create textarea {
   padding: 10px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--border-default);
   border-radius: 6px;
-  color: var(--ink);
+  color: var(--text);
   font: inherit;
 }
 
@@ -482,7 +526,7 @@ onMounted(load)
   border-radius: 6px;
   padding: 0 16px;
   background: var(--accent);
-  color: #fff;
+  color: var(--surface);
   cursor: pointer;
   font-weight: 500;
 }
@@ -522,7 +566,7 @@ onMounted(load)
 }
 
 .status-badge {
-  font-size: 11px;
+  font-size: 12px;
   padding: 2px 8px;
   border-radius: var(--radius-full);
   background: var(--surface-soft);
@@ -670,8 +714,8 @@ onMounted(load)
 .help-text {
   display: block;
   margin-top: 4px;
-  font-size: 11px;
-  color: var(--muted);
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
 .task-actions {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue'
+import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { CircleAlert, KeyRound, X } from '@lucide/vue'
 import { apiError, learningApi } from '../api/client'
@@ -41,14 +41,44 @@ function handleClose() {
   emit('close')
 }
 
+let prevBodyOverflow: string | null = null
+
+function onDialogKeydown(event: KeyboardEvent) {
+  if (!props.modelValue || event.key !== 'Escape') return
+  event.preventDefault()
+  event.stopPropagation()
+  handleClose()
+}
+
+function restoreBodyScroll() {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('keydown', onDialogKeydown, true)
+  }
+  if (typeof document !== 'undefined' && prevBodyOverflow !== null) {
+    document.body.style.overflow = prevBodyOverflow
+    prevBodyOverflow = null
+  }
+}
+
 watch(() => props.modelValue, (isOpen) => {
   if (isOpen) {
     resetForm()
+    if (typeof document !== 'undefined') {
+      if (prevBodyOverflow === null) prevBodyOverflow = document.body.style.overflow
+      document.body.style.overflow = 'hidden'
+    }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('keydown', onDialogKeydown, true)
+    }
     void nextTick(() => {
       currentPasswordInput.value?.focus()
     })
+  } else {
+    restoreBodyScroll()
   }
 })
+
+onBeforeUnmount(restoreBodyScroll)
 
 async function onSubmit() {
   if (submitting.value) return
@@ -200,7 +230,7 @@ async function onSubmit() {
   display: grid;
   place-items: center;
   padding: 16px;
-  background: var(--surface-overlay, rgba(15, 23, 42, 0.45));
+  background: var(--surface-overlay);
   backdrop-filter: blur(4px);
 }
 
@@ -276,9 +306,9 @@ async function onSubmit() {
   gap: 8px;
   padding: 10px 12px;
   font-size: 13px;
-  color: var(--danger, #dc2626);
-  background: var(--danger-soft, #fef2f2);
-  border: 1px solid var(--danger-border, #fecaca);
+  color: var(--danger);
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-border);
   border-radius: var(--radius-sm);
 }
 

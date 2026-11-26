@@ -139,8 +139,8 @@ onBeforeUnmount(() => window.removeEventListener('learning:changed', refreshCont
 
 <style scoped>
 .path-row .path-percent{display:grid;justify-items:end;gap:4px}
-.dash-alert-badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:var(--radius-pill);font-size:11px;font-weight:600;white-space:nowrap}
-.dash-alert-badge.urgency-fading{color:#8a5300;background:var(--warning-soft)}
+.dash-alert-badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:var(--radius-pill);font-size:12px;font-weight:600;white-space:nowrap}
+.dash-alert-badge.urgency-fading{color:var(--warning-strong);background:var(--warning-soft)}
 .dash-alert-badge.urgency-due{color:var(--danger);background:var(--danger-soft)}
 .dash-retention-alerts{display:grid;gap:8px;margin-top:12px;padding:10px 12px;background:var(--surface-tint);border-radius:var(--radius-sm)}
 .dash-retention-alert-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 12px}

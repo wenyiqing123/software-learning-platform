@@ -43,6 +43,8 @@ describe('MicroLessonAdminView', () => {
     expect(wrapper.text()).toContain('只根据证据生成的摘要')
     await wrapper.get('button[aria-label="发布微课 11"]').trigger('click')
     await flushPromises()
+    ;(document.body.querySelector('[data-testid="confirm-dialog-confirm"]') as HTMLButtonElement | null)?.click()
+    await flushPromises()
     expect(http.put).toHaveBeenCalledWith('/admin/micro-lessons/11/publish')
     expect(wrapper.text()).toContain('已发布')
     wrapper.unmount()
