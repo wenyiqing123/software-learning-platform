@@ -13,11 +13,14 @@ import PrerequisitePathPanel from './PrerequisitePathPanel.vue'
 import VisualizationViewport from '../components/VisualizationViewport.vue'
 import ThreeGraphCanvas from '../components/ThreeGraphCanvas.vue'
 import GraphEvidenceDrawer, { type EvidenceTriple } from '../components/GraphEvidenceDrawer.vue'
+import ConceptComparisonPanel from '../components/ConceptComparisonPanel.vue'
 
 const graphHost = ref<HTMLElement | null>(null)
 const route = useRoute()
 const router = useRouter()
-const mode = ref<'graph' | 'path'>(route.query.view === 'path' ? 'path' : 'graph')
+const mode = ref<'graph' | 'path' | 'compare'>(
+  route.query.view === 'path' ? 'path' : route.query.view === 'compare' ? 'compare' : 'graph',
+)
 const courseId = computed(() => Number(route.query.courseId) || undefined)
 const pathTargetId = computed(() => Number(route.query.knowledgePointId) || undefined)
 const entity = ref('需求分析')
@@ -208,15 +211,35 @@ function setPathEntity(value: string) {
   entity.value = value
 }
 
-async function switchMode(next: 'graph' | 'path') {
+async function switchMode(next: 'graph' | 'path' | 'compare') {
   if (mode.value === next) return
   mode.value = next
-  if (next === 'path') {
+  if (next !== 'graph') {
     destroyGraph()
     return
   }
   if (graphData.value.available && graphData.value.nodes.length && renderMode.value === '2d') await drawGraph()
   else await searchEntity(entity.value)
+}
+
+async function focusComparedEntity(target: string) {
+  const next = target.trim()
+  if (!next) return
+  entity.value = next
+  selectedNode.value = next
+  mode.value = 'graph'
+  await searchEntity(next)
+}
+
+function askTutorComparison(payload: { entity: string; prompt: string }) {
+  void router.push({
+    path: '/tutor',
+    query: {
+      entity: payload.entity,
+      ...(courseId.value ? { courseId: String(courseId.value) } : {}),
+      prompt: payload.prompt,
+    },
+  })
 }
 
 async function switchRenderMode(next: '2d' | '3d') {
@@ -296,8 +319,9 @@ onBeforeUnmount(() => {
     <SectionHeading eyebrow="软件工程知识网络" title="知识图谱" description="从一个概念出发，沿着关系探索课程知识。">
       <button class="button button-outline" @click="emit('navigate', 'tutor', selectedNode)"><Sparkles :size="16" />围绕此知识提问</button>
     </SectionHeading>
-    <div class="graph-mode-switch" role="tablist" aria-label="知识关系视图"><button :class="{ active: mode === 'graph' }" role="tab" aria-label="图谱浏览" :aria-selected="mode === 'graph'" aria-controls="knowledge-graph-panel" @click="switchMode('graph')">图谱浏览</button><button :class="{ active: mode === 'path' }" role="tab" aria-label="先修学习路径" :aria-selected="mode === 'path'" aria-controls="prerequisite-path-panel" @click="switchMode('path')">先修学习路径</button></div>
+    <div class="graph-mode-switch" role="tablist" aria-label="知识关系视图"><button :class="{ active: mode === 'graph' }" role="tab" aria-label="图谱浏览" :aria-selected="mode === 'graph'" aria-controls="knowledge-graph-panel" @click="switchMode('graph')">图谱浏览</button><button :class="{ active: mode === 'path' }" role="tab" aria-label="先修学习路径" :aria-selected="mode === 'path'" aria-controls="prerequisite-path-panel" @click="switchMode('path')">先修学习路径</button><button :class="{ active: mode === 'compare' }" role="tab" aria-label="概念对比" :aria-selected="mode === 'compare'" aria-controls="concept-comparison-panel" data-testid="graph-mode-compare" @click="switchMode('compare')">概念对比</button></div>
     <PrerequisitePathPanel v-if="mode === 'path'" id="prerequisite-path-panel" role="tabpanel" :course-id="courseId" :initial-target-id="pathTargetId" @target-change="setPathEntity" />
+    <ConceptComparisonPanel v-else-if="mode === 'compare'" id="concept-comparison-panel" role="tabpanel" :course-points="coursePoints" :initial-left="selectedNode" @focus-entity="focusComparedEntity" @ask-tutor="askTutorComparison" />
     <div v-else id="knowledge-graph-panel" class="graph-browser" role="tabpanel">
     <section class="graph-toolbar" aria-label="图谱数据概况">
       <span class="graph-count"><Network :size="16" />{{ graphData.nodes.length }} 个实体</span>

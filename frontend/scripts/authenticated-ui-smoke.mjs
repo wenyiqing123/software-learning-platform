@@ -156,9 +156,35 @@ function apiResponse(url, role, scenario, method) {
     commonErrors: [{ stem: '把实现方案写成用户目标', explanation: '先描述业务需要，再比较解决方案。', wrongCount: 2 }],
     selfTests: [{ questionId: 101, stem: '如何核验一条借阅需求？', options: [] }], evidence: { graphEntity: '需求分析', tripleCount: evidence.length },
   })
-  if (path === '/api/knowledge/graph') return json(scenario === 'graph-offline'
-    ? { available: false, nodes: [], edges: [], evidence: [] }
-    : { available: true, nodes: graphNodes, edges: evidence.map(({ subject, object, predicate, score }) => ({ source: subject, target: object, label: predicate, score })), evidence })
+  if (path === '/api/knowledge/graph') {
+    if (scenario === 'graph-offline') return json({ available: false, nodes: [], edges: [], evidence: [] })
+    const qEntity = new URL(url).searchParams.get('entity') || ''
+    if (qEntity === '结构化分析SA') {
+      const saEvidence = [
+        { subject: '结构化分析SA', predicate: '属于', object: '需求分析', score: 0.92 },
+        { subject: '结构化分析SA', predicate: '采用', object: '数据流图DFD', score: 0.9 },
+      ]
+      return json({
+        available: true,
+        nodes: [{ id: '结构化分析SA', label: '结构化分析SA' }, { id: '需求分析', label: '需求分析' }, { id: '数据流图DFD', label: '数据流图DFD' }],
+        edges: saEvidence.map(({ subject, object, predicate, score }) => ({ source: subject, target: object, label: predicate, score })),
+        evidence: saEvidence,
+      })
+    }
+    if (qEntity === '面向对象分析OOA') {
+      const ooaEvidence = [
+        { subject: '面向对象分析OOA', predicate: '属于', object: '需求分析', score: 0.92 },
+        { subject: '面向对象分析OOA', predicate: '构建', object: '用例图', score: 0.89 },
+      ]
+      return json({
+        available: true,
+        nodes: [{ id: '面向对象分析OOA', label: '面向对象分析OOA' }, { id: '需求分析', label: '需求分析' }, { id: '用例图', label: '用例图' }],
+        edges: ooaEvidence.map(({ subject, object, predicate, score }) => ({ source: subject, target: object, label: predicate, score })),
+        evidence: ooaEvidence,
+      })
+    }
+    return json({ available: true, nodes: graphNodes, edges: evidence.map(({ subject, object, predicate, score }) => ({ source: subject, target: object, label: predicate, score })), evidence })
+  }
   if (path === '/api/knowledge/learning-path') return json({ targetId: Number(new URL(url).searchParams.get('targetId')), courseId: 3, nodes: pathNodes, cycleDetected: false })
   if (path === '/api/knowledge/mastery-map') return json({ courseId: 3, courseName: '软件工程', nodes: pathNodes.map((point, index) => ({ ...point, attemptCount: index < 2 ? 4 : 0, correctCount: 4 - index * 2, dueReviewCount: index === 1 ? 2 : 0 })), edges: [{ source: 11, target: 12, relation: '先修' }, { source: 12, target: 13, relation: '先修' }] })
   if (path === '/api/adaptive-practice') return json([{ questionId: quiz.id, stem: quiz.stem, knowledgePointId: 12, knowledgePointName: quiz.knowledgePoint, difficulty: 2, mastery: 42, wrongCount: 2, due: true, score: 84, reason: '已到复习时间；掌握度相对较低，建议先复习加工命名。' }])
@@ -299,6 +325,18 @@ const visualScenarios = {
       await page.mouse.up()
       const after = await sample()
       if (before.every((color, i) => color === after[i])) throw new Error('3D viewport did not react to dragging')
+    } },
+    { route: '/knowledge?entity=%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90', name: 'concept-comparison', async check(page) {
+      await page.getByTestId('graph-mode-compare').click()
+      await page.getByTestId('concept-comparison-panel').waitFor()
+      await page.getByTestId('compare-preset-sa-ooa').click()
+      await page.getByTestId('compare-matrix').waitFor()
+      const sharedCol = page.getByTestId('compare-col-shared')
+      if (!(await sharedCol.innerText()).includes('需求分析')) {
+        throw new Error('Concept comparison did not render expected shared concept node')
+      }
+      await page.getByTestId('compare-focus-shared-需求分析').click()
+      await page.getByTestId('knowledge-graph').waitFor()
     } },
     { route: '/dashboard', name: 'dashboard-retention', async check(page) {
       await page.getByTestId('dashboard-retention-alerts').waitFor()
