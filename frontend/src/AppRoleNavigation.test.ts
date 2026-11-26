@@ -333,6 +333,26 @@ describe('App role navigation', () => {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
       await flushPromises()
       expect(document.body.querySelector('[data-testid="command-palette-dialog"]')).toBeNull()
+
+      // 输入框聚焦期间键入 ? 绝不误触发快捷键弹窗
+      const textInput = document.createElement('input')
+      document.body.appendChild(textInput)
+      textInput.focus()
+      textInput.dispatchEvent(new KeyboardEvent('keydown', { key: '?', bubbles: true }))
+      await flushPromises()
+      expect(document.body.querySelector('[data-testid="shortcuts-help-dialog"]')).toBeNull()
+      textInput.remove()
+
+      // 非输入区域按 ? 打开快捷键速查弹窗并按 Escape 关闭
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: '?', bubbles: true }))
+      await flushPromises()
+      const shortcutsDialog = document.body.querySelector('[data-testid="shortcuts-help-dialog"]')
+      expect(shortcutsDialog).not.toBeNull()
+      expect(shortcutsDialog!.querySelectorAll('kbd.kbd-badge').length).toBeGreaterThan(0)
+
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+      await flushPromises()
+      expect(document.body.querySelector('[data-testid="shortcuts-help-dialog"]')).toBeNull()
     } finally {
       wrapper.unmount()
     }

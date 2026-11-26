@@ -7,6 +7,7 @@ import type { FlashcardItem } from '../api/flashcards'
 import { getSpacedRatingPreviews } from '../domain/graphAlgorithms'
 import SectionHeading from '../components/SectionHeading.vue'
 import FeedbackState from '../components/FeedbackState.vue'
+import KbdBadge from '../components/KbdBadge.vue'
 
 interface Course { id: number; name: string; term: string }
 
@@ -253,7 +254,12 @@ onBeforeUnmount(() => {
         <span>本轮已自评</span>
         <strong>{{ sessionReviewedCount }} 张</strong>
       </div>
-      <span class="flashcard-shortcut-hint">快捷键：空格翻面 · ←/→ 切卡 · 1~4 评分</span>
+      <span class="flashcard-shortcut-hint">
+        <span>快捷键：</span>
+        <KbdBadge :keys="['Space']" /><span>翻面</span>
+        <KbdBadge :keys="['←', '→']" separator="/" /><span>切卡</span>
+        <KbdBadge :keys="['1', '4']" separator="~" /><span>评分</span>
+      </span>
     </section>
 
     <div v-if="error" class="inline-notice error-notice" role="alert">
@@ -387,7 +393,7 @@ onBeforeUnmount(() => {
 .flashcard-metrics { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 12px 16px; background: var(--surface-tint); border-radius: var(--radius-md); }
 .flashcard-stat { display: flex; align-items: baseline; gap: 8px; font-size: 13px; color: var(--text-muted); }
 .flashcard-stat strong { font-size: 16px; color: var(--text); font-variant-numeric: tabular-nums; }
-.flashcard-shortcut-hint { margin-left: auto; font-size: 12px; color: var(--text-subtle); }
+.flashcard-shortcut-hint { margin-left: auto; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; color: var(--text-subtle); }
 
 .flashcard-stage-wrap { display: grid; gap: 14px; max-width: 820px; width: 100%; margin: 0 auto; }
 .flashcard-stage-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--text-muted); font-size: 13px; font-variant-numeric: tabular-nums; }
