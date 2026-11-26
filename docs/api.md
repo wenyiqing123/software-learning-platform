@@ -28,6 +28,8 @@
 | GET | /spaced-reviews/paused | 本人暂停中的复习项 |
 | POST | /spaced-reviews/{wrongQuestionId}/review | answer、recallRating(0–3)、requestKey(UUID)；同请求幂等；错答缩短至10分钟 |
 | PUT | /spaced-reviews/{wrongQuestionId}/state | ACTIVE、PAUSED、MASTERED |
+| GET | /flashcards | 可选 courseId、dueOnly；读取本人 V18 概念闪卡（融合知识点摘要、小节学习目标与间隔状态，仅 STUDENT） |
+| POST | /flashcards/{knowledgePointId}/review | recallRating(0–3)；提交主动回忆自评并按固定间隔规则持久化至 `flashcard_review_state`（仅 STUDENT） |
 | GET | /study-plans/today | 读取或生成本人今日计划 |
 | POST | /study-plans | budgetMinutes(5–240)，生成/重新生成本人今日计划 |
 | PUT | /study-plans/tasks/{taskId} | action=COMPLETE 或 SKIP；完成需有课程阅读/正确答题/正确复习记录 |
@@ -95,6 +97,7 @@
 | GET | /courses/{courseId}/study/sections/{sectionId}/micro-lesson | 学生读取已发布微课；未发布返回404，不返回草稿 |
 | GET | /admin/questions/{id}/diagnostics | 查询该题已配置的干扰项错因关联；仅管理员 |
 | PUT | /admin/questions/{id}/diagnostics | entries: optionKey、knowledgePointId、rationale 数组；仅允许同课程启用知识点和非正确答案干扰项 |
+| GET | /admin/content/coverage-audit | 可选 courseId；基于 V18 课程/章节/知识点/题目/错因/微课/闪卡表执行只读 SQL 聚合与透明规则缺口审计（`ADMIN` 200、`STUDENT` 403、未登录 401；未知课程 404） |
 
 题目管理输入：courseId、knowledgePointId、type（SINGLE/MULTIPLE/TRUE_FALSE）、stem、options（key/text数组）、answer（key数组）、explanation、difficulty（1–5）。判断题选项键为 TRUE 与 FALSE，选择题为 A–H。知识点必须属于题目的同一启用课程。学生提交无效选项返回400，不保存错误学习事件。
 
@@ -124,7 +127,7 @@ ROUGE-L 使用小写 Unicode 字母/数字字符序列的最长公共子序列F1
 
 - `GET /admin/experiments/fixed-suite` 为管理员提供只读的固定实验套件 manifest，包含 8 个由系统预置的典型案例（仅含 `caseId`、`question`、`sourceSection` 与 `knowledgePoint`），不含答案 key，也不构成教师审核过的参考答案 corpus。
 - 批次实验队列仅驻留浏览器内存（browser-only batch queue），逐项调用真实 `POST /experiments/run` 并独立保存，失败继续推进；队列与进度不声称服务端持久队列或刷新恢复；现有 compare endpoint 超时时间最长支持 600s。
-- 数据库 Flyway 迁移已应用至 V17（`V17__knowledge_mastery_peak.sql` 为 `knowledge_mastery` 增加单调历史峰值 `peak_mastery` 并向旧行自动回填，包含 V16 为实验组增加的评估顺序可空字段），历史 V1–V17 迁移严格不可变，未来扩展预留 V18+。
+- 数据库 Flyway 迁移已应用至 **V18**（`V18__flashcard_review_state.sql` 新增概念闪卡主动回忆间隔状态表，连同 `V17__knowledge_mastery_peak.sql` 历史峰值 `peak_mastery` 与 `V16` 实验顺序字段），历史 V1–V18 迁移严格不可变，未来扩展预留 V19+；`GET /admin/content/coverage-audit` 在 V18 上严格采用只读 SQL 聚合，零新增迁移。
 
 ## 最终合规守卫
 

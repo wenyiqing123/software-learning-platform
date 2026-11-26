@@ -594,3 +594,17 @@
   - `node scripts/scan-vue-classes.mjs --check`：**65** 个 Vue 文件、**2,114** 处模板类用法、**0 missing classes**。
   - `npx vitest run --maxWorkers=2`：**74 passed (74)** 个测试文件、**291 passed (291)** 条测试用例全部通过。
   - `node scripts/authenticated-ui-smoke.mjs`：**198/198** 场景全绿通过（`1440×900` 与 `1280×800` 双视口零溢出、`failures: []`），已目视抽检截图并彻底删除 `frontend/.ui-visual-review`。
+
+### 第 2 批高价值新功能（`NF-1`/`NF-2`）与 V18 全仓文档对齐（2026-11-26）
+
+- **范围与红线**：继续在同一分支 `feat/oss-benchmark-opt` 严格按序落地 `NF-1` 与 `NF-2`，保持 **0 新增 Flyway 迁移（维持终版 V18）**、**0 修改外部 Mecha-QA/Python Bridge/NebulaGraph/模型权重**，并完整保留第 1 批已落地的 `ContentSkeleton`、`KeyboardShortcutsModal`、`CitationInlinePopover` 与错题本增强。
+  1. **`NF-1`（`8f36d5c`）**：新建纯函数引擎 `domain/conceptComparison.ts`（含 `conceptComparison.test.ts`）与 `ConceptComparisonPanel.vue`，并在 `GraphView.vue` 新增第 3 标签 **“概念对比”**（保留 2D/3D、多跳与桥接路径）；对两侧真实只读图谱查询结果计算直接关联、共同关联节点与各自独有邻接关系三栏对比矩阵，支持课程预设、同概念校验拦截、点击聚焦主图谱、带对比上下文跳转 `/tutor` 预填（绝不自动提交）及 503 诚实降级；扩充 `GraphView.test.ts` 与 Playwright `concept-comparison` 检查。
+  2. **`NF-2`（`cb0ad8a`）**：
+     - 后端（`learning-service`）：新建只读聚合映射 `AdminContentAuditMapper.java`（按外键预聚合子查询再 `LEFT JOIN`，严格兼容 H2 MySQL 模式与真实 MySQL 8 `ONLY_FULL_GROUP_BY`）、`KnowledgeCoverageAuditService.java` 与 `@PreAuthorize("hasRole('ADMIN')")` 控制器 `AdminCoverageAuditController.java`（`GET /api/admin/content/coverage-audit`），对 V18 知识点/章节/启用题目/干扰项错因/已发布微课/概念闪卡关联给出透明确定性缺口标签（无黑盒评分），新增 `AdminCoverageAuditTest.java`（实测匿名 401、学生 403、空课程 200、未知课程 404 与聚合口径）；
+     - 前端：更新 `types.ts`、`admin.ts`、`navigation.ts`（在管理员内容与题库中心增设第 5 子菜单 **“覆盖体检”**，保持 3 大顶层工作台不变），新建 `AdminCoverageAuditView.vue` 与 `AdminCoverageAuditView.test.ts`，接入 `AdminContentCenterView.vue` 并更新 `AdminCentersView.test.ts`、`AppRoleNavigation.test.ts` 与 Playwright `admin-coverage-audit` 场景。
+- **第 2 批及全仓终版实测结果（JDK 21 `D:\develop\Java\temurin-21\jdk-21.0.13+9`）**：
+  - 后端三模块 Maven 全量回归（`mvn -f backend/pom.xml test "-Dsurefire.failIfNoSpecifiedTests=false"`）：`learning-service` **206/206**、`ai-service` **114/114**、`learning-gateway` **5/5**，合计 **325/325 passed**（0 failures / 0 errors / 0 skipped）。
+  - 前端全量 Vitest（`npx vitest run --maxWorkers=2`）：**76 passed (76)** 个文件、**297 passed (297)** 项通过（含 `design-system-contract.test.ts` 与 `compliance-guard.test.ts`）。
+  - 样式与构建：`node scripts/scan-vue-classes.mjs --check` **67** 文件 **2,233** 处用法 **0 missing classes**；`git grep -n "!important" frontend/src/` 严格 **0** 命中；`npm run build` 耗时 **2.75s**（**0 error / 0 chunk warning**）。
+  - Playwright 双视口 UI 冒烟（`node scripts/authenticated-ui-smoke.mjs`）：**202/202 场景 passed**（`failures: []`、`overflowCount: 0`、`1440×900` & `1280×800`），目视抽检 `admin-coverage-audit` 与 `knowledge` 截图无异常后已彻底清除 `frontend/.ui-visual-review`。
+  - V18 文档对齐：`README.md`、`docs/api.md`、`docs/ui-design.md`、`docs/test-report.md`、`docs/毕业设计工程验收报告.md`、`docs/答辩现场演示剧本与故障应急清单.md` 与本账本已统一同步至 V18 及最新实测数据。

@@ -358,3 +358,19 @@ git diff --check:  pass
 3. **费曼离线诚实降级与环境清理复原**：
    - 临时停止 Python Bridge（8999，`PORT_8999_LISTENING_COUNT=0`）后再次调用 `POST /api/ai/feynman/evaluate`，系统诚实返回 `503 Service Unavailable`（`code="KNOWLEDGE_UNAVAILABLE"`），绝不编造假三元组；
    - 验收结束后已停止全部本轮临时启动的 Java/Python 后台进程（`8080/8081/8082/8999/5173` 监听数均归零），并在 MySQL 事务内按主键精确删除本轮全部临时验证学生账号及其关联记录，确认 `sys_user` 无残留验证用户、`knowledge_mastery=12`、`ai_experiment_run=12`、`learning_evaluation_session=2` 与基线一致。
+
+## V18 架构与开源标杆交互两批次全量验收补充报告（2026-11-26）
+
+在已有 **V18** 数据库架构（含 `V18__flashcard_review_state.sql` 概念闪卡复习表）基线上，于 `feat/oss-benchmark-opt` 分支依次交付第 1 批 4 项纯前端高感知精修（`UI-1` 骨架屏、`UI-2` `?` 快捷键帮助浮层与 `<KbdBadge>`、`FN-1` `[k]` 悬停/聚焦证据气泡、`FN-2` 错题分布与带题干问助教）及第 2 批 2 项毕设高价值新功能（`NF-1` 双概念图谱结构化对比矩阵、`NF-2` 管理端只读知识资产覆盖度体检）；全程严守 **0 新增 Flyway 迁移（维持 V18）** 与 **外部 Mecha-QA/Python Bridge/NebulaGraph 零修改** 红线。
+
+| 验收维度 | 执行命令与范围 | 实测通过结果 | 结论 |
+| --- | --- | ---: | --- |
+| **Java 后端三模块全量回归** | Temurin JDK `21.0.13+9`，`mvn -f backend/pom.xml test "-Dsurefire.failIfNoSpecifiedTests=false"` | **325/325 passed** | **100% 通过** |
+| ├─ `learning-service` | 含新增 `AdminCoverageAuditTest`（3 项：匿名 401/学生 403、空课程容错/404、V18 聚合与缺口规则）及 `AdminStudyWorkflowTest`（28 项）等全部用例 | **206/206 passed** | 0 失败 / 0 错误 / 0 跳过 |
+| ├─ `ai-service` | 含 `FeynmanEvaluationServiceTest`、`AiSecurityConfigTest` 等全部用例 | **114/114 passed** | 0 失败 / 0 错误 / 0 跳过 |
+| └─ `learning-gateway` | `GatewayRouteConfigurationTest` | **5/5 passed** | 0 失败 / 0 错误 / 0 跳过 |
+| **前端单元与集成测试** | `cd frontend; npx vitest run --maxWorkers=2`（含 `ContentSkeleton`、`KeyboardShortcutsModal`、`CitationInlinePopover`/`MarkdownContent`/`TutorAnswerCard`、`WrongBookView`、`conceptComparison`、`GraphView`、`AdminCoverageAuditView`、`AdminCentersView`、`design-system-contract`、`compliance-guard`） | **76 文件 / 297 项 passed** | **100% 通过** |
+| **AST 模板类名扫描** | `cd frontend; node scripts/scan-vue-classes.mjs --check` | **67** 个 Vue 文件 / **2,233** 处用法 / **0 missing classes** | **100% 匹配** |
+| **前端生产构建与 CSS** | `npm run build` 及 `git grep -n "!important" frontend/src/` | 构建 **2.75s**（0 error / **0 chunk warning**）；四份全局 CSS 共 **70,515 B**，`!important` 为 **0** | **通过** |
+| **Playwright 双视口 UI 冒烟** | `cd frontend; node scripts/authenticated-ui-smoke.mjs`（含 `tutor-history` 气泡悬停、`wrong-search` 分布筛选、`concept-comparison` 与 `admin-coverage-audit`，`1440×900` & `1280×800`） | **202/202 场景 passed**（`failures: []`、`overflowCount: 0`、`failedCount: 0`，截图抽检后已清空 `.ui-visual-review`） | **100% 通过** |
+| **工作区与代码规范卫生** | `git diff --check` | 退出码 **0**（0 处空白格式违规） | **通过** |

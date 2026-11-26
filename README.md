@@ -100,7 +100,7 @@ try {
 
 `.env.example` 覆盖本地 MySQL、Redis、RabbitMQ、JWT、Python Bridge、Gateway、模型超时、RANKED/Qwen 可选开关和管理员引导变量；服务器部署使用 `deploy/.env.server.example`，其中只放占位符。Compose 会显式传递 `RABBITMQ_VHOST`、Python 图谱超时、Gateway 地址、AI 生成参数和可选 RANKED 参数，实际密钥只写入服务器的受限 `.env.server`。
 
-当前专用数据库已通过 Flyway 应用至 V17（包含 V17 为 `knowledge_mastery` 增加并自动回填的单调历史峰值 `peak_mastery` 列，以及 V16 为实验组增加的可空 `task_order` 评估顺序字段）。已经执行的迁移保持原样；历史迁移严格不可变，未来扩展预留 V18+。不要修改已执行的 SQL 或清空 Flyway 历史。
+当前专用数据库已通过 Flyway 应用至 **V18**（`V18__flashcard_review_state.sql` 新增概念闪卡主动回忆间隔状态表，并包含 V17 为 `knowledge_mastery` 增加并自动回填的单调历史峰值 `peak_mastery` 列，以及 V16 为实验组增加的可空 `task_order` 评估顺序字段）。已经执行的迁移（V1–V18）保持原样且严格不可变，未来扩展预留 V19+。不要修改已执行的 SQL 或清空 Flyway 历史。
 
 ## 账户、工作台与权限边界
 
@@ -108,17 +108,17 @@ try {
 
 平台严格实施基于角色的访问控制（RBAC）与工作区分割：
 
-- **学生学习空间（5 大核心学习分组，16 个 Canonical 路由）**：
-  - 基础学习：课程阅读（`/courses`）、概念知识图谱（`/knowledge`）、先修掌握图谱（`/mastery-map`）、AI 交互助教（`/tutor`）；
-  - 题库练习：基础章节练习（`/practice`）、自适应强化练习（`/adaptive-practice`）；
-  - 复习规划：错题笔记本（`/wrong-book`）、艾宾浩斯间隔复习（`/review`）、今日动态学习计划（`/study-plan`）；
-  - 微课微测：微课浏览中心（`/micro-lessons`）、学习成效评估向导（`/evaluation`）、学情报告与雷达图（`/learning-report`）；
-  - 受限任务：指派实验任务入口（`/experiment-tasks`）、受限实验运行页（`/experiment-run`）。
+- **学生学习空间（5 大核心学习分组）**：
+  - 概览与课程：学习概览（`/dashboard`）、课程阅读（`/courses`，支持划词收藏与笔记）、笔记与收藏（`/notes`）；
+  - 图谱与助教：概念知识图谱与双概念结构化对比（`/knowledge`，含 2D G6、3D Three.js、先修路径与“概念对比”子视图）、掌握图谱（`/mastery-map`）、AI 交互助教（`/tutor`，含句子级 `[k]` 悬停证据气泡与费曼“以教促学”自检）、证据微课（`/micro-lessons`）；
+  - 练习与复习：基础章节练习（`/practice`）、自适应强化练习（`/adaptive-practice`）、错题整理（`/wrong-book`，含知识点确定性分布统计条与“带题干问助教”跳转）、到期复习（`/review`）、概念闪卡（`/flashcards`，V18 间隔回忆）；
+  - 计划与推荐：今日动态学习计划（`/study-plan`）、可解释规则推荐（`/recommendations`）；
+  - 实验与评估：指派实验任务入口（`/experiment-tasks`）、学习成效评估向导（`/evaluation`）、学情报告与雷达图（`/learning-report`）及受限实验运行页（`/experiment-run`）。
 - **管理员管理空间（3 大聚合工作台中心）**：
-  - 教学总览工作台（`/teaching-dashboard`）：班级学习指标、学习活跃度、薄弱知识点分布与匿名学情导出；
-  - 内容与题库中心（`/admin/content`）：集成课程与知识点管理、题库版本与批次 JSON 导入、干扰项错因诊断配置、已发布微课管理；
+  - 教学与用户（`/teaching-dashboard` 教学总览工作台、`/admin/users` 用户与独立学情画像管理）；
+  - 内容与题库中心（`/admin/content`）：集成课程与知识点管理、题库版本与批次 JSON 导入、干扰项错因诊断配置、微课管理及只读知识资产 **覆盖体检**（`GET /api/admin/content/coverage-audit`）；
   - 实验与评价中心（`/admin/experiments`）：集成多模式问答对照实验、实验任务配组与学生派发、去标识化心理努力与成效统计；
-  - 兼容保留独立问答实验入口（`/experiments`）以及 7 条 Legacy 管理端重定向路由。
+  - 兼容保留独立问答实验入口（`/experiments`）以及多条 Legacy 管理端重定向路由。
 
 ### 安全凭据、密码修改与 Single-flight 刷新
 
@@ -138,11 +138,11 @@ try {
 
 /admin 兼容路由支持课程新增/编辑/启停、题目新增/编辑/启停和同课程知识点映射，校验单选/多选/判断题的选项与标准答案。学生列表不返回标准答案，提交后才返回正确答案与解析。
 
-/courses 提供软件工程正文、目标与案例；阅读完成状态按用户保存。图谱页按课程概念查询关系、查看三元组并跳转助教提问。
+/courses 提供软件工程正文、目标与案例；阅读完成状态按用户保存，并支持划词收藏与笔记。图谱页支持按课程概念查询 2D/3D 关系、查看三元组、进行“概念对比”三栏集合分析并跳转助教提问。
 
 登录后的顶部“依赖状态”入口会按固定间隔检查 MySQL、Redis、RabbitMQ、Python Bridge/知识图谱和 AI 服务。状态接口只返回健康状态、检查时间和受影响功能，不返回内部地址、异常栈或凭据；图谱或模型不可用时，课程阅读、题库和错题复习仍保持可用。
 
-知识图谱页还提供“先修学习路径”视图：选择目标知识点后，平台按课程内先修关系递归整理学习顺序，展示当前用户的系统掌握度与基于距上次有效学习天数的可解释遗忘衰减保持度（间隔 ≤ 1 天不衰减，超过 1 天按常数半衰期 `HALF_LIFE_DAYS = 14` 估算 `effectiveMastery` 与 `FRESH`/`FADING`/`DUE` 复习预警，先修解锁门槛始终以单调 `peakMastery` 为准、绝不因久未复习而反复锁死），并链接到对应课程阅读、专项练习、间隔复习和图谱实体。管理员页面增加只读的先修关系质量检查，用于发现坏 JSON、无效/重复/跨课程引用、自引用和循环依赖；系统不会自动修改课程关系。
+知识图谱页还提供“先修学习路径”视图与“概念对比”视图：选择目标知识点后，平台按课程内先修关系递归整理学习顺序，展示当前用户的系统掌握度与基于距上次有效学习天数的可解释遗忘衰减保持度（间隔 ≤ 1 天不衰减，超过 1 天按常数半衰期 `HALF_LIFE_DAYS = 14` 估算 `effectiveMastery` 与 `FRESH`/`FADING`/`DUE` 复习预警，先修解锁门槛始终以单调 `peakMastery` 为准、绝不因久未复习而反复锁死），并链接到对应课程阅读、专项练习、间隔复习和图谱实体；“概念对比”则基于两次只读图谱查询输出直接关联、共同关联节点及各自独有邻接关系（不含任何虚构节点）。管理员页面提供只读先修关系质量检查与基于 V18 表的知识资产覆盖度体检（`/api/admin/content/coverage-audit`，按确定性规则标记缺题/缺错因/缺微课/缺闪卡支撑并一键跳转补录）；系统不会自动修改课程关系。
 
 ## AI 与现有 Python 依赖
 
@@ -193,3 +193,12 @@ Wave 4 将问答生成执行拆为显式策略选择器：普通聊天策略负�
   - 真实运行态视觉巡检（Playwright UI Smoke）：双视口（1440×900 与 1280×800）、三角色（STUDENT, ADMIN, GUEST），覆盖 29 个路由与进阶场景，**170/170 场景全部通过**，无控制台错误、未捕获异常、横向溢出或组件回归；
   - 容器与工程配置：`docker compose --env-file deploy/.env.server.example -f deploy/compose.server.yml config --quiet` 校验通过；`git diff --check` 通过（0 处空白错误）。
 - 答辩点击路径和故障应急命令见 [`docs/答辩现场演示剧本与故障应急清单.md`](docs/答辩现场演示剧本与故障应急清单.md)。
+
+## V18 与开源标杆两批次终版基线（2026-11-26）
+
+在 M1–M4 与 2026-11-25 增量基线之上，已演进至 **V18** 数据库架构并完成两批次体验升级（`ContentSkeleton`、`KeyboardShortcutsModal`、`CitationInlinePopover`、错题本分布与带题干问助教、双概念图谱结构化对比面板、管理端只读知识资产覆盖度体检）：
+- 后端三模块 Maven 全量回归（Temurin JDK 21.0.13+9）：**325/325 passed**（`learning-service` **206/206**、`ai-service` **114/114**、`learning-gateway` **5/5**）；
+- 前端全量测试（Vitest）：**76 个文件 / 297 项通过**（0 失败）；
+- AST 模板类名扫描：**67 个 Vue 文件 / 2,233 处类名用法 / 0 missing classes**；四份全局 CSS 共 **70,515 B**，全仓严格 **0 `!important`**；
+- 前端生产构建：**2.75s**（0 error / **0 chunk warning**）；
+- Playwright 双视口鉴权 UI 冒烟：**202/202 场景全部通过**（`1440×900` & `1280×800`，0 横向溢出，已清理临时目录）。
