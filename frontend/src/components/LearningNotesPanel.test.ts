@@ -62,4 +62,41 @@ describe('LearningNotesPanel', () => {
     expect(http.delete).toHaveBeenCalledWith('/learning/notes/7')
     wrapper2.unmount()
   })
+
+  it('opens teleported note dialog via openComposer and respects Escape layering with ConfirmDialog', async () => {
+    http.get.mockImplementation(async (path: string) => {
+      if (path === '/learning/notes') return { data: [{ id: 7, sectionId: 101, title: '验收条件', content: '记录验收条件', tags: ['需求'] }] }
+      if (path === '/learning/bookmarks') return { data: { targetType: 'SECTION', targetId: 101, bookmarked: false } }
+      throw new Error('unexpected path: ' + path)
+    })
+
+    const wrapper = mount(LearningNotesPanel, {
+      props: { sectionId: 101, knowledgePointId: 2, sectionTitle: '用例建模基础', startCollapsed: true },
+    })
+    await flushPromises()
+    expect(document.body.querySelector('[data-testid="note-composer-dialog"]')).toBeNull()
+
+    await (wrapper.vm as unknown as { openComposer: () => Promise<void> }).openComposer()
+    await flushPromises()
+
+    const dialog = document.body.querySelector('[data-testid="note-composer-dialog"]')
+    expect(dialog).not.toBeNull()
+    expect(dialog!.textContent).toContain('课程笔记 · 用例建模基础')
+    expect(document.body.style.overflow).toBe('hidden')
+
+    ;(dialog!.querySelector('[aria-label="删除笔记 7"]') as HTMLButtonElement).click()
+    await flushPromises()
+    expect(document.body.querySelector('[data-testid="confirm-dialog"]')).not.toBeNull()
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    await flushPromises()
+    expect(document.body.querySelector('[data-testid="confirm-dialog"]')).toBeNull()
+    expect(document.body.querySelector('[data-testid="note-composer-dialog"]')).not.toBeNull()
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    await flushPromises()
+    expect(document.body.querySelector('[data-testid="note-composer-dialog"]')).toBeNull()
+    expect(document.body.style.overflow).toBe('')
+    wrapper.unmount()
+  })
 })

@@ -1,17 +1,19 @@
 <script setup lang="ts">
-import { nextTick, onMounted, reactive, ref, watch } from 'vue'
-import { Bookmark, ChevronDown, FilePlus2, Pencil, Save, Trash2, X } from '@lucide/vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { Bookmark, ChevronDown, NotebookPen, X } from '@lucide/vue'
 import { api, apiError, type LearningBookmark, type LearningNote } from '../api/client'
 import ConfirmDialog from './ConfirmDialog.vue'
+import LearningNotesBody from './LearningNotesBody.vue'
 
 interface SectionDraft { editingId: number | null; title: string; content: string; tags: string }
 const draftCache = new Map<number, SectionDraft>()
 
-const props = defineProps<{ sectionId: number; knowledgePointId?: number; startCollapsed?: boolean }>()
+const props = defineProps<{ sectionId: number; knowledgePointId?: number; sectionTitle?: string; startCollapsed?: boolean }>()
 const emit = defineEmits<{
   'bookmark-change': [bookmarked: boolean]
   'notes-count-change': [count: number]
 }>()
+
 const notes = ref<LearningNote[]>([])
 const bookmarked = ref(false)
 const loading = ref(true)
@@ -21,11 +23,27 @@ const notice = ref('')
 const editingId = ref<number | null>(null)
 const confirmDeleteNote = ref<LearningNote | null>(null)
 const collapsed = ref(Boolean(props.startCollapsed))
-const panelRef = ref<HTMLElement | null>(null)
-const contentInputRef = ref<HTMLTextAreaElement | null>(null)
+const composerModalOpen = ref(false)
+const modalBodyRef = ref<{ focusContent: () => void } | null>(null)
 const draft = reactive({ title: '', content: '', tags: '' })
 
-function prefillExcerpt(payload: { text: string; title?: string }) {
+let prevBodyOverflow: string | null = null
+let prevFocusedEl: HTMLElement | null = null
+
+const modalTitle = computed(() => (props.sectionTitle ? `课程笔记 · ${props.sectionTitle}` : '课程笔记'))
+
+async function openComposer() {
+  collapsed.value = false
+  composerModalOpen.value = true
+  await nextTick()
+  modalBodyRef.value?.focusContent()
+}
+
+function closeComposer() {
+  composerModalOpen.value = false
+}
+
+async function prefillExcerpt(payload: { text: string; title?: string }) {
   const snippet = payload.text.trim()
   if (!snippet) return
   collapsed.value = false
@@ -38,6 +56,9 @@ function prefillExcerpt(payload: { text: string; title?: string }) {
     .join('\n')
   draft.content = draft.content.trim() ? `${draft.content.trimEnd()}\n\n${quoted}` : quoted
   notice.value = '已摘录选文至草稿，可补充理解后点击保存'
+  composerModalOpen.value = true
+  await nextTick()
+  modalBodyRef.value?.focusContent()
 }
 
 function resetDraft(clearCache = true) {
@@ -63,7 +84,13 @@ async function load() {
   } catch (cause) { error.value = failure(cause) }
   finally { loading.value = false }
 }
-function edit(note: LearningNote) { editingId.value = note.id; draft.title = note.title; draft.content = note.content; draft.tags = note.tags.join(', '); notice.value = '' }
+function edit(note: LearningNote) {
+  editingId.value = note.id
+  draft.title = note.title
+  draft.content = note.content
+  draft.tags = note.tags.join(', ')
+  notice.value = ''
+}
 async function save() {
   if (!draft.content.trim() || saving.value) return
   saving.value = true; error.value = ''; notice.value = ''
@@ -110,14 +137,45 @@ async function toggleBookmark() {
   }
 }
 
-async function openComposer() {
-  collapsed.value = false
-  await nextTick()
-  panelRef.value?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
-  contentInputRef.value?.focus()
+function onModalKeydown(event: KeyboardEvent) {
+  if (!composerModalOpen.value || confirmDeleteNote.value || event.key !== 'Escape') return
+  event.preventDefault()
+  event.stopPropagation()
+  closeComposer()
 }
 
-defineExpose({ prefillExcerpt, toggleBookmark, openComposer })
+function restoreModalEnvironment() {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('keydown', onModalKeydown, true)
+  }
+  if (typeof document !== 'undefined' && prevBodyOverflow !== null) {
+    document.body.style.overflow = prevBodyOverflow
+    prevBodyOverflow = null
+  }
+  if (prevFocusedEl && typeof prevFocusedEl.focus === 'function') {
+    prevFocusedEl.focus()
+    prevFocusedEl = null
+  }
+}
+
+watch(composerModalOpen, (isOpen) => {
+  if (isOpen) {
+    if (typeof document !== 'undefined') {
+      prevFocusedEl = document.activeElement instanceof HTMLElement ? document.activeElement : null
+      if (prevBodyOverflow === null) {
+        prevBodyOverflow = document.body.style.overflow
+      }
+      document.body.style.overflow = 'hidden'
+    }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('keydown', onModalKeydown, true)
+    }
+  } else {
+    restoreModalEnvironment()
+  }
+})
+
+defineExpose({ prefillExcerpt, toggleBookmark, openComposer, closeComposer })
 watch(() => props.sectionId, (nextId, prevId) => {
   if (prevId && (draft.title.trim() || draft.content.trim() || draft.tags.trim() || editingId.value !== null)) {
     draftCache.set(prevId, { editingId: editingId.value, title: draft.title, content: draft.content, tags: draft.tags })
@@ -137,20 +195,88 @@ watch(() => props.sectionId, (nextId, prevId) => {
   void load()
 })
 onMounted(() => void load())
+onBeforeUnmount(restoreModalEnvironment)
 </script>
 
 <template>
-  <section ref="panelRef" class="learning-notes-panel" aria-label="我的学习记录">
+  <section class="learning-notes-panel" aria-label="我的学习记录">
     <header class="notes-panel-heading">
       <div><h3>我的学习记录（{{ notes.length }}）</h3><span>{{ bookmarked ? '已收藏本节 · ' : '' }}笔记和收藏只对当前账户可见</span></div>
       <button class="notes-collapse icon-button" type="button" :aria-expanded="!collapsed" :aria-label="collapsed ? '展开笔记' : '收起笔记'" :title="collapsed ? '展开写笔记' : '收起笔记'" @click="collapsed = !collapsed"><ChevronDown :size="16" :class="{ rotated: collapsed }" /></button>
       <button class="notes-bookmark icon-button" :class="{ active: bookmarked }" :aria-label="bookmarked ? '取消收藏本节' : '收藏本节'" :title="bookmarked ? '取消收藏本节' : '收藏本节'" :aria-pressed="bookmarked" :disabled="saving || loading" @click="toggleBookmark"><Bookmark :size="16" :fill="bookmarked ? 'currentColor' : 'none'" /></button>
     </header>
-    <div v-if="!collapsed">
-    <div v-if="error" class="notes-message error" role="alert">{{ error }}</div><div v-if="notice" class="notes-message success" role="status">{{ notice }}</div>
-    <form class="notes-editor" @submit.prevent="save"><div class="notes-editor-top"><strong>{{ editingId ? '编辑笔记' : '添加一条笔记' }}</strong><button v-if="editingId" type="button" class="icon-button" aria-label="取消编辑笔记" @click="resetDraft()"><X :size="15" /></button></div><input v-model="draft.title" aria-label="笔记标题" maxlength="160" placeholder="标题（可选）" /><textarea ref="contentInputRef" v-model="draft.content" aria-label="笔记内容" rows="3" maxlength="10000" placeholder="记录你的理解、疑问或易错点"></textarea><div class="notes-editor-bottom"><input v-model="draft.tags" aria-label="笔记标签" placeholder="标签，用逗号分隔" /><button class="button button-dark button-small" type="submit" aria-label="保存笔记" :disabled="saving || !draft.content.trim()"><Save :size="14" />保存</button></div></form>
-    <div v-if="loading" class="notes-empty">正在读取学习记录…</div><div v-else-if="!notes.length" class="notes-empty"><FilePlus2 :size="20" /><span>还没有笔记，写下本节最重要的一个理解。</span></div><div v-else class="notes-list"><article v-for="note in notes" :key="note.id" class="note-item"><div class="note-item-heading"><strong>{{ note.title || '未命名笔记' }}</strong><div><button class="icon-button" :aria-label="'编辑笔记 ' + note.id" @click="edit(note)"><Pencil :size="14" /></button><button class="icon-button" :aria-label="'删除笔记 ' + note.id" @click="remove(note)"><Trash2 :size="14" /></button></div></div><p>{{ note.content }}</p><div class="note-tags"><span v-for="tag in note.tags" :key="tag">#{{ tag }}</span></div></article></div>
+    <div v-if="!collapsed && !composerModalOpen">
+      <LearningNotesBody
+        v-model:title="draft.title"
+        v-model:content="draft.content"
+        v-model:tags="draft.tags"
+        :notes="notes"
+        :loading="loading"
+        :saving="saving"
+        :editing-id="editingId"
+        :error="error"
+        :notice="notice"
+        @submit="save"
+        @cancel-edit="resetDraft()"
+        @edit="edit"
+        @remove="remove"
+      />
     </div>
+    <Teleport to="body">
+      <div
+        v-if="composerModalOpen"
+        class="notes-dialog-backdrop"
+        data-testid="note-composer-backdrop"
+        @click.self="closeComposer"
+      >
+        <section
+          class="notes-dialog-card"
+          role="dialog"
+          aria-modal="true"
+          :aria-label="modalTitle"
+          data-testid="note-composer-dialog"
+        >
+          <header class="notes-dialog-head">
+            <div class="notes-dialog-title">
+              <span class="notes-dialog-icon" aria-hidden="true">
+                <NotebookPen :size="17" />
+              </span>
+              <div>
+                <h3>{{ modalTitle }}</h3>
+                <span>已有 {{ notes.length }} 条私有笔记 · 按 Esc 关闭</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="icon-button"
+              aria-label="关闭记笔记弹窗"
+              data-testid="note-composer-close"
+              @click="closeComposer"
+            >
+              <X :size="16" />
+            </button>
+          </header>
+          <div class="notes-dialog-body">
+            <LearningNotesBody
+              ref="modalBodyRef"
+              v-model:title="draft.title"
+              v-model:content="draft.content"
+              v-model:tags="draft.tags"
+              :notes="notes"
+              :loading="loading"
+              :saving="saving"
+              :editing-id="editingId"
+              :error="error"
+              :notice="notice"
+              @submit="save"
+              @cancel-edit="resetDraft()"
+              @edit="edit"
+              @remove="remove"
+            />
+          </div>
+        </section>
+      </div>
+    </Teleport>
     <ConfirmDialog
       :open="Boolean(confirmDeleteNote)"
       title="删除笔记"
@@ -166,26 +292,22 @@ onMounted(() => void load())
 
 <style scoped>
 .learning-notes-panel{display:grid;gap:12px;min-width:0;padding:14px;background:var(--surface-tint);border-radius:var(--radius-md)}
-.notes-panel-heading,.note-item-heading,.notes-editor-top{display:flex;align-items:flex-start;justify-content:space-between;gap:4px}
-.notes-panel-heading>div,.note-item-heading>strong{min-width:0;flex:1}
+.notes-panel-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:4px}
+.notes-panel-heading>div{min-width:0;flex:1}
 .notes-panel-heading h3{margin:0;font-size:14px}
-.notes-panel-heading span,.notes-empty,.note-item p{color:var(--text-muted);font-size:12px}
-.notes-panel-heading .icon-button,.note-item-heading .icon-button{flex:0 0 30px;width:30px;height:30px}
+.notes-panel-heading span{color:var(--text-muted);font-size:12px}
+.notes-panel-heading .icon-button{flex:0 0 30px;width:30px;height:30px}
 .notes-collapse svg{transition:transform var(--motion)}
 .notes-collapse .rotated{transform:rotate(-90deg)}
 .notes-bookmark.active{color:var(--accent-strong);background:var(--accent-soft)}
-.notes-editor,.notes-editor-bottom{display:grid;gap:8px}
-.notes-editor-top,.note-item-heading strong{font-size:13px}
-.notes-editor :is(input,textarea){width:100%;font-size:13px}
-.notes-editor .button{justify-self:end}
-.notes-empty{display:flex;align-items:center;gap:8px;margin-top:12px}
-.notes-empty svg{flex:0 0 auto;color:var(--accent)}
-.notes-list{display:grid;gap:0}
-.note-item{padding-top:12px;margin-top:12px;border-top:1px solid var(--border-default);overflow-wrap:anywhere}
-.note-item-heading>div,.note-tags{display:flex;gap:4px}
-.note-item p{margin:6px 0 8px;white-space:pre-wrap;line-height:1.7}
-.note-tags{flex-wrap:wrap}
-.note-tags span,.notes-message{padding:3px 8px;color:var(--accent-strong);background:var(--accent-soft);border-radius:var(--radius-pill);font-size:12px}
-.notes-message{margin-bottom:8px;border-radius:var(--radius-sm)}
-.notes-message.error{color:var(--danger);background:var(--danger-soft)}
+.notes-dialog-backdrop{position:fixed;inset:0;z-index:1150;display:grid;place-items:center;padding:16px;background:var(--surface-overlay);backdrop-filter:blur(2px)}
+.notes-dialog-card{width:min(560px,100%);max-height:min(84dvh,720px);display:flex;flex-direction:column;background:var(--surface);color:var(--text);border:1px solid var(--border-default);border-radius:var(--radius-md);box-shadow:var(--shadow-lg);overflow:hidden}
+.notes-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border-soft);background:var(--surface-soft)}
+.notes-dialog-head .icon-button{cursor:pointer}
+.notes-dialog-title{display:flex;align-items:center;gap:10px;min-width:0}
+.notes-dialog-title>div{min-width:0}
+.notes-dialog-title h3{margin:0;font-size:16px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.notes-dialog-title span{display:block;color:var(--text-muted);font-size:12px}
+.notes-dialog-icon{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:var(--radius-sm);color:var(--accent-strong);background:var(--accent-soft)}
+.notes-dialog-body{overflow-y:auto;padding:16px 18px 18px}
 </style>

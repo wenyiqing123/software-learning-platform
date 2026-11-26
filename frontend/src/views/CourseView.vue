@@ -30,7 +30,7 @@ const readingProgressPct = ref(0)
 const activeAnchorId = ref('anchor-objectives')
 const readingArticleRef = ref<HTMLElement | null>(null)
 const notesPanelRef = ref<{
-  prefillExcerpt: (payload: { text: string; title?: string }) => void
+  prefillExcerpt: (payload: { text: string; title?: string }) => Promise<void> | void
   toggleBookmark: () => Promise<boolean>
   openComposer: () => Promise<void>
 } | null>(null)
@@ -223,7 +223,7 @@ function clearNativeSelection() {
 function excerptToNote() {
   const snippet = selectionToolbar.value.text
   if (!snippet) return
-  notesPanelRef.value?.prefillExcerpt({ text: snippet, title: active.value?.title })
+  void notesPanelRef.value?.prefillExcerpt({ text: snippet, title: active.value?.title })
   clearNativeSelection()
 }
 function askSelectedInTutor() {
@@ -368,7 +368,7 @@ onBeforeUnmount(() => {
       <div v-else class="study-layout">
         <div class="study-rail">
           <details id="course-outline" class="study-outline" :open="outlineOpen" @toggle="outlineOpen = ($event.target as HTMLDetailsElement).open" aria-label="章节目录"><summary class="outline-heading"><h2>章节目录</h2><span>{{ sections.length }} 节</span></summary><div><section v-for="(chapter, index) in study.chapters" :key="chapter.id"><h3>{{ String(index + 1).padStart(2, '0') }} {{ chapter.name }}</h3><p>{{ chapter.description }}</p><button v-for="section in chapter.sections" :key="section.id" class="outline-item" :class="{ active: active?.id === section.id }" :aria-current="active?.id === section.id ? 'page' : undefined" :aria-controls="'section-' + section.id" @click="chooseSection(section)"><span class="outline-status" aria-hidden="true">{{ section.completed ? '✓' : '○' }}</span><span>{{ section.title }}<small>{{ section.completed ? '已完成阅读' : section.knowledgePointName }}</small></span></button></section></div></details>
-          <LearningNotesPanel v-if="active" ref="notesPanelRef" :section-id="active.id" :knowledge-point-id="active.knowledgePointId" start-collapsed @bookmark-change="onPanelBookmarkChange" @notes-count-change="onPanelNotesCountChange" />
+          <LearningNotesPanel v-if="active" ref="notesPanelRef" :section-id="active.id" :knowledge-point-id="active.knowledgePointId" :section-title="active.title" start-collapsed @bookmark-change="onPanelBookmarkChange" @notes-count-change="onPanelNotesCountChange" />
         </div>
         <article v-if="active" ref="readingArticleRef" :id="'section-' + active.id" class="study-reading reading-flow" :aria-labelledby="'section-title-' + active.id" @mouseup="inspectTextSelection">
           <div class="reading-progress-bar no-print" role="progressbar" aria-label="当前小节阅读滚动进度" :aria-valuenow="readingProgressPct" aria-valuemin="0" aria-valuemax="100" data-testid="reading-progress-bar">
@@ -511,7 +511,8 @@ onBeforeUnmount(() => {
 .study-notice{color:var(--danger);background:var(--danger-soft)}
 .study-empty{color:var(--text-muted);text-align:center;background:var(--surface);border:1px solid var(--border-default)}
 @media(min-width:761px){
-  .study-outline{position:sticky;top:calc(var(--topbar-height) + 16px);max-height:calc(100dvh - var(--topbar-height) - 40px);overflow-y:auto}
+  .study-rail{position:sticky;top:calc(var(--topbar-height) + 16px);max-height:calc(100dvh - var(--topbar-height) - 32px);overflow-y:auto;padding-right:2px}
+  .study-outline{max-height:none;overflow:visible}
   .study-outline summary{cursor:default;pointer-events:none}
 }
 @media(max-width:760px){

@@ -225,11 +225,16 @@ describe('CourseView', () => {
     const toolbar = document.body.querySelector('[data-testid="course-selection-toolbar"]')
     expect(toolbar).not.toBeNull()
 
-    // 摘录到笔记草稿（不刷新页面，直接展开右侧草稿）
+    // 摘录到笔记草稿（直接弹出记笔记弹窗并带入引用文本）
     ;(document.body.querySelector('[data-testid="selection-to-note"]') as HTMLButtonElement).click()
     await flushPromises()
-    const noteTextarea = wrapper.get('[aria-label="笔记内容"]').element as HTMLTextAreaElement
+    const noteDialog = document.body.querySelector('[data-testid="note-composer-dialog"]')
+    expect(noteDialog).not.toBeNull()
+    const noteTextarea = noteDialog!.querySelector('[aria-label="笔记内容"]') as HTMLTextAreaElement
     expect(noteTextarea.value).toContain('> 表达系统功能需求')
+    ;(document.body.querySelector('[data-testid="note-composer-close"]') as HTMLButtonElement).click()
+    await flushPromises()
+    expect(document.body.querySelector('[data-testid="note-composer-dialog"]')).toBeNull()
 
     // 再次选中并跳转到 AI 助教（携带 prompt 查询参数，不自动提交）
     document.dispatchEvent(new Event('selectionchange'))
@@ -273,15 +278,20 @@ describe('CourseView', () => {
     wrapper.unmount()
   })
 
-  it('exposes top and footer note buttons that reflect count and open the collapsed note composer', async () => {
+  it('exposes top and footer note buttons that reflect count and open the teleported note dialog', async () => {
     const emptyMount = await mountCourseView({ courseId: '1', sectionId: '101' })
-    expect(emptyMount.wrapper.find('[aria-label="笔记内容"]').exists()).toBe(false)
+    expect(document.body.querySelector('[data-testid="note-composer-dialog"]')).toBeNull()
     expect(emptyMount.wrapper.get('[data-testid="course-section-note"]').text()).toContain('记笔记')
     expect(emptyMount.wrapper.get('[data-testid="course-footer-note"]').text()).toContain('记一条笔记')
 
     await emptyMount.wrapper.get('[data-testid="course-footer-note"]').trigger('click')
     await flushPromises()
-    expect(emptyMount.wrapper.find('[aria-label="笔记内容"]').exists()).toBe(true)
+    const footerDialog = document.body.querySelector('[data-testid="note-composer-dialog"]')
+    expect(footerDialog).not.toBeNull()
+    expect(footerDialog!.textContent).toContain('用例建模基础')
+    expect(footerDialog!.querySelector('[aria-label="笔记内容"]')).not.toBeNull()
+    ;(document.body.querySelector('[data-testid="note-composer-close"]') as HTMLButtonElement).click()
+    await flushPromises()
     emptyMount.wrapper.unmount()
 
     http.get.mockImplementation(async (path: string) => {
@@ -297,13 +307,16 @@ describe('CourseView', () => {
     })
 
     const { wrapper } = await mountCourseView({ courseId: '1', sectionId: '101' })
-    expect(wrapper.find('[aria-label="笔记内容"]').exists()).toBe(false)
+    expect(document.body.querySelector('[data-testid="note-composer-dialog"]')).toBeNull()
     expect(wrapper.get('[data-testid="course-section-note"]').text()).toContain('记笔记 (1)')
     expect(wrapper.get('[data-testid="course-footer-note"]').text()).toContain('记笔记 (1)')
 
     await wrapper.get('[data-testid="course-section-note"]').trigger('click')
     await flushPromises()
-    expect(wrapper.find('[aria-label="笔记内容"]').exists()).toBe(true)
+    const topDialog = document.body.querySelector('[data-testid="note-composer-dialog"]')
+    expect(topDialog).not.toBeNull()
+    expect(topDialog!.textContent).toContain('先画系统边界')
+    expect(topDialog!.querySelector('[aria-label="笔记内容"]')).not.toBeNull()
     wrapper.unmount()
   })
 })

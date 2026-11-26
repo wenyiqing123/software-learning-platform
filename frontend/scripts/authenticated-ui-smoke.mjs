@@ -234,8 +234,19 @@ const visualScenarios = {
       await page.getByTestId('course-section-bookmark').click()
       await page.getByTestId('course-bookmark-notice').waitFor()
       await page.getByTestId('course-section-note').click()
+      const dialog = page.getByTestId('note-composer-dialog')
+      await dialog.waitFor({ state: 'visible' })
+      const box = await dialog.boundingBox()
+      const vp = page.viewportSize()
+      if (!box || box.width < 280 || box.height < 140 || box.y < 0 || (vp && box.y + box.height > vp.height)) {
+        throw new Error('Note composer dialog did not render visibly inside viewport')
+      }
       await page.getByLabel('笔记内容').waitFor({ state: 'visible' })
       await page.getByText('先画系统边界').waitFor()
+      await page.keyboard.press('Escape')
+      await dialog.waitFor({ state: 'hidden' })
+      await page.getByTestId('course-footer-note').click()
+      await dialog.waitFor({ state: 'visible' })
     } },
     { route: '/courses?courseId=3&sectionId=32', name: 'course-scroll-read', async check(page) {
       await page.getByRole('button', { name: '标记本节已读' }).waitFor()
