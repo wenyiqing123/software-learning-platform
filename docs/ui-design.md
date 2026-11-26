@@ -218,3 +218,10 @@
 
 - **`/tutor` 双活动分段切换（严禁实验术语回流）**：顶部无边框画布栏放置纯净的 `自由答疑` / `费曼自检` 双标签切换，不引入任何 `DIRECT` / `TRIPLES` / `RANKED` 选项；外层 `<KeepAlive>` 在切换活动时保留未提交的费曼讲解草稿；支持 `/tutor?activity=feynman&entity=...` 深链接跳转自动预填目标概念，但不自动发起评估请求。`LearningContextActions.vue` 为学生端补充“费曼自检”快捷跳转入口（`/tutor` 页内保持自动去重隐藏）。
 - **`FeynmanTeachBackPanel.vue` 单屏内滚动诊断区**：复用 `var(--surface-soft)` 单层卡片与轻量排版，严格满足 `1440×900` 与 `1280×800` 单屏内部滚动（无双滚动条、无白卡套白卡、`0 !important`、`0 missing classes`），涵盖知识点快选芯片与输入（兼容 IME 中文输入与 `Ctrl/Cmd + Enter` 快捷键）、字数实时校准（10–2000 字）、四格诊断反馈（① 已覆盖要点；② 可点击跳转 `/knowledge?entity=...` 的遗漏真实图谱关联；③ 接入 `MarkdownContent.vue` 渲染的易混纠偏；④ 启发式追问 + “基于追问继续完善讲解”追写模板）、默认折叠的真实图谱证据胶囊及底部辅助自检免责小字（“基于当前课程知识图谱三元组对照生成的辅助自检建议，仅供学习参考，不作为正式成绩评定”）。接口或图谱故障时完整保留学生已输入讲解文本并展示诚实错误重试态。
+
+### 开源标杆前端交互与循证体验第 1 批精修（2026-11-26）
+
+- **`UI-1` 内容形状骨架屏占位体系（`ContentSkeleton.vue`）**：基于 `styles-design-system.css` 令牌封装 `reading` / `flashcard` / `cards` / `list` 四种几何形状骨架占位，遵守 `@media (prefers-reduced-motion: reduce)` 降级并接入 `FeedbackState.vue`、`DashboardView.vue`、`CourseView.vue`、`WrongBookView.vue` 与 `FlashcardsView.vue`，消除异步首屏 CLS 布局跳动。
+- **`UI-2` 全局 `?` 快捷键帮助浮层与 `<KbdBadge>` 键帽组件**：新建 `domain/shortcuts.ts`、`KbdBadge.vue` 与 `KeyboardShortcutsModal.vue`，并在 `App.vue` 顶栏提供助记入口与严格输入框/IME 隔离防护（焦点位于 `input`/`textarea`/`select`/`contenteditable` 或中文输入法组合态时按 `?` 绝不误弹），同时统一 `FlashcardsView.vue` 快捷键提示键帽；支持 `Escape` 关闭与焦点还原。
+- **`FN-1` 助教 `[k]` 引用悬停/聚焦证据气泡（`CitationInlinePopover.vue`）**：在 `MarkdownContent.vue` 与 `TutorAnswerCard.vue` 中将内联 `[k]` 引用升级为可交互且按可视边界自适应锚点的证据气泡（悬停或键盘聚焦显示 `[k]` 三元组 `主体 — 关系 — 客体` 与直达 `/knowledge?entity=...` 的“在图谱中查看”链接，`Escape` 可关闭），同时完整保留点击 `[k]` 展开底部证据抽屉并高亮第 `k` 条及打开右侧焦点抽屉的既有联动，零 `RANKED` 后台提示词泄露。
+- **`FN-2` 错题本知识点分布统计条与“带题干问助教”（`WrongBookView.vue`）**：在错题复习页增加确定性计数统计的知识点分布微统计条（展示题数、占比、累计答错次数，支持点击按知识点筛选/重置），并在每条错题操作列新增不与练习主轮廓冲突的“带题干问助教”快捷按钮（`.wrong-ask-tutor-btn`），携带知识点上下文与题干跳转 `/tutor` 预填输入框，严禁自动触发大模型请求或附带/泄露标准答案；全局四份 CSS（`styles-design-system.css` 33,507 B、`styles.css` 21,392 B、`styles-learning.css` 11,389 B、`styles-graph.css` 4,227 B）合计 **70,515 B**，全仓保持 `0 !important`、`0 missing classes`。

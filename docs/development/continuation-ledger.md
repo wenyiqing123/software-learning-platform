@@ -580,3 +580,17 @@
   - 拉起 NebulaGraph（9669）、只读 Python Bridge（8999，预热后返回 7 条三元组）与最新后端服务，再次验证 `/api/system/status=UP`、匿名 `401`、管理员 `403`，学生调用 `POST /api/ai/feynman/evaluate`（主题 `需求分析`）稳定返回 `200 OK`：`coveredPoints` **2** 条、`missingTriples` **5** 条（全部属于 `evidenceTriples` **7** 条子集，含《软件需求规格说明书》）、`misconceptions` **1** 条自然语言提示且零 `{` 或 JSON 原文、`followUpQuestion` **36** 字符，响应体 **0** 系统提示词泄露。
   - 停止全部本轮临时 Java/Python 进程（8080/8081/8082/8999/5173 监听均已归零），在 MySQL 事务内按主键精确删除本轮临时测试用户及关联记录，复核基线数据库表零脏数据残留（`remaining_test_users=0`、`km_rows=12`、`ai_exp_cnt=12`、`eval_sess_cnt=2`）。
   - 终版全仓基线统一锁定为：后端 **311/311**（192 + 114 + 5）、前端 Vitest **61 文件 / 237 项**、AST **53 文件 / 1,552 用法 / 0 missing**、Playwright **180/180**、构建 **0 error / 0 chunk warning**、CSS `!important` **0**（四文件共 `66,159 B`），并同步封口至 `docs/test-report.md` 与 `docs/毕业设计工程验收报告.md`。
+
+### 开源标杆前端交互与循证体验第 1 批落地记录（2026-11-26）
+
+- **分支与范围边界**：基于干净 `master`（`45398b4`）切出独立分支 `feat/oss-benchmark-opt`，先纳入调研规划 `docs/development/oss-benchmark-optimization-plan.md`（`9033e82`），随后严格按序以独立语义化提交完成第 1 批 4 项纯前端高感知优化（`backend/` 改动 **0 文件**，未触碰 `NF-1`/`NF-2` 与外部 Mecha-QA/Python Bridge/NebulaGraph）：
+  1. **`UI-1`（`d126f43`）**：新增 `ContentSkeleton.vue` 与单测，拓展 `FeedbackState.vue`，并在 `DashboardView`、`CourseView`、`WrongBookView`、`FlashcardsView` 落地令牌化骨架屏占位。
+  2. **`UI-2`（`6589369`）**：新增 `domain/shortcuts.ts`、`KbdBadge.vue`、`KeyboardShortcutsModal.vue` 与单测，升级 `App.vue` 全局 `?` 快捷键帮助浮层（含可编辑元素与 IME 双重防误触及 `Escape`/焦点恢复）与 `FlashcardsView.vue` 键帽提示，补充 `AppRoleNavigation.test.ts` 验证。
+  3. **`FN-1`（`799265a`）**：抽离 `CitationInlinePopover.vue` 并升级 `MarkdownContent.vue` / `TutorAnswerCard.vue` 的 `[k]` 内联引用交互，支持悬停或键盘聚焦显示结构化三元组与直达 `/knowledge?entity=...` 链接并保留既有点击展开高亮抽屉与零 `RANKED` 后台系统提示词泄露；更新 `MarkdownContent.test.ts`、`TutorAnswerCard.test.ts` 与 Playwright `tutor-history` 断言。
+  4. **`FN-2`（`eb10bc6`）**：升级 `WrongBookView.vue` 增加确定性计数统计的知识点错题分布条与点击筛选，并在每条错题增加“带题干问助教”快捷按钮（`.wrong-ask-tutor-btn`，预填 `/tutor` 输入框，绝不自动发起请求或泄露答案）；补充 `WrongBookView.test.ts`（增至 5 项）与 Playwright `wrong-search` 断言。
+- **全量门禁复核结果**：
+  - `git grep -n "!important" frontend/src/`：严格 **0** 命中；`backend/` 变更文件数 **0**。
+  - `npm run build`：通过（**0 error、0 chunk warning**）。
+  - `node scripts/scan-vue-classes.mjs --check`：**65** 个 Vue 文件、**2,114** 处模板类用法、**0 missing classes**。
+  - `npx vitest run --maxWorkers=2`：**74 passed (74)** 个测试文件、**291 passed (291)** 条测试用例全部通过。
+  - `node scripts/authenticated-ui-smoke.mjs`：**198/198** 场景全绿通过（`1440×900` 与 `1280×800` 双视口零溢出、`failures: []`），已目视抽检截图并彻底删除 `frontend/.ui-visual-review`。
