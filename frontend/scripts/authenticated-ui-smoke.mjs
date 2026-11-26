@@ -233,8 +233,8 @@ const visualScenarios = {
     { route: '/courses?courseId=3&sectionId=32', name: 'course-notes', async check(page) {
       await page.getByTestId('course-section-bookmark').click()
       await page.getByTestId('course-bookmark-notice').waitFor()
-      const toggle = page.getByRole('button', { name: /展开笔记/ })
-      if (await toggle.count()) await toggle.click()
+      await page.getByTestId('course-section-note').click()
+      await page.getByLabel('笔记内容').waitFor({ state: 'visible' })
       await page.getByText('先画系统边界').waitFor()
     } },
     { route: '/courses?courseId=3&sectionId=32', name: 'course-scroll-read', async check(page) {

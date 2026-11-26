@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Bookmark, BookmarkPlus, GraduationCap, MessageSquarePlus } from '@lucide/vue'
+import { Bookmark, BookmarkPlus, GraduationCap, MessageSquarePlus, Pencil } from '@lucide/vue'
 import { api } from '../api/client'
 import SectionHeading from '../components/SectionHeading.vue'
 import FeedbackState from '../components/FeedbackState.vue'
@@ -32,8 +32,10 @@ const readingArticleRef = ref<HTMLElement | null>(null)
 const notesPanelRef = ref<{
   prefillExcerpt: (payload: { text: string; title?: string }) => void
   toggleBookmark: () => Promise<boolean>
+  openComposer: () => Promise<void>
 } | null>(null)
 const sectionBookmarked = ref(false)
+const sectionNotesCount = ref(0)
 const bookmarkSaving = ref(false)
 const bookmarkNotice = ref('')
 const selectionToolbar = ref({ visible: false, text: '', top: 0, left: 0 })
@@ -157,6 +159,12 @@ function jumpToAnchor(id: string) {
 }
 function onPanelBookmarkChange(bookmarked: boolean) {
   sectionBookmarked.value = bookmarked
+}
+function onPanelNotesCountChange(count: number) {
+  sectionNotesCount.value = count
+}
+function openSectionNotes() {
+  void notesPanelRef.value?.openComposer()
 }
 async function toggleSectionBookmark() {
   if (!notesPanelRef.value || bookmarkSaving.value) return
@@ -304,6 +312,7 @@ watch(activeId, (next, prev) => {
   autoReadNotice.value = ''
   bookmarkNotice.value = ''
   sectionBookmarked.value = false
+  sectionNotesCount.value = 0
   hideSelectionToolbar()
   activeAnchorId.value = 'anchor-objectives'
   const metrics = getWindowScrollMetrics()
@@ -359,7 +368,7 @@ onBeforeUnmount(() => {
       <div v-else class="study-layout">
         <div class="study-rail">
           <details id="course-outline" class="study-outline" :open="outlineOpen" @toggle="outlineOpen = ($event.target as HTMLDetailsElement).open" aria-label="章节目录"><summary class="outline-heading"><h2>章节目录</h2><span>{{ sections.length }} 节</span></summary><div><section v-for="(chapter, index) in study.chapters" :key="chapter.id"><h3>{{ String(index + 1).padStart(2, '0') }} {{ chapter.name }}</h3><p>{{ chapter.description }}</p><button v-for="section in chapter.sections" :key="section.id" class="outline-item" :class="{ active: active?.id === section.id }" :aria-current="active?.id === section.id ? 'page' : undefined" :aria-controls="'section-' + section.id" @click="chooseSection(section)"><span class="outline-status" aria-hidden="true">{{ section.completed ? '✓' : '○' }}</span><span>{{ section.title }}<small>{{ section.completed ? '已完成阅读' : section.knowledgePointName }}</small></span></button></section></div></details>
-          <LearningNotesPanel v-if="active" ref="notesPanelRef" :section-id="active.id" :knowledge-point-id="active.knowledgePointId" start-collapsed @bookmark-change="onPanelBookmarkChange" />
+          <LearningNotesPanel v-if="active" ref="notesPanelRef" :section-id="active.id" :knowledge-point-id="active.knowledgePointId" start-collapsed @bookmark-change="onPanelBookmarkChange" @notes-count-change="onPanelNotesCountChange" />
         </div>
         <article v-if="active" ref="readingArticleRef" :id="'section-' + active.id" class="study-reading reading-flow" :aria-labelledby="'section-title-' + active.id" @mouseup="inspectTextSelection">
           <div class="reading-progress-bar no-print" role="progressbar" aria-label="当前小节阅读滚动进度" :aria-valuenow="readingProgressPct" aria-valuemin="0" aria-valuemax="100" data-testid="reading-progress-bar">
@@ -371,19 +380,31 @@ onBeforeUnmount(() => {
               <p class="eyebrow">小节 {{ position + 1 }} / {{ sections.length }} · {{ active.knowledgePointName }}</p>
               <h2 :id="'section-title-' + active.id">{{ active.title }}</h2>
             </div>
-            <button
-              type="button"
-              class="section-bookmark-btn no-print"
-              :class="{ active: sectionBookmarked }"
-              :disabled="bookmarkSaving"
-              :aria-pressed="sectionBookmarked"
-              :aria-label="sectionBookmarked ? '取消收藏当前小节' : '收藏当前小节'"
-              data-testid="course-section-bookmark"
-              @click="toggleSectionBookmark"
-            >
-              <Bookmark :size="15" :fill="sectionBookmarked ? 'currentColor' : 'none'" aria-hidden="true" />
-              <span>{{ sectionBookmarked ? '已收藏' : '收藏本节' }}</span>
-            </button>
+            <div class="reading-header-actions no-print">
+              <button
+                type="button"
+                class="section-bookmark-btn"
+                aria-label="展开当前小节笔记并写笔记"
+                data-testid="course-section-note"
+                @click="openSectionNotes"
+              >
+                <Pencil :size="15" aria-hidden="true" />
+                <span>{{ sectionNotesCount ? `记笔记 (${sectionNotesCount})` : '记笔记' }}</span>
+              </button>
+              <button
+                type="button"
+                class="section-bookmark-btn"
+                :class="{ active: sectionBookmarked }"
+                :disabled="bookmarkSaving"
+                :aria-pressed="sectionBookmarked"
+                :aria-label="sectionBookmarked ? '取消收藏当前小节' : '收藏当前小节'"
+                data-testid="course-section-bookmark"
+                @click="toggleSectionBookmark"
+              >
+                <Bookmark :size="15" :fill="sectionBookmarked ? 'currentColor' : 'none'" aria-hidden="true" />
+                <span>{{ sectionBookmarked ? '已收藏' : '收藏本节' }}</span>
+              </button>
+            </div>
           </div>
           <p v-if="bookmarkNotice" class="bookmark-feedback-status no-print" role="status" data-testid="course-bookmark-notice">{{ bookmarkNotice }}</p>
           <nav v-if="sectionAnchors.length > 1" class="section-toc no-print" aria-label="本节段落目录" data-testid="section-toc">
@@ -402,7 +423,7 @@ onBeforeUnmount(() => {
           <section v-for="(block, blockIdx) in active.content" :id="'anchor-block-' + blockIdx" :key="block.heading" class="reading-block"><h3>{{ block.heading }}</h3><MarkdownContent v-for="paragraph in block.paragraphs" :key="paragraph" :content="paragraph" /></section>
            <section v-if="active.resources.length" id="anchor-resources" class="study-resources"><h3>延伸阅读</h3><div v-for="resource in active.resources" :key="resource.url"><a v-if="safeUrl(resource.url)" :href="safeUrl(resource.url)" target="_blank" rel="noopener noreferrer">{{ resource.title }} ↗</a><strong v-else>{{ resource.title }}</strong><p>{{ resource.description }}</p></div></section>
           <LearningContextActions :context="{ courseId: courseId ?? undefined, sectionId: active.id, knowledgePointId: active.knowledgePointId, entity: active.graphEntity }" />
-           <footer class="study-footer"><div><div class="study-footer-actions"><button class="button button-outline" :disabled="saving" @click="markRead">{{ saving ? '正在保存…' : active.completed ? '✓ 已读 · 撤销标记' : '标记本节已读' }}</button><button type="button" class="section-bookmark-btn no-print" :class="{ active: sectionBookmarked }" :disabled="bookmarkSaving" :aria-pressed="sectionBookmarked" data-testid="course-footer-bookmark" @click="toggleSectionBookmark"><Bookmark :size="14" :fill="sectionBookmarked ? 'currentColor' : 'none'" aria-hidden="true" /><span>{{ sectionBookmarked ? '已收藏本节' : '收藏本节' }}</span></button></div><p>滚动至页面底部自动标记本节已读；阅读记录与练习掌握度分别统计。</p><span v-if="autoReadNotice" class="auto-read-status" role="status">{{ autoReadNotice }}</span><span v-if="progressError" role="alert">{{ progressError }}</span></div><div class="section-paging"><button class="text-button" :disabled="position <= 0" @click="sections[position - 1] && chooseSection(sections[position - 1]!)">上一节</button><button class="text-button" :disabled="position >= sections.length - 1" @click="sections[position + 1] && chooseSection(sections[position + 1]!)">下一节 →</button></div></footer>
+           <footer class="study-footer"><div><div class="study-footer-actions"><button class="button button-outline" :disabled="saving" @click="markRead">{{ saving ? '正在保存…' : active.completed ? '✓ 已读 · 撤销标记' : '标记本节已读' }}</button><button type="button" class="section-bookmark-btn no-print" :class="{ active: sectionBookmarked }" :disabled="bookmarkSaving" :aria-pressed="sectionBookmarked" data-testid="course-footer-bookmark" @click="toggleSectionBookmark"><Bookmark :size="14" :fill="sectionBookmarked ? 'currentColor' : 'none'" aria-hidden="true" /><span>{{ sectionBookmarked ? '已收藏本节' : '收藏本节' }}</span></button><button type="button" class="section-bookmark-btn no-print" data-testid="course-footer-note" @click="openSectionNotes"><Pencil :size="14" aria-hidden="true" /><span>{{ sectionNotesCount ? `记笔记 (${sectionNotesCount})` : '记一条笔记' }}</span></button></div><p>滚动至页面底部自动标记本节已读；阅读记录与练习掌握度分别统计。</p><span v-if="autoReadNotice" class="auto-read-status" role="status">{{ autoReadNotice }}</span><span v-if="progressError" role="alert">{{ progressError }}</span></div><div class="section-paging"><button class="text-button" :disabled="position <= 0" @click="sections[position - 1] && chooseSection(sections[position - 1]!)">上一节</button><button class="text-button" :disabled="position >= sections.length - 1" @click="sections[position + 1] && chooseSection(sections[position + 1]!)">下一节 →</button></div></footer>
         </article>
       </div>
     </template>
@@ -436,6 +457,7 @@ onBeforeUnmount(() => {
 .selection-tool-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border:0;border-radius:var(--radius-xs);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
 .selection-tool-btn:hover{color:var(--accent-strong);background:var(--accent-soft)}
 .reading-section-header{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px 16px;margin-bottom:14px}
+.reading-header-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .reading-section-header h2{margin:0;font-size:24px;line-height:1.35}
 .section-bookmark-btn{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:6px 12px;border:1px solid var(--border-default);border-radius:var(--radius-sm);background:var(--surface-soft);color:var(--text-muted);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:color var(--motion),border-color var(--motion),background var(--motion)}
 .section-bookmark-btn:hover:not(:disabled),.section-bookmark-btn.active{color:var(--accent-strong);border-color:var(--border-focus);background:var(--accent-soft)}

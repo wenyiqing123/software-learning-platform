@@ -272,6 +272,40 @@ describe('CourseView', () => {
     expect(wrapper.get('.notes-bookmark').classes()).not.toContain('active')
     wrapper.unmount()
   })
+
+  it('exposes top and footer note buttons that reflect count and open the collapsed note composer', async () => {
+    const emptyMount = await mountCourseView({ courseId: '1', sectionId: '101' })
+    expect(emptyMount.wrapper.find('[aria-label="笔记内容"]').exists()).toBe(false)
+    expect(emptyMount.wrapper.get('[data-testid="course-section-note"]').text()).toContain('记笔记')
+    expect(emptyMount.wrapper.get('[data-testid="course-footer-note"]').text()).toContain('记一条笔记')
+
+    await emptyMount.wrapper.get('[data-testid="course-footer-note"]').trigger('click')
+    await flushPromises()
+    expect(emptyMount.wrapper.find('[aria-label="笔记内容"]').exists()).toBe(true)
+    emptyMount.wrapper.unmount()
+
+    http.get.mockImplementation(async (path: string) => {
+      if (path === '/courses') return { data: [{ id: 1, name: '软件工程导论', term: '2026秋', description: '软件工程核心基础' }] }
+      if (path === '/courses/1/study') return { data: structuredClone(mockStudyData) }
+      if (path === '/learning/notes') {
+        return {
+          data: [{ id: 7, sectionId: 101, knowledgePointId: 11, title: '边界提醒', content: '先画系统边界', updatedAt: '2026-11-26 19:00' }],
+        }
+      }
+      if (path === '/learning/bookmarks') return { data: { bookmarked: false } }
+      throw new Error('unexpected path: ' + path)
+    })
+
+    const { wrapper } = await mountCourseView({ courseId: '1', sectionId: '101' })
+    expect(wrapper.find('[aria-label="笔记内容"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="course-section-note"]').text()).toContain('记笔记 (1)')
+    expect(wrapper.get('[data-testid="course-footer-note"]').text()).toContain('记笔记 (1)')
+
+    await wrapper.get('[data-testid="course-section-note"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[aria-label="笔记内容"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
 })
 
 afterEach(() => {

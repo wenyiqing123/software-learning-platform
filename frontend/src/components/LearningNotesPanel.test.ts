@@ -24,6 +24,7 @@ describe('LearningNotesPanel', () => {
     await flushPromises()
     expect(http.put).toHaveBeenCalledWith('/learning/bookmarks', { sectionId: 101, bookmarked: true })
     expect(wrapper.emitted('bookmark-change')?.some((payload) => payload[0] === true)).toBe(true)
+    expect(wrapper.emitted('notes-count-change')?.some((payload) => payload[0] === 0)).toBe(true)
 
     await wrapper.get('[aria-label="笔记标题"]').setValue('验收条件')
     await wrapper.get('[aria-label="笔记内容"]').setValue('记录验收条件')
