@@ -92,7 +92,7 @@ describe('MarkdownContent', () => {
     wrapper.unmount()
   })
 
-  it('renders deterministic inline citation markers with hover tooltip preview and skips ungrounded text', async () => {
+  it('renders deterministic inline citation markers with hover/focus popover, Escape close, and graph navigation link', async () => {
     const wrapper = mount(MarkdownContent, {
       props: {
         content: '需求分析用于编写需求规格说明书。也可以用 `需求分析` 代码块讨论无关内容。',
@@ -104,10 +104,26 @@ describe('MarkdownContent', () => {
     })
 
     const btn = wrapper.get('[data-testid="inline-citation-1"]')
+    const popover = wrapper.get('[data-testid="citation-popover-1"]')
     expect(btn.text()).toBe('[1]')
     expect(wrapper.find('[data-testid="inline-citation-2"]').exists()).toBe(false)
     expect(wrapper.findAll('.inline-citation-btn')).toHaveLength(1)
     expect(wrapper.get('.citation-hover-preview').text()).toContain('需求分析 — 输出 — 需求规格说明书')
+    expect(popover.classes()).not.toContain('is-open')
+
+    await btn.trigger('mouseenter')
+    expect(popover.classes()).toContain('is-open')
+    expect(btn.attributes('aria-expanded')).toBe('true')
+
+    const graphBtn = wrapper.get('[data-testid="citation-popover-graph-1"]')
+    await graphBtn.trigger('click')
+    expect(wrapper.emitted('open-graph')).toEqual([['需求分析']])
+    expect(popover.classes()).not.toContain('is-open')
+
+    await btn.trigger('focusin')
+    expect(popover.classes()).toContain('is-open')
+    await btn.trigger('keydown.esc')
+    expect(popover.classes()).not.toContain('is-open')
 
     await btn.trigger('click')
     expect(wrapper.emitted('select-citation')).toEqual([[1]])

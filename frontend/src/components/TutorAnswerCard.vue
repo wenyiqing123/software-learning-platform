@@ -161,6 +161,7 @@ onBeforeUnmount(() => {
         :content="cleanedAnswer"
         :citations="citationReport.triples"
         @select-citation="focusEvidenceCitation"
+        @open-graph="entity => emit('open-graph', entity)"
       />
     </div>
 

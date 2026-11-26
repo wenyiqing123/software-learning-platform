@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { Check, Copy, GitBranch } from '@lucide/vue'
 import { alignSentenceCitations, splitMarkdownLineIntoSentences, type NormalizedCitationTriple } from '../domain/citationAlignment'
 import { parseInlineMarkdown, parseSimpleMarkdown, type InlineSpan } from '../domain/markdown'
+import CitationInlinePopover from './CitationInlinePopover.vue'
 import MermaidDiagram from './MermaidDiagram.vue'
 
 const props = withDefaults(defineProps<{
@@ -15,11 +16,11 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   'select-citation': [index: number]
+  'open-graph': [entity: string]
 }>()
 
 const blocks = computed(() => parseSimpleMarkdown(props.content))
 const copyResult = ref<{ index: number; text: string; status: '已复制' | '复制失败' }>()
-const instanceUid = Math.random().toString(36).slice(2, 7)
 
 const citationMap = computed(() => {
   const map = new Map<number, NormalizedCitationTriple>()
@@ -92,27 +93,15 @@ async function copyCode(index: number, text: string) {
               <code v-else-if="span.kind === 'code'">{{ span.text }}</code>
               <template v-else>{{ span.text }}</template>
             </template>
-            <span
+            <CitationInlinePopover
               v-for="cIdx in sent.citationIndices"
               :key="`c-${cIdx}`"
-              class="citation-ref-wrap"
-            >
-              <button
-                type="button"
-                class="inline-citation-btn"
-                :aria-label="`查看图谱证据 [${cIdx}]：${triplePreview(cIdx)}`"
-                :aria-describedby="`cite-tip-${instanceUid}-${index}-${lineIndex}-${sentIdx}-${cIdx}`"
-                :data-testid="`inline-citation-${cIdx}`"
-                @click="emit('select-citation', cIdx)"
-              >[{{ cIdx }}]</button>
-              <span
-                :id="`cite-tip-${instanceUid}-${index}-${lineIndex}-${sentIdx}-${cIdx}`"
-                class="citation-hover-preview"
-                role="tooltip"
-              >
-                <strong>[{{ cIdx }}]</strong> {{ triplePreview(cIdx) }}
-              </span>
-            </span>
+              :index="cIdx"
+              :triple="citationMap.get(cIdx)"
+              :preview="triplePreview(cIdx)"
+              @select-citation="emit('select-citation', $event)"
+              @open-graph="emit('open-graph', $event)"
+            />
           </template>
         </template>
       </p>
@@ -126,27 +115,15 @@ async function copyCode(index: number, text: string) {
               <code v-else-if="span.kind === 'code'">{{ span.text }}</code>
               <template v-else>{{ span.text }}</template>
             </template>
-            <span
+            <CitationInlinePopover
               v-for="cIdx in sent.citationIndices"
               :key="`c-${cIdx}`"
-              class="citation-ref-wrap"
-            >
-              <button
-                type="button"
-                class="inline-citation-btn"
-                :aria-label="`查看图谱证据 [${cIdx}]：${triplePreview(cIdx)}`"
-                :aria-describedby="`cite-tip-${instanceUid}-${index}-${lineIndex}-${sentIdx}-${cIdx}`"
-                :data-testid="`inline-citation-${cIdx}`"
-                @click="emit('select-citation', cIdx)"
-              >[{{ cIdx }}]</button>
-              <span
-                :id="`cite-tip-${instanceUid}-${index}-${lineIndex}-${sentIdx}-${cIdx}`"
-                class="citation-hover-preview"
-                role="tooltip"
-              >
-                <strong>[{{ cIdx }}]</strong> {{ triplePreview(cIdx) }}
-              </span>
-            </span>
+              :index="cIdx"
+              :triple="citationMap.get(cIdx)"
+              :preview="triplePreview(cIdx)"
+              @select-citation="emit('select-citation', $event)"
+              @open-graph="emit('open-graph', $event)"
+            />
           </template>
         </li>
       </ol>
@@ -160,27 +137,15 @@ async function copyCode(index: number, text: string) {
               <code v-else-if="span.kind === 'code'">{{ span.text }}</code>
               <template v-else>{{ span.text }}</template>
             </template>
-            <span
+            <CitationInlinePopover
               v-for="cIdx in sent.citationIndices"
               :key="`c-${cIdx}`"
-              class="citation-ref-wrap"
-            >
-              <button
-                type="button"
-                class="inline-citation-btn"
-                :aria-label="`查看图谱证据 [${cIdx}]：${triplePreview(cIdx)}`"
-                :aria-describedby="`cite-tip-${instanceUid}-${index}-${lineIndex}-${sentIdx}-${cIdx}`"
-                :data-testid="`inline-citation-${cIdx}`"
-                @click="emit('select-citation', cIdx)"
-              >[{{ cIdx }}]</button>
-              <span
-                :id="`cite-tip-${instanceUid}-${index}-${lineIndex}-${sentIdx}-${cIdx}`"
-                class="citation-hover-preview"
-                role="tooltip"
-              >
-                <strong>[{{ cIdx }}]</strong> {{ triplePreview(cIdx) }}
-              </span>
-            </span>
+              :index="cIdx"
+              :triple="citationMap.get(cIdx)"
+              :preview="triplePreview(cIdx)"
+              @select-citation="emit('select-citation', $event)"
+              @open-graph="emit('open-graph', $event)"
+            />
           </template>
         </li>
       </ul>
@@ -196,27 +161,15 @@ async function copyCode(index: number, text: string) {
                 <code v-else-if="span.kind === 'code'">{{ span.text }}</code>
                 <template v-else>{{ span.text }}</template>
               </template>
-              <span
+              <CitationInlinePopover
                 v-for="cIdx in sent.citationIndices"
                 :key="`c-${cIdx}`"
-                class="citation-ref-wrap"
-              >
-                <button
-                  type="button"
-                  class="inline-citation-btn"
-                  :aria-label="`查看图谱证据 [${cIdx}]：${triplePreview(cIdx)}`"
-                  :aria-describedby="`cite-tip-${instanceUid}-${index}-${lineIndex}-${sentIdx}-${cIdx}`"
-                  :data-testid="`inline-citation-${cIdx}`"
-                  @click="emit('select-citation', cIdx)"
-                >[{{ cIdx }}]</button>
-                <span
-                  :id="`cite-tip-${instanceUid}-${index}-${lineIndex}-${sentIdx}-${cIdx}`"
-                  class="citation-hover-preview"
-                  role="tooltip"
-                >
-                  <strong>[{{ cIdx }}]</strong> {{ triplePreview(cIdx) }}
-                </span>
-              </span>
+                :index="cIdx"
+                :triple="citationMap.get(cIdx)"
+                :preview="triplePreview(cIdx)"
+                @select-citation="emit('select-citation', $event)"
+                @open-graph="emit('open-graph', $event)"
+              />
             </template>
           </template>
         </p>
@@ -288,10 +241,4 @@ async function copyCode(index: number, text: string) {
 .mermaid-streaming-bar{min-height:32px}
 .mermaid-streaming-box pre{margin:0;padding:12px 14px;overflow-x:auto}
 .mermaid-streaming-box .language-mermaid{font-family:ui-monospace,monospace}
-.citation-ref-wrap{position:relative;display:inline-block;margin-left:2px;vertical-align:baseline}
-.inline-citation-btn{display:inline-flex;align-items:center;justify-content:center;min-height:18px;padding:0 4px;color:var(--accent-strong);background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 24%,transparent);border-radius:4px;font-size:11px;font-weight:650;line-height:1.2;vertical-align:super;cursor:pointer;transition:background-color var(--motion),border-color var(--motion)}
-.inline-citation-btn:hover,.inline-citation-btn:focus-visible{background:color-mix(in srgb,var(--accent) 18%,var(--surface));border-color:var(--border-focus);outline:none}
-.citation-hover-preview{position:absolute;left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);z-index:30;display:none;min-width:190px;max-width:300px;padding:7px 10px;color:var(--text);background:var(--surface);border:1px solid var(--border-default);border-radius:var(--radius-sm);box-shadow:var(--shadow-md);font-size:12px;font-weight:450;line-height:1.45;white-space:normal;overflow-wrap:anywhere;pointer-events:none}
-.citation-hover-preview strong{color:var(--accent-strong);margin-right:4px}
-.citation-ref-wrap:hover .citation-hover-preview,.citation-ref-wrap:focus-within .citation-hover-preview{display:block}
 </style>

@@ -132,4 +132,30 @@ describe('TutorAnswerCard', () => {
     expect(wrapper.emitted('hint')).toHaveLength(1)
     expect(wrapper.emitted('open-graph')?.[0]).toEqual(['需求分析'])
   })
+
+  it('opens graph navigation from citation hover popover link without leaking backend prompts', async () => {
+    const wrapper = mount(TutorAnswerCard, {
+      props: {
+        item: {
+          mode: 'RANKED',
+          prompt: 'RANKED_SYSTEM_SECRET_CONSTRAINT',
+          answer: '需求分析输出软件需求规格说明书。',
+          triples: [
+            { subject: '需求分析', predicate: '输出', object: '软件需求规格说明书' },
+          ],
+        },
+      },
+    })
+
+    const citeBtn = wrapper.get('[data-testid="inline-citation-1"]')
+    await citeBtn.trigger('mouseenter')
+    const popover = wrapper.get('[data-testid="citation-popover-1"]')
+    expect(popover.classes()).toContain('is-open')
+    expect(popover.text()).toContain('需求分析')
+    expect(popover.text()).toContain('软件需求规格说明书')
+    expect(popover.text()).not.toContain('RANKED_SYSTEM_SECRET_CONSTRAINT')
+
+    await wrapper.get('[data-testid="citation-popover-graph-1"]').trigger('click')
+    expect(wrapper.emitted('open-graph')?.[0]).toEqual(['需求分析'])
+  })
 })

@@ -380,7 +380,18 @@ const visualScenarios = {
       await page.locator('[data-testid="mermaid-svg-stage"] svg').waitFor()
       const evidenceDetails = page.locator('.tutor-assistant-body details.evidence-block')
       if (await evidenceDetails.evaluate(el => el.open)) throw new Error('Tutor graph evidence should be collapsed by default')
-      await page.getByTestId('inline-citation-1').first().click()
+      const firstCite = page.getByTestId('inline-citation-1').first()
+      await firstCite.hover()
+      const popover = page.getByTestId('citation-popover-1').first()
+      await popover.waitFor({ state: 'visible' })
+      await page.waitForFunction(() => {
+        const pop = document.querySelector('[data-testid="citation-popover-1"]')
+        const link = pop?.querySelector('[data-testid="citation-popover-graph-1"]')
+        if (!pop || !link) return false
+        const r = pop.getBoundingClientRect()
+        return r.width > 120 && r.left >= 0 && r.right <= window.innerWidth
+      })
+      await firstCite.click()
       await page.waitForFunction(() => {
         const d = document.querySelector('.tutor-assistant-body details.evidence-block')
         const highlighted = document.querySelector('[data-testid="evidence-triple-1"]')
