@@ -47,4 +47,21 @@ class QuizServiceValidationTest {
         assertThatThrownBy(()->service.submit(9L,1L,List.of("NONEXISTENT"))).isInstanceOfSatisfying(ResponseStatusException.class,e->assertThat(e.getStatusCode().value()).isEqualTo(400));
         verifyNoInteractions(attempts,wrong,publisher);
     }
+
+    @Test void wrongQuestionsIncludeMasteredOrdersOpenBeforeMastered() {
+        var questions = mock(QuizQuestionMapper.class);
+        var wrong = mock(WrongQuestionMapper.class);
+        var mastered = new edu.wfust.learning.platform.entity.WrongQuestionEntity();
+        mastered.setId(1L); mastered.setUserId(9L); mastered.setQuestionId(101L); mastered.setWrongCount(3); mastered.setStatus("MASTERED");
+        var open = new edu.wfust.learning.platform.entity.WrongQuestionEntity();
+        open.setId(2L); open.setUserId(9L); open.setQuestionId(102L); open.setWrongCount(1); open.setStatus("UNMASTERED");
+        when(wrong.selectList(any())).thenReturn(List.of(mastered, open));
+        var q1 = new QuizQuestionEntity(); q1.setId(101L); q1.setStem("已掌握题");
+        var q2 = new QuizQuestionEntity(); q2.setId(102L); q2.setStem("待复习题");
+        when(questions.selectById(101L)).thenReturn(q1);
+        when(questions.selectById(102L)).thenReturn(q2);
+        var service = new QuizService(questions, mock(QuizAttemptMapper.class), wrong, mock(KnowledgePointMapper.class), new ObjectMapper(), mock(LearningEventPublisher.class));
+        var rows = service.wrongQuestions(9L, true);
+        assertThat(rows).extracting(QuizService.WrongQuestionView::status).containsExactly("UNMASTERED", "MASTERED");
+    }
 }

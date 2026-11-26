@@ -12,6 +12,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/', component: () => import('./views/DashboardView.vue'), meta: { roles: ['STUDENT', 'ADMIN'] } },
   { path: '/dashboard', component: () => import('./views/DashboardView.vue'), meta: { roles: ['STUDENT'] } },
   { path: '/courses', component: () => import('./views/CourseView.vue'), meta: { roles: ['STUDENT'] } },
+  { path: '/notes', component: () => import('./views/NotesAndBookmarksView.vue'), meta: { roles: ['STUDENT'] } },
   { path: '/knowledge', component: () => import('./views/GraphView.vue'), meta: { roles: ['STUDENT'] } },
   { path: '/mastery-map', component: () => import('./views/MasteryMapView.vue'), meta: { roles: ['STUDENT'] } },
   { path: '/tutor', component: () => import('./views/TutorView.vue'), meta: { roles: ['STUDENT'] } },

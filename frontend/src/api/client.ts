@@ -4,6 +4,7 @@ import * as course from './course'
 import * as evaluation from './evaluation'
 import * as experiment from './experiment'
 import * as knowledge from './knowledge'
+import * as notes from './notes'
 import * as practice from './practice'
 import * as recommendation from './recommendation'
 import * as system from './system'
@@ -21,6 +22,7 @@ export const learningApi = {
   ...auth,
   ...course,
   ...knowledge,
+  ...notes,
   ...practice,
   ...evaluation,
   ...experiment,

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Graph } from '@antv/g6'
 import { ArrowRight, CircleAlert, Clock3, Network, RotateCcw } from '@lucide/vue'
 import { api, apiError, learningApi, type MasteryMap, type MasteryMapNode } from '../api/client'
@@ -20,9 +20,11 @@ import LearningContextActions from '../components/LearningContextActions.vue'
 
 interface Course { id: number; name: string; term: string }
 const router = useRouter()
+const route = useRoute()
 const host = ref<HTMLElement | null>(null)
 const courses = ref<Course[]>([])
-const courseId = ref<number | undefined>()
+const courseId = ref<number | undefined>(Number(route.query.courseId) || undefined)
+const statusFilter = ref<'ALL' | 'WEAK' | 'DUE' | 'BLOCKED' | 'MASTERED'>('ALL')
 const map = ref<MasteryMap | null>(null)
 const loading = ref(true)
 const error = ref('')
@@ -34,6 +36,21 @@ let graph: GraphViewportInstance | null = null
 let viewportSync: ReturnType<typeof bindGraphViewportSync> | null = null
 
 const selectedNode = computed(() => map.value?.nodes.find(node => node.id === selectedNodeId.value) ?? null)
+const filteredNodes = computed(() => {
+  const nodes = map.value?.nodes ?? []
+  switch (statusFilter.value) {
+    case 'WEAK':
+      return nodes.filter(node => effectiveMasteryPercent(node) < 60)
+    case 'DUE':
+      return nodes.filter(node => Boolean(retentionAlertLabel(node)) || node.dueReviewCount > 0)
+    case 'BLOCKED':
+      return nodes.filter(node => node.status === 'BLOCKED')
+    case 'MASTERED':
+      return nodes.filter(node => node.status === 'MASTERED')
+    default:
+      return nodes
+  }
+})
 
 function destroyGraph() {
   viewportSync?.destroy()
@@ -98,6 +115,20 @@ async function loadCourses() {
 function practice(node: MasteryMapNode) { void router.push({ path: '/practice', query: { knowledgePointId: String(node.id) } }) }
 function study(node: MasteryMapNode) { void router.push({ path: '/courses', query: { courseId: String(node.courseId), knowledgePointId: String(node.id) } }) }
 function review() { void router.push({ path: '/review' }) }
+function onCourseChange() {
+  const nextQuery = { ...route.query }
+  if (courseId.value) nextQuery.courseId = String(courseId.value)
+  else delete nextQuery.courseId
+  void router.replace({ query: nextQuery })
+  void load()
+}
+watch(() => route.query.courseId, (raw) => {
+  const next = Number(raw) || undefined
+  if (next !== courseId.value) {
+    courseId.value = next
+    void load()
+  }
+})
 onMounted(async () => { await loadCourses(); await load() })
 onBeforeUnmount(destroyGraph)
 </script>
@@ -108,7 +139,7 @@ onBeforeUnmount(destroyGraph)
       <button class="button button-outline" :disabled="loading" @click="load"><RotateCcw :size="15" />刷新</button>
     </SectionHeading>
     <div v-if="error" class="inline-notice" role="alert"><CircleAlert :size="16" />{{ error }}<button class="text-button" @click="load">重试</button></div>
-    <section class="mastery-controls"><label><Network :size="15" />课程<select v-model.number="courseId" @change="load"><option :value="undefined">全部课程</option><option v-for="course in courses" :key="course.id" :value="course.id">{{ course.name }} · {{ course.term }}</option></select></label><span v-if="map" class="mastery-summary">{{ map.courseName }} · {{ map.nodes.length }} 个知识点 · {{ map.edges.length }} 条先修关系</span></section>
+    <section class="mastery-controls"><label><Network :size="15" />课程<select v-model.number="courseId" @change="onCourseChange"><option :value="undefined">全部课程</option><option v-for="course in courses" :key="course.id" :value="course.id">{{ course.name }} · {{ course.term }}</option></select></label><span v-if="map" class="mastery-summary">{{ map.courseName }} · {{ map.nodes.length }} 个知识点 · {{ map.edges.length }} 条先修关系</span></section>
     <div v-if="loading" class="empty-state"><span class="spinner"></span><strong>正在汇总个人掌握记录</strong></div>
     <template v-else-if="map">
       <VisualizationViewport title="个人掌握关系" description="颜色表示当前掌握状态；可切换 2D/3D 视图并从节点继续学习。" :mode="renderMode" :status="renderMode === '3d' ? 'Three.js 3D' : 'G6 2D'" :loading="loading" :error="error" :empty="!map.nodes.length" @retry="load" @reset="load" @focus="focusSelected" @mode-change="switchRenderMode" @fullscreen-change="onFullscreenChange">
@@ -130,8 +161,12 @@ onBeforeUnmount(destroyGraph)
       </VisualizationViewport>
       <GraphEvidenceDrawer v-model="evidenceOpen" :node="selectedNode?.name || ''" title="掌握图谱证据" empty-text="掌握图谱只使用当前账户的 MySQL 学习记录和课程先修配置；本视图不伪造 NebulaGraph 证据。" />
       <p class="mastery-retention-rule" data-testid="mastery-retention-rule"><Clock3 :size="14" aria-hidden="true" /><span>{{ RETENTION_RULE_SUMMARY }}</span></p>
-      <section class="mastery-node-list">
-        <article v-for="node in map.nodes" :key="node.id" role="button" tabindex="0" class="mastery-node" :class="[statusClass(node.status), { selected: selectedNodeId === node.id }]" @click="selectedNodeId = node.id; evidenceOpen = true" @keydown.enter.prevent="selectedNodeId = node.id; evidenceOpen = true" @keydown.space.prevent="selectedNodeId = node.id; evidenceOpen = true">
+      <div class="mastery-filter-bar" role="tablist" aria-label="知识点状态筛选">
+        <button v-for="tab in [{ id: 'ALL', label: '全部节点' }, { id: 'WEAK', label: '薄弱待巩固' }, { id: 'DUE', label: '遗忘预警/待复习' }, { id: 'BLOCKED', label: '先修阻塞' }, { id: 'MASTERED', label: '已掌握' }]" :key="tab.id" type="button" role="tab" class="mastery-filter-chip" :class="{ active: statusFilter === tab.id }" :aria-selected="statusFilter === tab.id" :data-testid="`mastery-filter-${tab.id}`" @click="statusFilter = tab.id as any">{{ tab.label }}</button>
+      </div>
+      <div v-if="!filteredNodes.length" class="empty-state"><strong>当前筛选条件下暂无知识点</strong><button class="text-button" @click="statusFilter = 'ALL'">查看全部节点</button></div>
+      <section v-else class="mastery-node-list">
+        <article v-for="node in filteredNodes" :key="node.id" role="button" tabindex="0" class="mastery-node" :class="[statusClass(node.status), { selected: selectedNodeId === node.id }]" @click="selectedNodeId = node.id; evidenceOpen = true" @keydown.enter.prevent="selectedNodeId = node.id; evidenceOpen = true" @keydown.space.prevent="selectedNodeId = node.id; evidenceOpen = true">
           <div class="mastery-node-main">
             <div class="mastery-node-top">
               <span class="eyebrow">{{ node.graphEntity }}</span>
@@ -206,5 +241,8 @@ onBeforeUnmount(destroyGraph)
 .mastery-progress i{position:relative;z-index:1;display:block;height:100%;background:var(--accent);border-radius:inherit}
 .mastery-meta{margin-top:8px;color:var(--text-muted);font-size:12px}
 .mastery-review-btn{color:var(--warning-strong)}
+.mastery-filter-bar{display:flex;flex-wrap:wrap;gap:8px}
+.mastery-filter-chip{min-height:30px;padding:4px 12px;color:var(--text-muted);background:var(--surface);border:1px solid var(--border-default);border-radius:var(--radius-pill);font-size:12px;font-weight:600;cursor:pointer}
+.mastery-filter-chip.active{color:var(--accent-strong);background:var(--accent-soft);border-color:var(--border-focus)}
 @media(max-width:700px){.mastery-summary{width:100%;margin-left:0}.mastery-node{grid-template-columns:minmax(0,1fr)}.mastery-canvas{min-height:320px}}
 </style>

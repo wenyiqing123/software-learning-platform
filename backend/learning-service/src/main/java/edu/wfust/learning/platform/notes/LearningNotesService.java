@@ -71,9 +71,27 @@ public class LearningNotesService {
     private List<String> read(String value){try{return json.readValue(value==null?"[]":value,new TypeReference<>(){});}catch(Exception e){return List.of();}}
     private NoteView view(LearningNotesMapper.NoteRow row){return new NoteView(row.getId(),row.getSectionId(),row.getKnowledgePointId(),row.getTitle(),row.getContent(),read(row.getTagsJson()),row.getCreatedAt(),row.getUpdatedAt());}
     private ResponseStatusException bad(String message){return new ResponseStatusException(HttpStatus.BAD_REQUEST,message);}
+    public List<BookmarkItemView> listBookmarks(long userId) {
+        var combined = new java.util.ArrayList<LearningNotesMapper.BookmarkRow>();
+        var sections = mapper.listSectionBookmarks(userId);
+        if (sections != null) combined.addAll(sections);
+        var points = mapper.listPointBookmarks(userId);
+        if (points != null) combined.addAll(points);
+        return combined.stream()
+                .sorted(java.util.Comparator.comparing(
+                        LearningNotesMapper.BookmarkRow::getCreatedAt,
+                        java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())))
+                .map(row -> new BookmarkItemView(
+                        row.getTargetType(), row.getTargetId(), row.getTitle(),
+                        row.getCourseId(), row.getCourseName(), row.getKnowledgePointId(),
+                        row.getKnowledgePointName(), row.getGraphEntity(), row.getCreatedAt()))
+                .toList();
+    }
+
     private record Target(String type,Long id,Long sectionId,Long knowledgePointId){Target(String type,Long id,Long pointId){this(type,id,type.equals("SECTION")?id:null,type.equals("SECTION")?null:pointId);}}
     public record NoteRequest(Long sectionId,Long knowledgePointId,String title,String content,List<String> tags) { }
     public record BookmarkRequest(Long sectionId,Long knowledgePointId,boolean bookmarked) { }
     public record NoteView(Long id,Long sectionId,Long knowledgePointId,String title,String content,List<String> tags,java.time.LocalDateTime createdAt,java.time.LocalDateTime updatedAt) { }
     public record BookmarkView(String targetType,Long targetId,boolean bookmarked) { }
+    public record BookmarkItemView(String targetType,Long targetId,String title,Long courseId,String courseName,Long knowledgePointId,String knowledgePointName,String graphEntity,java.time.LocalDateTime createdAt) { }
 }

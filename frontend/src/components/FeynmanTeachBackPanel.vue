@@ -31,8 +31,40 @@ const emit = defineEmits<{
 
 const router = useRouter()
 
-const knowledgePoint = ref(props.initialKnowledgePoint.trim())
-const studentExplanation = ref('')
+const FEYNMAN_DRAFT_KEY = 'slp:feynman-draft'
+interface FeynmanDraftCache {
+  topic: string
+  explanation: string
+}
+interface FeynmanRoundSnapshot {
+  round: number
+  topic: string
+  coveredCount: number
+  missingCount: number
+  misconceptionCount: number
+  time: string
+}
+
+function readDraftCache(): FeynmanDraftCache | null {
+  try {
+    const raw = window.sessionStorage?.getItem(FEYNMAN_DRAFT_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Partial<FeynmanDraftCache>
+    if (typeof parsed.topic !== 'string' || typeof parsed.explanation !== 'string') return null
+    return { topic: parsed.topic, explanation: parsed.explanation }
+  } catch {
+    return null
+  }
+}
+
+const savedDraft = readDraftCache()
+const initialTopicTrimmed = props.initialKnowledgePoint.trim()
+const knowledgePoint = ref(initialTopicTrimmed || savedDraft?.topic || '')
+const studentExplanation = ref(
+  savedDraft && (!initialTopicTrimmed || savedDraft.topic.trim() === initialTopicTrimmed)
+    ? savedDraft.explanation
+    : '',
+)
 const isComposing = ref(false)
 const points = ref<KnowledgePoint[]>([])
 const pointsLoading = ref(false)
@@ -40,7 +72,23 @@ const pointsLoading = ref(false)
 const loading = ref(false)
 const error = ref('')
 const result = ref<FeynmanEvaluateResponse | null>(null)
+const rounds = ref<FeynmanRoundSnapshot[]>([])
 const explanationRef = ref<HTMLTextAreaElement | null>(null)
+
+watch([knowledgePoint, studentExplanation], ([nextTopic, nextExplanation]) => {
+  try {
+    if (!nextTopic.trim() && !nextExplanation.trim()) {
+      window.sessionStorage?.removeItem(FEYNMAN_DRAFT_KEY)
+      return
+    }
+    window.sessionStorage?.setItem(
+      FEYNMAN_DRAFT_KEY,
+      JSON.stringify({ topic: nextTopic, explanation: nextExplanation }),
+    )
+  } catch {
+    // 忽略隐私模式或配额导致的存储异常
+  }
+})
 
 watch(
   () => props.initialKnowledgePoint,
@@ -94,6 +142,11 @@ function clearForm() {
   studentExplanation.value = ''
   error.value = ''
   result.value = null
+  try {
+    window.sessionStorage?.removeItem(FEYNMAN_DRAFT_KEY)
+  } catch {
+    // 忽略存储清理异常
+  }
 }
 
 function onKeydown(event: KeyboardEvent) {
@@ -103,15 +156,44 @@ function onKeydown(event: KeyboardEvent) {
   }
 }
 
+const currentTopicRounds = computed(() => {
+  const key = result.value?.knowledgePoint || trimmedTopic.value
+  return rounds.value.filter(item => item.topic === key)
+})
+
+const roundDelta = computed(() => {
+  const list = currentTopicRounds.value
+  if (list.length < 2) return null
+  const prev = list[list.length - 2]
+  const latest = list[list.length - 1]
+  return {
+    prevRound: prev.round,
+    latestRound: latest.round,
+    coveredDiff: latest.coveredCount - prev.coveredCount,
+    missingDiff: latest.missingCount - prev.missingCount,
+  }
+})
+
 async function submit() {
   if (!canSubmit.value) return
   loading.value = true
   error.value = ''
   try {
-    result.value = await learningApi.evaluateFeynmanExplanation({
+    const response = await learningApi.evaluateFeynmanExplanation({
       knowledgePoint: trimmedTopic.value,
       studentExplanation: trimmedExplanation.value,
       ...(props.courseId ? { courseId: props.courseId } : {}),
+    })
+    result.value = response
+    const topicKey = response.knowledgePoint || trimmedTopic.value
+    const sameTopicCount = rounds.value.filter(item => item.topic === topicKey).length
+    rounds.value.push({
+      round: sameTopicCount + 1,
+      topic: topicKey,
+      coveredCount: response.coveredPoints.length,
+      missingCount: response.missingTriples.length,
+      misconceptionCount: response.misconceptions.length,
+      time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
     })
   } catch (cause) {
     error.value = apiError(cause, '费曼图谱自检服务或知识检索暂不可用，已保留你的讲解草稿，请稍后重试。')
@@ -262,6 +344,26 @@ function jumpToGraph(entity: string) {
             <Network :size="14" aria-hidden="true" />
             <span>在图谱中查看</span>
           </button>
+        </div>
+
+        <div
+          v-if="currentTopicRounds.length"
+          class="feynman-rounds-bar"
+          data-testid="feynman-rounds-history"
+        >
+          <span class="feynman-rounds-label">自检迭代记录（{{ currentTopicRounds.length }} 轮）</span>
+          <div class="feynman-rounds-chips">
+            <span
+              v-for="item in currentTopicRounds"
+              :key="item.round"
+              class="feynman-round-chip"
+            >
+              第 {{ item.round }} 轮（{{ item.time }}）：覆盖 {{ item.coveredCount }} · 遗漏 {{ item.missingCount }}
+            </span>
+          </div>
+          <span v-if="roundDelta" class="feynman-round-delta">
+            较第 {{ roundDelta.prevRound }} 轮：已覆盖 {{ roundDelta.coveredDiff >= 0 ? `+${roundDelta.coveredDiff}` : roundDelta.coveredDiff }} · 遗漏 {{ roundDelta.missingDiff >= 0 ? `+${roundDelta.missingDiff}` : roundDelta.missingDiff }}
+          </span>
         </div>
 
         <div class="feynman-grid">
@@ -757,6 +859,43 @@ function jumpToGraph(entity: string) {
 
 .triple-object {
   color: var(--text);
+}
+
+.feynman-rounds-bar {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+}
+
+.feynman-rounds-label {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.feynman-rounds-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.feynman-round-chip {
+  padding: 2px 8px;
+  color: var(--text-muted);
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.feynman-round-delta {
+  color: var(--accent-strong);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 @media (max-width: 780px) {

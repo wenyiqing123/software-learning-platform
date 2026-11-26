@@ -33,8 +33,9 @@ public class QuizController {
     }
 
     @GetMapping("/wrong-book")
-    public List<QuizService.WrongQuestionView> wrongBook(Authentication authentication) {
-        return quizService.wrongQuestions(Long.parseLong(authentication.getName()));
+    public List<QuizService.WrongQuestionView> wrongBook(Authentication authentication,
+                                                         @RequestParam(required = false, defaultValue = "false") boolean includeMastered) {
+        return quizService.wrongQuestions(Long.parseLong(authentication.getName()), includeMastered);
     }
 
     @PostMapping("/wrong-book/{wrongQuestionId}/review")

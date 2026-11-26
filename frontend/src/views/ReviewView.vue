@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ArrowRight, BookOpen, Check, CircleAlert, CircleCheck, CircleX, Clock3, Pause, RotateCcw } from '@lucide/vue'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { learningApi, type SpacedReviewCard, type SpacedReviewResult } from '../api/client'
 import SectionHeading from '../components/SectionHeading.vue'
 import LearningContextActions from '../components/LearningContextActions.vue'
@@ -97,7 +97,29 @@ function next() {
   }
 }
 
-onMounted(() => void load())
+function onReviewKey(event: KeyboardEvent) {
+  const target = event.target as HTMLElement | null
+  if (event.altKey || event.ctrlKey || event.metaKey || target?.closest('input, textarea, select, [contenteditable="true"]')) return
+  if (event.key === 'Enter' && result.value && !loading.value && !showingPaused.value) {
+    event.preventDefault()
+    next()
+    return
+  }
+  if (!/^[1-9]$/.test(event.key) || !current.value || result.value || submitting.value || showingPaused.value) return
+  const option = current.value.options[Number(event.key) - 1]
+  if (option) {
+    event.preventDefault()
+    toggle(option.key)
+  }
+}
+
+onMounted(() => {
+  void load()
+  window.addEventListener('keydown', onReviewKey)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onReviewKey)
+})
 </script>
 
 <template>
@@ -135,7 +157,18 @@ onMounted(() => void load())
         <p>连续达到“正确且一般/轻松”：{{ result.consecutiveSuccessfulReviews }} / 3{{ result.mastered ? '，已达到复习掌握条件' : '' }}</p>
         <button class="button button-dark" @click="next">{{ index + 1 < cards.length ? '下一道题' : '完成' }}<ArrowRight :size="15" /></button>
       </div>
-      <div v-if="!showingPaused" class="review-footer"><button class="text-button" @click="router.push('/wrong-book')"><BookOpen :size="14" />错题整理</button><button class="text-button" @click="setState('MASTERED')">手动标记已掌握</button></div>
+      <div v-if="!showingPaused" class="review-footer">
+        <RouterLink
+          v-if="current.sectionId"
+          class="text-button"
+          :to="{ path: '/courses', query: { sectionId: String(current.sectionId) } }"
+          data-testid="review-reread-section"
+        >
+          <BookOpen :size="14" />重读对应小节
+        </RouterLink>
+        <button class="text-button" @click="router.push('/wrong-book')"><BookOpen :size="14" />错题整理</button>
+        <button class="text-button" @click="setState('MASTERED')">手动标记已掌握</button>
+      </div>
     </section>
     <section v-else class="empty-state"><CircleCheck :size="25" /><strong>{{ showingPaused ? '没有暂停的错题' : dueCards.length ? '本次到期复习已完成' : '目前没有到期复习' }}</strong><span>{{ dueCards.length ? '稍后刷新查看新到期任务。' : '错题答错后会进入复习队列。' }}</span><button v-if="showingPaused" class="button button-outline" @click="showDue">返回到期队列</button><button v-else class="button button-outline" @click="router.push('/study-plan')">查看每日计划<ArrowRight :size="15" /></button></section>
   </div>

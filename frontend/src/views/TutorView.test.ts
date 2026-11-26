@@ -450,4 +450,28 @@ describe('TutorView', () => {
       .toBe('数据流图用于表达系统内部的数据流动与加工转换。')
     wrapper.unmount()
   })
+
+  it('switches back to chat when selecting a history session and confirms before deleting', async () => {
+    learning.sessions.mockResolvedValueOnce([{ id: 30, title: '需求分析回顾' }])
+    learning.sessionMessages.mockResolvedValueOnce([{ id: 1, role: 'USER', content: '什么是需求规格说明书？', mode: 'RANKED' }])
+    learning.deleteSession.mockResolvedValueOnce(undefined)
+
+    const wrapper = await mountPage('/tutor?activity=feynman&entity=数据流图')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="feynman-panel"]').exists()).toBe(true)
+
+    await wrapper.get('.tutor-session-select').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('#question-input').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="feynman-panel"]').exists()).toBe(false)
+
+    await wrapper.get('[data-testid="tutor-delete-30"]').trigger('click')
+    expect(learning.deleteSession).not.toHaveBeenCalled()
+    const confirmBtn = document.body.querySelector('[data-testid="confirm-dialog-confirm"]') as HTMLButtonElement | null
+    expect(confirmBtn).not.toBeNull()
+    confirmBtn!.click()
+    await flushPromises()
+    expect(learning.deleteSession).toHaveBeenCalledWith(30)
+    wrapper.unmount()
+  })
 })

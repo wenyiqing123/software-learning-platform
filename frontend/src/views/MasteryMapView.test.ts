@@ -99,4 +99,18 @@ describe('personal mastery map', () => {
     expect(router.currentRoute.value.path).toBe('/review')
     wrapper.unmount()
   })
+
+  it('filters visible mastery nodes by status chip', async () => {
+    const { wrapper } = await mountPage()
+    await flushPromises()
+    expect(wrapper.findAll('.mastery-node')).toHaveLength(2)
+
+    await wrapper.get('[data-testid="mastery-filter-BLOCKED"]').trigger('click')
+    expect(wrapper.findAll('.mastery-node')).toHaveLength(1)
+    expect(wrapper.text()).toContain('数据流图')
+
+    await wrapper.get('[data-testid="mastery-filter-ALL"]').trigger('click')
+    expect(wrapper.findAll('.mastery-node')).toHaveLength(2)
+    wrapper.unmount()
+  })
 })

@@ -93,8 +93,19 @@ public class QuizService {
     }
 
     public List<WrongQuestionView> wrongQuestions(Long userId) {
-        List<WrongQuestionEntity> wrongItems = wrongMapper.selectList(new QueryWrapper<WrongQuestionEntity>()
-                .eq("user_id", userId).ne("status", "MASTERED").orderByDesc("wrong_count").orderByDesc("last_wrong_at"));
+        return wrongQuestions(userId, false);
+    }
+
+    public List<WrongQuestionView> wrongQuestions(Long userId, boolean includeMastered) {
+        QueryWrapper<WrongQuestionEntity> query = new QueryWrapper<WrongQuestionEntity>().eq("user_id", userId);
+        if (!includeMastered) query.ne("status", "MASTERED");
+        query.orderByDesc("wrong_count").orderByDesc("last_wrong_at");
+        List<WrongQuestionEntity> wrongItems = wrongMapper.selectList(query);
+        if (includeMastered) {
+            wrongItems = wrongItems.stream()
+                    .sorted(java.util.Comparator.comparingInt(item -> "MASTERED".equals(item.getStatus()) ? 1 : 0))
+                    .toList();
+        }
         return wrongItems.stream().map(item -> {
             QuizQuestionEntity question = questionMapper.selectById(item.getQuestionId());
             KnowledgePointEntity point = question == null || question.getKnowledgePointId() == null

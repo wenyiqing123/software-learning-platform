@@ -12,6 +12,7 @@ describe('StudentLearningSections', () => {
     { path: '/', component: { template: '<div />' } },
     { path: '/dashboard', component: { template: '<div />' } },
     { path: '/courses', component: { template: '<div />' } },
+    { path: '/notes', component: { template: '<div />' } },
     { path: '/knowledge', component: { template: '<div />' } },
     { path: '/mastery-map', component: { template: '<div />' } },
     { path: '/tutor', component: { template: '<div />' } },
@@ -45,9 +46,10 @@ describe('StudentLearningSections', () => {
     })
 
     const links = wrapper.findAll('.student-section-link')
-    expect(links).toHaveLength(2)
+    expect(links).toHaveLength(3)
     expect(links[0].text()).toBe('学习概览')
     expect(links[1].text()).toBe('课程阅读')
+    expect(links[2].text()).toBe('笔记与收藏')
     expect(links[1].classes()).toContain('active')
     expect(links[1].attributes('aria-current')).toBe('page')
     expect(links[0].classes()).not.toContain('active')
@@ -125,10 +127,11 @@ describe('StudentLearningSections', () => {
     expect(resolveItemQuery('/practice', rawQuery)).toBeUndefined()
   })
 
-  it('maps all 15 student canonical paths to correct group', () => {
+  it('maps all student canonical paths to correct group', () => {
     const pathGroupMap: Record<string, string> = {
       '/dashboard': 'overview',
       '/courses': 'overview',
+      '/notes': 'overview',
       '/knowledge': 'graph-tutor',
       '/mastery-map': 'graph-tutor',
       '/tutor': 'graph-tutor',

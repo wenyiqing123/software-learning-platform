@@ -54,6 +54,46 @@ public interface LearningNotesMapper {
     @Delete("DELETE FROM learning_point_bookmark WHERE user_id=#{userId} AND knowledge_point_id=#{targetId}")
     int removePointBookmark(@Param("userId") Long userId, @Param("targetId") Long targetId);
 
+    @Select({
+        "SELECT 'SECTION' AS targetType, b.section_id AS targetId, s.title AS title,",
+        "s.course_id AS courseId, c.name AS courseName, s.knowledge_point_id AS knowledgePointId,",
+        "kp.name AS knowledgePointName, kp.graph_entity AS graphEntity, b.created_at AS createdAt",
+        "FROM learning_section_bookmark b",
+        "JOIN course_study_section s ON s.id = b.section_id",
+        "JOIN course c ON c.id = s.course_id",
+        "LEFT JOIN knowledge_point kp ON kp.id = s.knowledge_point_id",
+        "WHERE b.user_id = #{userId}",
+        "ORDER BY b.created_at DESC"
+    })
+    List<BookmarkRow> listSectionBookmarks(@Param("userId") Long userId);
+
+    @Select({
+        "SELECT 'KNOWLEDGE_POINT' AS targetType, b.knowledge_point_id AS targetId, kp.name AS title,",
+        "kp.course_id AS courseId, c.name AS courseName, kp.id AS knowledgePointId,",
+        "kp.name AS knowledgePointName, kp.graph_entity AS graphEntity, b.created_at AS createdAt",
+        "FROM learning_point_bookmark b",
+        "JOIN knowledge_point kp ON kp.id = b.knowledge_point_id",
+        "JOIN course c ON c.id = kp.course_id",
+        "WHERE b.user_id = #{userId}",
+        "ORDER BY b.created_at DESC"
+    })
+    List<BookmarkRow> listPointBookmarks(@Param("userId") Long userId);
+
+    class BookmarkRow {
+        private String targetType, title, courseName, knowledgePointName, graphEntity;
+        private Long targetId, courseId, knowledgePointId;
+        private java.time.LocalDateTime createdAt;
+        public String getTargetType() { return targetType; } public void setTargetType(String value) { targetType = value; }
+        public Long getTargetId() { return targetId; } public void setTargetId(Long value) { targetId = value; }
+        public String getTitle() { return title; } public void setTitle(String value) { title = value; }
+        public Long getCourseId() { return courseId; } public void setCourseId(Long value) { courseId = value; }
+        public String getCourseName() { return courseName; } public void setCourseName(String value) { courseName = value; }
+        public Long getKnowledgePointId() { return knowledgePointId; } public void setKnowledgePointId(Long value) { knowledgePointId = value; }
+        public String getKnowledgePointName() { return knowledgePointName; } public void setKnowledgePointName(String value) { knowledgePointName = value; }
+        public String getGraphEntity() { return graphEntity; } public void setGraphEntity(String value) { graphEntity = value; }
+        public java.time.LocalDateTime getCreatedAt() { return createdAt; } public void setCreatedAt(java.time.LocalDateTime value) { createdAt = value; }
+    }
+
     class NoteRow {
         private Long id,userId,sectionId,knowledgePointId;
         private String title,content,tagsJson;

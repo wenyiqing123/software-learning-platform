@@ -8,6 +8,7 @@ export const STUDENT_SECTIONS: Record<string, SectionItem[]> = {
   overview: [
     { path: '/dashboard', label: '学习概览' },
     { path: '/courses', label: '课程阅读' },
+    { path: '/notes', label: '笔记与收藏' },
   ],
   'graph-tutor': [
     { path: '/knowledge', label: '知识图谱' },

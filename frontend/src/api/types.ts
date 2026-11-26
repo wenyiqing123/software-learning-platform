@@ -13,6 +13,17 @@ export interface MasteryMap { courseId: number; courseName: string; nodes: Maste
 export interface LearningReport { from: string; to: string; days: number; courseId?: number; courseName: string; reading: { totalSections: number; completedSections: number; completedInPeriod: number }; practice: { attempts: number; correct: number; accuracy: number }; reviews: { reviews: number; correct: number; accuracy: number }; plans: { totalTasks: number; completedTasks: number; plannedMinutes: number; completedMinutes: number }; dailyActivity: { date: string; attempts: number; correct: number; readingCompleted: number }[]; chapters: { chapterId: number; chapterName: string; totalSections: number; completedSections: number; completedInPeriod: number }[]; knowledge: { pointId: number; pointName: string; mastery: number; attempts: number; correct: number; dueReviewCount: number }[] }
 export interface LearningNote { id: number; sectionId?: number; knowledgePointId?: number; title: string; content: string; tags: string[]; createdAt?: string; updatedAt?: string }
 export interface LearningBookmark { targetType: 'SECTION' | 'KNOWLEDGE_POINT'; targetId: number; bookmarked: boolean }
+export interface LearningBookmarkItem {
+  targetType: 'SECTION' | 'KNOWLEDGE_POINT'
+  targetId: number
+  title: string
+  courseId?: number
+  courseName?: string
+  knowledgePointId?: number
+  knowledgePointName?: string
+  graphEntity?: string
+  createdAt?: string
+}
 export interface TeachingDashboard { from: string; to: string; days: number; courseId?: number; courseName: string; overview: { activeLearners: number; totalSections: number; completedReads: number; attempts: number; correct: number; openWrong: number; averageMastery: number }; dailyActivity: { date: string; activeLearners: number; attempts: number; correct: number; completedReads: number }[]; weakPoints: { pointId: number; pointName: string; averageMastery: number; attempts: number; learners: number }[] }
 export interface Course { id: number; code: string; name: string; term: string; description?: string; graphSpaceId?: number; enabled?: boolean }
 export interface QuestionBankVersion { id: number; courseId: number; courseName: string; versionName: string; status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'; sourceFilename: string; createdBy?: number; createdAt?: string; publishedAt?: string; questionCount: number }

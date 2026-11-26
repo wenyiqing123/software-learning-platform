@@ -21,6 +21,7 @@ import TutorConversationList from '../components/TutorConversationList.vue'
 import TutorMessageList from '../components/TutorMessageList.vue'
 import TutorComposer from '../components/TutorComposer.vue'
 import FeynmanTeachBackPanel from '../components/FeynmanTeachBackPanel.vue'
+import ConfirmDialog from '../components/ConfirmDialog.vue'
 
 type TutorActivity = 'chat' | 'feynman'
 
@@ -251,6 +252,7 @@ async function selectSession() {
 }
 
 function selectSessionById(id: number) {
+  activeActivity.value = 'chat'
   sessionId.value = id
   mobileDrawerOpen.value = false
   void selectSession()
@@ -270,9 +272,26 @@ function newSession() {
   mobileDrawerOpen.value = false
 }
 
-async function deleteSession() {
-  if (!sessionId.value || loading.value || hintLoading.value) return
-  const targetId = sessionId.value
+const confirmDeleteSessionId = ref<number | null>(null)
+const deletingSession = ref(false)
+const copyFeedback = ref<{ type: 'ok' | 'err'; text: string } | null>(null)
+let copyFeedbackTimer: ReturnType<typeof setTimeout> | null = null
+
+function showCopyFeedback(type: 'ok' | 'err', text: string) {
+  copyFeedback.value = { type, text }
+  if (copyFeedbackTimer) clearTimeout(copyFeedbackTimer)
+  copyFeedbackTimer = setTimeout(() => {
+    copyFeedback.value = null
+  }, 2200)
+}
+
+onBeforeUnmount(() => {
+  if (copyFeedbackTimer) clearTimeout(copyFeedbackTimer)
+})
+
+async function deleteSession(targetId = sessionId.value) {
+  if (!targetId || loading.value || hintLoading.value || deletingSession.value) return
+  deletingSession.value = true
   try {
     await learningApi.deleteSession(targetId)
     sessions.value = sessions.value.filter(s => s.id !== targetId)
@@ -281,15 +300,17 @@ async function deleteSession() {
       sessionStepHints.value = rest
       persistStepHintSessions(rest)
     }
-    newSession()
+    if (sessionId.value === targetId) newSession()
+    confirmDeleteSessionId.value = null
   } catch (e) {
     historyError.value = apiError(e)
+  } finally {
+    deletingSession.value = false
   }
 }
 
 function removeSessionById(id: number) {
-  sessionId.value = id
-  void deleteSession()
+  confirmDeleteSessionId.value = id
 }
 
 async function renameSession(id: number, title: string) {
@@ -302,7 +323,14 @@ async function renameSession(id: number, title: string) {
 }
 
 async function copyAnswer(value?: string) {
-  if (value) await window.navigator.clipboard?.writeText(value)
+  if (!value) return
+  try {
+    if (!window.navigator.clipboard?.writeText) throw new Error('clipboard unavailable')
+    await window.navigator.clipboard.writeText(value)
+    showCopyFeedback('ok', '已复制到剪贴板')
+  } catch {
+    showCopyFeedback('err', '剪贴板不可用，请手动选中回答文本复制')
+  }
 }
 
 async function ensureActiveSession(titleSource: string): Promise<number> {
@@ -694,8 +722,27 @@ function toggleSidebarDesktop() {
             @open-graph="openGraph"
           />
         </KeepAlive>
+        <div
+          v-if="copyFeedback"
+          class="tutor-copy-toast"
+          :class="{ 'is-error': copyFeedback.type === 'err' }"
+          role="status"
+          data-testid="tutor-copy-toast"
+        >
+          {{ copyFeedback.text }}
+        </div>
       </div>
     </section>
+    <ConfirmDialog
+      :open="confirmDeleteSessionId !== null"
+      title="删除历史对话"
+      message="删除后该对话的提问与答疑记录将无法恢复，确定继续吗？"
+      confirm-label="确认删除"
+      tone="danger"
+      :busy="deletingSession"
+      @cancel="confirmDeleteSessionId = null"
+      @confirm="confirmDeleteSessionId !== null && deleteSession(confirmDeleteSessionId)"
+    />
   </div>
 </template>
 
@@ -944,5 +991,26 @@ function toggleSidebarDesktop() {
   .tutor-composer-dock {
     padding: 4px 14px 10px;
   }
+}
+
+.tutor-copy-toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 95;
+  padding: 8px 14px;
+  color: var(--accent-strong);
+  background: var(--surface);
+  border: 1px solid var(--border-focus);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.tutor-copy-toast.is-error {
+  color: var(--danger);
+  border-color: var(--danger-border);
+  background: var(--danger-soft);
 }
 </style>

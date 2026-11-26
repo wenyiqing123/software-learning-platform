@@ -21,6 +21,7 @@ public class LearningNotesController {
     @PutMapping("/notes/{id}") public LearningNotesService.NoteView update(Authentication auth,@PathVariable Long id,@Valid @RequestBody NotePayload request){return service.update(owner(auth),id,request.toRequest());}
     @DeleteMapping("/notes/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void delete(Authentication auth,@PathVariable Long id){service.delete(owner(auth),id);}
     @GetMapping("/bookmarks") public LearningNotesService.BookmarkView bookmark(Authentication auth,@RequestParam(required=false) Long sectionId,@RequestParam(required=false) Long knowledgePointId){return service.bookmark(owner(auth),sectionId,knowledgePointId);}
+    @GetMapping("/bookmarks/list") public List<LearningNotesService.BookmarkItemView> bookmarksList(Authentication auth){return service.listBookmarks(owner(auth));}
     @PutMapping("/bookmarks") public LearningNotesService.BookmarkView setBookmark(Authentication auth,@Valid @RequestBody BookmarkPayload request){return service.setBookmark(owner(auth),new LearningNotesService.BookmarkRequest(request.sectionId(),request.knowledgePointId(),request.bookmarked()));}
     private long owner(Authentication auth){return Long.parseLong(auth.getName());}
     public record NotePayload(Long sectionId,Long knowledgePointId,@Size(max=160) String title,@NotBlank @Size(max=10000) String content,@Size(max=10) List<@Size(max=24) String> tags){LearningNotesService.NoteRequest toRequest(){return new LearningNotesService.NoteRequest(sectionId,knowledgePointId,title,content,tags);}}

@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { Graph } from '@antv/g6'
-import { ArrowUpRight, CircleHelp, Network, Sparkles } from '@lucide/vue'
-import { learningApi, type GraphResponse } from '../api/client'
+import { ArrowUpRight, BookOpen, CheckSquare, CircleHelp, Clock3, GraduationCap, Network, Sparkles } from '@lucide/vue'
+import { learningApi, type GraphResponse, type KnowledgePoint } from '../api/client'
 import { bindGraphViewportSync, graphViewportPadding, type GraphViewportInstance } from '../domain/graphViewport'
+import { effectiveMasteryPercent, peakMasteryPercent, retentionAlertLabel } from '../domain/masteryRetention'
 import SectionHeading from '../components/SectionHeading.vue'
 import PrerequisitePathPanel from './PrerequisitePathPanel.vue'
 import VisualizationViewport from '../components/VisualizationViewport.vue'
@@ -13,14 +14,17 @@ import GraphEvidenceDrawer, { type EvidenceTriple } from '../components/GraphEvi
 
 const graphHost = ref<HTMLElement | null>(null)
 const route = useRoute()
+const router = useRouter()
 const mode = ref<'graph' | 'path'>(route.query.view === 'path' ? 'path' : 'graph')
 const courseId = computed(() => Number(route.query.courseId) || undefined)
 const pathTargetId = computed(() => Number(route.query.knowledgePointId) || undefined)
 const entity = ref('需求分析')
 const selectedNode = ref('需求分析')
 const graphData = ref<GraphResponse>({ nodes: [], edges: [], evidence: [], available: false })
+const coursePoints = ref<KnowledgePoint[]>([])
 const loading = ref(false)
 const error = ref('')
+let searchTimer: ReturnType<typeof setTimeout> | null = null
 const graphUnavailable = computed(() => !loading.value && !error.value && !graphData.value.available)
 const renderMode = ref<'2d' | '3d'>('2d')
 const isFullscreen = ref(false)
@@ -84,6 +88,10 @@ async function drawGraph() {
 }
 
 async function searchEntity(value = entity.value) {
+  if (searchTimer) {
+    clearTimeout(searchTimer)
+    searchTimer = null
+  }
   const normalized = value.trim()
   if (!normalized) return
   entity.value = normalized
@@ -101,6 +109,26 @@ async function searchEntity(value = entity.value) {
     loading.value = false
   }
 }
+
+function scheduleSearch(value: string) {
+  entity.value = value
+  if (searchTimer) clearTimeout(searchTimer)
+  const normalized = value.trim()
+  if (!normalized) return
+  searchTimer = setTimeout(() => {
+    void searchEntity(normalized)
+  }, 260)
+}
+
+async function loadKnowledgePoints() {
+  if (typeof learningApi.knowledgePoints !== 'function') return
+  try {
+    const list = await learningApi.knowledgePoints(courseId.value)
+    coursePoints.value = Array.isArray(list) ? list : []
+  } catch {
+    coursePoints.value = []
+  }
+}
 function focusGraph() {
   if (graph?.focusElement && selectedNode.value) graph.focusElement(selectedNode.value, { duration: 350 })
   else graph?.fitView?.({ when: 'always' }, { duration: 350 })
@@ -112,6 +140,9 @@ function onFullscreenChange(fullscreen: boolean) {
 
 const exampleEntities = ['需求分析', '数据流图DFD', '用例图', '机票预定系统']
 const selectedRelations = computed(() => visibleEdges.value.filter((edge) => edge.source === selectedNode.value || edge.target === selectedNode.value))
+const selectedMasteryPoint = computed(() =>
+  coursePoints.value.find((point) => point.graphEntity === selectedNode.value || point.name === selectedNode.value) ?? null,
+)
 const emit = defineEmits<{ navigate: [view: string, entity?: string] }>()
 
 function setPathEntity(value: string) {
@@ -139,6 +170,7 @@ async function switchRenderMode(next: '2d' | '3d') {
 watch(relationFilter, () => { if (renderMode.value === '2d') void drawGraph() })
 
 onMounted(() => {
+  void loadKnowledgePoints()
   if (mode.value === 'graph') searchEntity(new URLSearchParams(window.location.search).get('entity') || entity.value)
   window.addEventListener('knowledge:select', onSelectEntity)
 })
@@ -153,6 +185,7 @@ function onSelectEntity(event: Event) {
   }
 }
 onBeforeUnmount(() => {
+  if (searchTimer) clearTimeout(searchTimer)
   window.removeEventListener('knowledge:select', onSelectEntity)
   destroyGraph()
 })
@@ -173,7 +206,7 @@ onBeforeUnmount(() => {
     </section>
     <section class="graph-explore-layout">
       <div class="graph-panel">
-        <VisualizationViewport title="课程知识关系" description="拖动节点、缩放画布，或切换实体查看相邻关系。" :mode="renderMode" :status="renderMode === '3d' ? 'Three.js 3D' : 'G6 2D'" :loading="loading" :error="error" :unavailable="graphUnavailable" :empty="!graphData.nodes.length && graphData.available" searchable :search-value="entity" @search="searchEntity" @focus="focusGraph" @retry="searchEntity()" @reset="searchEntity('需求分析')" @mode-change="switchRenderMode" @fullscreen-change="onFullscreenChange">
+        <VisualizationViewport title="课程知识关系" description="拖动节点、缩放画布，或切换实体查看相邻关系。" :mode="renderMode" :status="renderMode === '3d' ? 'Three.js 3D' : 'G6 2D'" :loading="loading" :error="error" :unavailable="graphUnavailable" :empty="!graphData.nodes.length && graphData.available" searchable :search-value="entity" @search="scheduleSearch" @focus="focusGraph" @retry="searchEntity()" @reset="searchEntity('需求分析')" @mode-change="switchRenderMode" @fullscreen-change="onFullscreenChange">
           <ThreeGraphCanvas v-if="renderMode === '3d'" :nodes="graphData.nodes" :edges="visibleEdges" :selected-id="selectedNode" @select="selectedNode = $event" />
           <div v-else ref="graphHost" class="graph-canvas" data-testid="knowledge-graph"></div>
           <template #footer>
@@ -190,6 +223,26 @@ onBeforeUnmount(() => {
       <aside class="entity-panel">
         <p class="eyebrow">{{ graphData.available ? '当前选中实体' : '查询实体' }}</p><h2>{{ selectedNode }}</h2><span v-if="graphData.available" class="entity-type">软件工程知识点</span>
         <div class="entity-stats"><div><strong>{{ selectedRelations.length }}</strong><span>关联关系</span></div><div><strong>{{ graphData.evidence.length }}</strong><span>证据三元组</span></div></div>
+        <div v-if="selectedMasteryPoint" class="entity-mastery-card" data-testid="entity-mastery-card">
+          <div class="entity-mastery-head">
+            <span>个人掌握保持度</span>
+            <strong>{{ effectiveMasteryPercent(selectedMasteryPoint) }}%</strong>
+          </div>
+          <div class="entity-mastery-bar">
+            <i :style="{ width: effectiveMasteryPercent(selectedMasteryPoint) + '%' }"></i>
+          </div>
+          <div class="entity-mastery-meta">
+            <span>历史峰值 {{ peakMasteryPercent(selectedMasteryPoint) }}%</span>
+            <span v-if="retentionAlertLabel(selectedMasteryPoint)" class="entity-mastery-alert">
+              <Clock3 :size="12" aria-hidden="true" />{{ retentionAlertLabel(selectedMasteryPoint) }}
+            </span>
+          </div>
+          <div class="entity-mastery-actions">
+            <button type="button" class="text-button" @click="router.push({ path: '/courses', query: { courseId: String(selectedMasteryPoint.courseId), knowledgePointId: String(selectedMasteryPoint.id) } })"><BookOpen :size="13" />阅读小节</button>
+            <button type="button" class="text-button" @click="router.push({ path: '/practice', query: { knowledgePointId: String(selectedMasteryPoint.id) } })"><CheckSquare :size="13" />专项练习</button>
+            <button type="button" class="text-button" @click="router.push({ path: '/tutor', query: { activity: 'feynman', entity: selectedMasteryPoint.graphEntity || selectedMasteryPoint.name, courseId: String(selectedMasteryPoint.courseId) } })"><GraduationCap :size="13" />费曼自检</button>
+          </div>
+        </div>
         <div v-if="renderMode === '3d'" class="graph-analysis"><p class="mini-heading">交互分析</p><label>关系筛选<select v-model="relationFilter" aria-label="关系类型筛选"><option value="ALL">全部关系</option><option v-for="item in relationOptions" :key="item" :value="item">{{ item }}</option></select></label><div><span>节点度数</span><strong>{{ selectedRelations.length }}</strong></div><div><span>平均证据分</span><strong>{{ averageEvidenceScore }}</strong></div></div>
         <div class="relation-list"><p class="mini-heading">相邻知识</p><div v-if="selectedRelations.length === 0" class="empty-relations">搜索并加载图谱后查看相邻知识。</div><button v-for="edge in selectedRelations" :key="edge.source + edge.label + edge.target" class="relation-item" @click="searchEntity(edge.source === selectedNode ? edge.target : edge.source)"><span>{{ edge.source === selectedNode ? edge.label + ' →' : '← ' + edge.label }}</span><strong>{{ edge.source === selectedNode ? edge.target : edge.source }}</strong><ArrowUpRight :size="14" /></button></div>
          <GraphEvidenceDrawer v-model="evidenceOpen" :node="selectedNode" :triples="selectedEvidence" @ask="emit('navigate', 'tutor', $event)" />
@@ -198,3 +251,56 @@ onBeforeUnmount(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.entity-mastery-card {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+}
+.entity-mastery-head,
+.entity-mastery-meta,
+.entity-mastery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.entity-mastery-head {
+  justify-content: space-between;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+.entity-mastery-head strong {
+  color: var(--accent-strong);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.entity-mastery-bar {
+  height: 5px;
+  overflow: hidden;
+  background: var(--surface-tint);
+  border-radius: var(--radius-pill);
+}
+.entity-mastery-bar i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: inherit;
+}
+.entity-mastery-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.entity-mastery-alert {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--warning-strong);
+  font-weight: 600;
+}
+</style>

@@ -3,7 +3,8 @@ import type { AdaptivePracticeItem, QuizDiagnosis, SpacedReviewCard, SpacedRevie
 
 export const questions = (knowledgePointId?: number) => api.get('/quizzes', { params: { knowledgePointId } }).then((r) => r.data)
 export const submitAnswer = (questionId: number, answer: string[]) => api.post('/quizzes/' + questionId + '/submit', { answer }).then((r) => r.data)
-export const wrongBook = () => api.get('/wrong-book').then((r) => r.data)
+export const wrongBook = (includeMastered?: boolean) =>
+  api.get('/wrong-book', includeMastered ? { params: { includeMastered: true } } : undefined).then((r) => r.data)
 export const reviewWrong = (id: number, answer: string[]) => api.post('/wrong-book/' + id + '/review', { answer }).then((r) => r.data)
 export const markWrongMastered = (id: number) => api.post('/wrong-book/' + id + '/mastered').then((r) => r.data)
 export const spacedReviewsDue = (wrongQuestionId?: number) => api.get<SpacedReviewCard[]>('/spaced-reviews/due', { params: wrongQuestionId ? { wrongQuestionId } : undefined }).then((r) => r.data)

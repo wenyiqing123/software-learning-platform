@@ -77,7 +77,18 @@ onMounted(() => {
 <template>
   <div class="page-stack">
     <SectionHeading eyebrow="规则式选题" title="自适应专项练习" description="从真实题库中优先安排到期错题、薄弱知识点和先修关系相关题目。">
-      <button class="button button-outline" aria-label="刷新专项练习" :disabled="loading" @click="loadCandidates"><RotateCcw :size="15" />刷新</button>
+      <div class="adaptive-heading-actions">
+        <button
+          v-if="items.length"
+          type="button"
+          class="button button-dark"
+          data-testid="start-adaptive-batch"
+          @click="router.push({ path: '/practice', query: { questionIds: items.map(item => item.questionId).join(',') } })"
+        >
+          <ArrowRight :size="15" />开始连续练习（{{ items.length }} 题）
+        </button>
+        <button class="button button-outline" aria-label="刷新专项练习" :disabled="loading" @click="loadCandidates"><RotateCcw :size="15" />刷新</button>
+      </div>
     </SectionHeading>
 
     <section class="adaptive-controls" aria-label="专项练习筛选">
@@ -105,3 +116,12 @@ onMounted(() => {
     <FeedbackState v-else empty empty-title="当前没有可安排的专项题目" empty-text="先完成课程练习，或调整课程和题目数量后重试。" empty-action-label="进入课程练习" @action="router.push('/practice')" />
   </div>
 </template>
+
+<style scoped>
+.adaptive-heading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+</style>

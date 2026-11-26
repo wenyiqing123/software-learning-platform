@@ -156,7 +156,7 @@ onMounted(async () => { await loadPoints(); await loadPath() })
 .path-target-badge{display:inline-flex;align-items:center;padding:2px 8px;color:var(--accent-strong);background:var(--accent-soft);border:1px solid var(--border-focus);border-radius:var(--radius-pill);font-size:11px;font-weight:600}
 .path-status{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;color:var(--text-muted);background:var(--surface-tint);border-radius:var(--radius-pill);font-size:12px}
 .path-retention-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:var(--radius-pill);font-size:11.5px;font-weight:600}
-.path-retention-badge.urgency-fading{color:#8a5300;background:var(--warning-soft)}
+.path-retention-badge.urgency-fading{color:var(--warning-strong);background:var(--warning-soft)}
 .path-retention-badge.urgency-due{color:var(--danger);background:var(--danger-soft)}
 .path-retention-rule{display:flex;align-items:flex-start;gap:8px;margin:0;padding:10px 12px;color:var(--text-muted);background:var(--surface-tint);border-radius:var(--radius-sm);font-size:12.5px;line-height:1.55}
 .path-retention-rule svg{flex:none;margin-top:2px;color:var(--accent-strong)}

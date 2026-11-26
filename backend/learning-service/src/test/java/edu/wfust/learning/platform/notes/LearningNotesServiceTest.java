@@ -34,4 +34,26 @@ class LearningNotesServiceTest {
         var result=service.setBookmark(9L,new LearningNotesService.BookmarkRequest(101L,null,true));
         verify(mapper).addSectionBookmark(9L,101L);assertThat(result.bookmarked()).isTrue();
     }
+
+    @Test void listBookmarksMergesAndSortsSectionAndPointBookmarks(){
+        var olderPoint=new LearningNotesMapper.BookmarkRow();
+        olderPoint.setTargetType("KNOWLEDGE_POINT");olderPoint.setTargetId(12L);olderPoint.setTitle("需求分析");
+        olderPoint.setCourseId(1L);olderPoint.setCourseName("软件工程");olderPoint.setKnowledgePointId(12L);
+        olderPoint.setKnowledgePointName("需求分析");olderPoint.setGraphEntity("需求分析");
+        olderPoint.setCreatedAt(java.time.LocalDateTime.of(2026,11,26,9,0));
+
+        var newerSection=new LearningNotesMapper.BookmarkRow();
+        newerSection.setTargetType("SECTION");newerSection.setTargetId(34L);newerSection.setTitle("2.1 需求获取");
+        newerSection.setCourseId(1L);newerSection.setCourseName("软件工程");newerSection.setKnowledgePointId(12L);
+        newerSection.setKnowledgePointName("需求分析");newerSection.setGraphEntity("需求分析");
+        newerSection.setCreatedAt(java.time.LocalDateTime.of(2026,11,26,10,30));
+
+        when(mapper.listSectionBookmarks(9L)).thenReturn(List.of(newerSection));
+        when(mapper.listPointBookmarks(9L)).thenReturn(List.of(olderPoint));
+
+        var list=service.listBookmarks(9L);
+        assertThat(list).hasSize(2);
+        assertThat(list).extracting(LearningNotesService.BookmarkItemView::targetType).containsExactly("SECTION","KNOWLEDGE_POINT");
+        assertThat(list.get(0).title()).isEqualTo("2.1 需求获取");
+    }
 }
