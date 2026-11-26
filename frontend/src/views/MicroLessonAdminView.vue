@@ -28,20 +28,26 @@ const error = ref('')
 const notice = ref('')
 
 async function loadCourses() {
-  try { courses.value = (await api.get<Course[]>('/admin/courses')).data; if (!courseId.value) courseId.value = courses.value[0]?.id }
-  catch (cause) { error.value = apiError(cause, '课程列表暂时无法加载。') }
+  try {
+    const list = (await api.get<Course[]>('/admin/courses')).data
+    courses.value = Array.isArray(list) ? list : []
+    if (!courseId.value) courseId.value = courses.value[0]?.id
+  } catch (cause) { error.value = apiError(cause, '课程列表暂时无法加载。') }
 }
 async function loadSections() {
   if (!courseId.value) { sections.value = []; sectionId.value = undefined; return }
   try {
-    sections.value = (await api.get<StudySection[]>('/admin/micro-lessons/courses/' + courseId.value + '/sections')).data
+    const list = (await api.get<StudySection[]>('/admin/micro-lessons/courses/' + courseId.value + '/sections')).data
+    sections.value = Array.isArray(list) ? list : []
     if (!sectionId.value || !sections.value.some(section => section.id === sectionId.value)) sectionId.value = sections.value[0]?.id
   } catch (cause) { error.value = apiError(cause, '课程小节暂时无法加载。') }
 }
 async function loadDrafts() {
   if (!courseId.value) { drafts.value = []; return }
-  try { drafts.value = (await api.get<MicroLessonDraft[]>('/admin/micro-lessons', { params: { courseId: courseId.value } })).data }
-  catch (cause) { error.value = apiError(cause, '微课草稿暂时无法加载。') }
+  try {
+    const list = (await api.get<MicroLessonDraft[]>('/admin/micro-lessons', { params: { courseId: courseId.value } })).data
+    drafts.value = Array.isArray(list) ? list : []
+  } catch (cause) { error.value = apiError(cause, '微课草稿暂时无法加载。') }
 }
 async function generate() {
   if (!courseId.value || !sectionId.value) { error.value = '请选择课程小节。'; return }

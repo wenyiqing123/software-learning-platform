@@ -9,7 +9,7 @@ import ConfirmDialog from '../components/ConfirmDialog.vue'
 import { useFormBaseline, useUnsavedChanges } from '../composables/useUnsavedChanges'
 
 interface Course { id: number; code: string; name: string; term: string; description: string; graphSpaceId: number; enabled: boolean }
-interface Point { id: number; courseId: number; name: string; graphEntity: string; enabled: boolean }
+interface Point { id: number; courseId: number; name: string; graphEntity: string; description?: string; sortOrder?: number; prerequisiteIds?: number[]; enabled: boolean }
 interface Option { key: string; text: string }
 type QuestionType = 'SINGLE' | 'MULTIPLE' | 'TRUE_FALSE'
 interface Question { id: number; courseId: number; knowledgePointId: number; type: QuestionType; stem: string; options: Option[]; answer: string[]; explanation: string; difficulty: number; enabled: boolean; source: string }
@@ -29,9 +29,11 @@ const qualityLoading = ref(false)
 const qualityError = ref('')
 const courseId = ref<number | null>(null)
 const editCourseId = ref<number | null>(null)
+const editPointId = ref<number | null>(null)
 const editQuestionId = ref<number | null>(null)
 const search = ref('')
 const courseDraft = reactive({ code: '', name: '', term: '', description: '', graphSpaceId: 1 })
+const pointDraft = reactive({ name: '', graphEntity: '', description: '', sortOrder: 0, prerequisiteIds: [] as number[] })
 const questionDraft = reactive({ knowledgePointId: null as number | null, type: 'SINGLE' as QuestionType, stem: '', options: [{ key: 'A', text: '' }, { key: 'B', text: '' }, { key: 'C', text: '' }, { key: 'D', text: '' }] as Option[], answer: [] as string[], explanation: '', difficulty: 2 })
 
 const { isDirty: isCourseDirty, resetBaseline: resetCourseBaseline } = useFormBaseline(() => ({
@@ -62,6 +64,56 @@ const types: Record<QuestionType, string> = { SINGLE: '单选题', MULTIPLE: '�
 function failure(cause: unknown) { const e = cause as { response?: { status?: number; data?: { message?: string; detail?: string } } }; return e.response?.data?.message || e.response?.data?.detail || (e.response?.status === 403 ? '当前账号没有管理权限。' : '操作未完成，请检查输入并重试。') }
 function newCourse() { editCourseId.value = null; Object.assign(courseDraft, { code: '', name: '', term: '', description: '', graphSpaceId: 1 }); resetCourseBaseline() }
 function editCourse(course: Course) { editCourseId.value = course.id; Object.assign(courseDraft, { code: course.code, name: course.name, term: course.term, description: course.description, graphSpaceId: 1 }); resetCourseBaseline(); notice.value = '' }
+function newPoint() { editPointId.value = null; Object.assign(pointDraft, { name: '', graphEntity: '', description: '', sortOrder: 0, prerequisiteIds: [] }) }
+function editPoint(point: Point) {
+  editPointId.value = point.id
+  Object.assign(pointDraft, {
+    name: point.name,
+    graphEntity: point.graphEntity,
+    description: point.description || '',
+    sortOrder: point.sortOrder ?? 0,
+    prerequisiteIds: [...(point.prerequisiteIds || [])],
+  })
+  notice.value = ''
+}
+async function savePoint() {
+  if (!courseId.value || !pointDraft.name.trim() || !pointDraft.graphEntity.trim()) {
+    error.value = '知识点名称与图谱实体名均不能为空。'
+    return
+  }
+  saving.value = true; error.value = ''; notice.value = ''
+  try {
+    const payload = {
+      courseId: courseId.value,
+      name: pointDraft.name.trim(),
+      graphEntity: pointDraft.graphEntity.trim(),
+      description: pointDraft.description.trim(),
+      sortOrder: Number(pointDraft.sortOrder) || 0,
+      prerequisiteIds: [...pointDraft.prerequisiteIds],
+    }
+    if (editPointId.value) await api.put('/admin/knowledge-points/' + editPointId.value, payload)
+    else await api.post('/admin/knowledge-points', payload)
+    newPoint()
+    await loadCourse()
+    notice.value = '知识点配置与先修关系已保存。'
+  } catch (cause) {
+    error.value = failure(cause)
+  } finally {
+    saving.value = false
+  }
+}
+async function togglePoint(point: Point) {
+  saving.value = true; error.value = ''; notice.value = ''
+  try {
+    const response = await api.put<Point>('/admin/knowledge-points/' + point.id + '/enabled', { enabled: !point.enabled })
+    Object.assign(point, response.data)
+    notice.value = point.enabled ? '知识点已启用。' : '知识点已停用。'
+  } catch (cause) {
+    error.value = failure(cause)
+  } finally {
+    saving.value = false
+  }
+}
 function resetQuestion() { editQuestionId.value = null; Object.assign(questionDraft, { knowledgePointId: null, type: 'SINGLE', stem: '', options: ['A', 'B', 'C', 'D'].map(key => ({ key, text: '' })), answer: [], explanation: '', difficulty: 2 }); resetQuestionBaseline() }
 function changeType() { questionDraft.answer = []; questionDraft.options = questionDraft.type === 'TRUE_FALSE' ? [{ key: 'TRUE', text: '正确' }, { key: 'FALSE', text: '错误' }] : ['A', 'B', 'C', 'D'].map(key => ({ key, text: '' })) }
 function editQuestion(question: Question) { editQuestionId.value = question.id; Object.assign(questionDraft, { knowledgePointId: question.knowledgePointId, type: question.type, stem: question.stem, options: question.options.map(o => ({ ...o })), answer: [...question.answer], explanation: question.explanation, difficulty: question.difficulty }); resetQuestionBaseline(); notice.value = '' }
@@ -80,7 +132,7 @@ function addOption() { const key = 'ABCDEFGH'.split('').find(k => !questionDraft
 let listVersion = 0
 async function loadCourse() {
   const version = ++listVersion
-  points.value = []; questions.value = []; prerequisiteQuality.value = null; qualityError.value = ''; resetQuestion(); error.value = ''
+  points.value = []; questions.value = []; prerequisiteQuality.value = null; qualityError.value = ''; newPoint(); resetQuestion(); error.value = ''
   if (!courseId.value) return
   courseLoading.value = true
   try {
@@ -213,7 +265,7 @@ onMounted(initialize)
     <div v-if="error" class="admin-message error" role="alert">{{ error }} <button v-if="!authorized" class="text-button" @click="initialize">重试</button></div>
     <div v-if="notice" class="admin-message success" role="status">{{ notice }}</div>
     <template v-if="authorized && !loading">
-      <AdminCoursePanel :courses="courses" :course-draft="courseDraft" :edit-course-id="editCourseId" :saving="saving" :prerequisite-quality="prerequisiteQuality" :quality-loading="qualityLoading" :quality-error="qualityError" @new-course="newCourse" @edit-course="editCourse" @toggle-course="toggleCourse" @save-course="saveCourse" @retry-quality="loadCourse" />
+      <AdminCoursePanel :courses="courses" :course-draft="courseDraft" :edit-course-id="editCourseId" :saving="saving" :prerequisite-quality="prerequisiteQuality" :quality-loading="qualityLoading" :quality-error="qualityError" :selected-course="selectedCourse" :points="points" :point-draft="pointDraft" :edit-point-id="editPointId" @new-course="newCourse" @edit-course="editCourse" @toggle-course="toggleCourse" @save-course="saveCourse" @retry-quality="loadCourse" @new-point="newPoint" @edit-point="editPoint" @toggle-point="togglePoint" @save-point="savePoint" />
       <AdminQuestionPanel :courses="courses" :selected-course="selectedCourse" :course-id="courseId" :course-loading="courseLoading" :saving="saving" :points="points" :questions="questions" :filtered-questions="filteredQuestions" :point-names="pointNames" :types="types" :search="search" :edit-question-id="editQuestionId" :question-draft="questionDraft" @select-course="selectCourse" @update-search="updateSearch" @edit-question="editQuestion" @toggle-question="toggleQuestion" @reset-question="resetQuestion" @change-type="changeType" @toggle-answer="toggleAnswer" @remove-option="removeOption" @add-option="addOption" @save-question="saveQuestion" />
     </template>
     <ConfirmDialog

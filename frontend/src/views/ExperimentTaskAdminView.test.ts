@@ -332,4 +332,52 @@ describe('ExperimentTaskAdminView', () => {
     expect((wrapper.get('[data-testid="assign-student-ids"]').element as HTMLTextAreaElement).value).toBe('101, 205')
     wrapper.unmount()
   })
+
+  it('creates QWEN_MATRIX task without ablations and loads per-task assignments', async () => {
+    const baseGet = http.get.getMockImplementation()!
+    http.get.mockImplementation((url: string, config?: unknown) => {
+      if (url === '/admin/experiment-tasks/9/assignments') {
+        return Promise.resolve({
+          data: [
+            {
+              id: 51,
+              taskId: 9,
+              groupId: 31,
+              userId: 101,
+              username: 'stu101',
+              displayName: '赵同学',
+              groupName: '三元组对照组',
+              conditionKey: 'TRIPLES',
+              taskOrder: 'A→B',
+              status: 'COMPLETED',
+              runCount: 2,
+            },
+          ],
+        })
+      }
+      return baseGet(url, config as never)
+    })
+
+    const wrapper = mount(ExperimentTaskAdminView)
+    await flushPromises()
+
+    await wrapper.get('[data-testid="task-title"]').setValue('矩阵评测')
+    await wrapper.get('[data-testid="task-experiment-type"]').setValue('QWEN_MATRIX')
+    expect((wrapper.get('[data-testid="task-include-ablations"]').element as HTMLInputElement).disabled).toBe(true)
+    await wrapper.get('[data-testid="task-question"]').setValue('比较模型结构差异')
+    await wrapper.get('[data-testid="task-expected-entities"]').setValue('需求分析, 用例图')
+    await wrapper.get('button[aria-label="创建实验任务"]').trigger('click')
+    await flushPromises()
+    expect(http.post).toHaveBeenCalledWith('/admin/experiment-tasks', expect.objectContaining({
+      experimentType: 'QWEN_MATRIX',
+      expectedEntities: ['需求分析', '用例图'],
+      includeAblations: false,
+    }))
+
+    await wrapper.get('[data-testid="toggle-assignments-9"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[data-testid="assignments-list-9"]').text()).toContain('赵同学')
+    expect(wrapper.get('[data-testid="assignments-list-9"]').text()).toContain('已完成')
+    wrapper.unmount()
+  })
 })

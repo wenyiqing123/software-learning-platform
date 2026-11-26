@@ -97,6 +97,33 @@ class QuestionBankServiceTest {
         order.verify(versions).markPublished(eq(11L), any());
     }
 
+    @Test
+    void listsQuestionsBelongingToSpecificVersion() {
+        var version = new QuestionBankVersionEntity();
+        version.setId(11L);
+        version.setCourseId(1L);
+        when(versions.selectById(11L)).thenReturn(version);
+        var q = new QuizQuestionEntity();
+        q.setId(88L);
+        q.setCourseId(1L);
+        q.setKnowledgePointId(2L);
+        q.setQuestionType("SINGLE");
+        q.setStem("什么是软件危机？");
+        q.setOptionsJson("[{\"key\":\"A\",\"text\":\"维护困难\"},{\"key\":\"B\",\"text\":\"硬件过热\"}]");
+        q.setAnswerJson("[\"A\"]");
+        q.setExplanation("维护成本高。");
+        q.setDifficulty(2);
+        q.setEnabled(false);
+        when(questions.selectList(any())).thenReturn(List.of(q));
+
+        var preview = service.listVersionQuestions(11L);
+        assertThat(preview).singleElement().satisfies(item -> {
+            assertThat(item.id()).isEqualTo(88L);
+            assertThat(item.answer()).containsExactly("A");
+            assertThat(item.options()).hasSize(2);
+        });
+    }
+
     private QuestionBankService.ImportRow validRow() {
         return new QuestionBankService.ImportRow(1L, 2L, "SINGLE", "valid question", List.of(
             new AdminPayloads.Option("A", "yes"), new AdminPayloads.Option("B", "no")),

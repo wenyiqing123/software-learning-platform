@@ -30,6 +30,11 @@ public class QuestionBankController {
         return service.listVersions(courseId);
     }
 
+    @GetMapping("/versions/{id}/questions")
+    public List<QuestionBankService.QuestionPreviewView> versionQuestions(@PathVariable Long id) {
+        return service.listVersionQuestions(id);
+    }
+
     @PostMapping("/versions")
     @ResponseStatus(HttpStatus.CREATED)
     public QuestionBankService.VersionView createVersion(Authentication authentication,

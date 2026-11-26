@@ -60,6 +60,19 @@ public class QuestionBankService {
         return versions.selectList(query).stream().map(this::view).toList();
     }
 
+    public List<QuestionPreviewView> listVersionQuestions(Long versionId) {
+        version(versionId);
+        var rows = questions.selectList(new QueryWrapper<QuizQuestionEntity>()
+                .eq("version_id", versionId).orderByAsc("id"));
+        if (rows == null) return List.of();
+        return rows.stream().map(row -> new QuestionPreviewView(
+                row.getId(), row.getCourseId(), row.getKnowledgePointId(), row.getQuestionType(),
+                row.getStem(), readJson(row.getOptionsJson(), new TypeReference<>() { }),
+                readJson(row.getAnswerJson(), new TypeReference<>() { }),
+                row.getExplanation(), row.getDifficulty(), row.getEnabled()
+        )).toList();
+    }
+
     @Transactional
     public VersionView createVersion(Long userId, CreateVersionRequest request) {
         if (request == null || request.courseId() == null || request.courseId() <= 0) {
@@ -198,6 +211,15 @@ public class QuestionBankService {
         catch (RuntimeException exception) { throw new IllegalStateException("无法保存导入数据", exception); }
     }
 
+    private <T> T readJson(String raw, TypeReference<T> type) {
+        if (raw == null || raw.isBlank()) {
+            try { return json.readValue("[]", type); }
+            catch (RuntimeException ignored) { throw new IllegalStateException("题目 JSON 数据无效"); }
+        }
+        try { return json.readValue(raw, type); }
+        catch (RuntimeException exception) { throw new IllegalStateException("无法读取题目数据", exception); }
+    }
+
     public record CreateVersionRequest(@NotNull Long courseId, @NotBlank @Size(max = 120) String versionName,
                                        @Size(max = 255) String sourceFilename) { }
 
@@ -215,4 +237,8 @@ public class QuestionBankService {
     public record VersionView(Long id, Long courseId, String courseName, String versionName, String status,
                               String sourceFilename, Long createdBy, LocalDateTime createdAt, LocalDateTime publishedAt,
                               long questionCount) { }
+
+    public record QuestionPreviewView(Long id, Long courseId, Long knowledgePointId, String type, String stem,
+                                      List<AdminPayloads.Option> options, List<String> answer,
+                                      String explanation, Integer difficulty, Boolean enabled) { }
 }

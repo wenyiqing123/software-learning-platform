@@ -17,4 +17,12 @@ public final class AdminPayloads {
         @NotNull @Size(min = 1, max = 8) List<@NotBlank String> answer,
         @NotBlank @Size(max = 10000) String explanation, @NotNull @Min(1) @Max(5) Integer difficulty) { }
     public record EnabledRequest(@NotNull Boolean enabled) { }
+    public record KnowledgePointRequest(
+        @NotNull @Positive Long courseId,
+        @NotBlank @Size(max = 160) String name,
+        @NotBlank @Size(max = 200) String graphEntity,
+        @Size(max = 800) String description,
+        List<@NotNull @Positive Long> prerequisiteIds,
+        @Min(0) @Max(9999) Integer sortOrder
+    ) { }
 }

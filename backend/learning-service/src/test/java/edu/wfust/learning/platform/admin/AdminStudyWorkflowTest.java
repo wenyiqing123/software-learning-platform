@@ -246,4 +246,15 @@ class AdminStudyWorkflowTest {
         mvc.perform(post("/api/admin/questions").with(user("3").roles("ADMIN")).contentType("application/json").content(VALID)).andExpect(status().isBadRequest());
     }
 
+    @Test void adminCanCreateAndUpdateKnowledgePointWithSameCoursePrerequisitesOnly() throws Exception {
+        mvc.perform(post("/api/admin/knowledge-points").with(user("3").roles("ADMIN")).contentType("application/json").content("""
+            {"courseId":1,"name":"领域建模","graphEntity":"领域建模","description":"识别核心实体","prerequisiteIds":[1],"sortOrder":20}
+            """)).andExpect(status().isCreated())
+            .andExpect(jsonPath("$.name").value("领域建模"))
+            .andExpect(jsonPath("$.prerequisiteIds[0]").value(1));
+
+        mvc.perform(post("/api/admin/knowledge-points").with(user("3").roles("ADMIN")).contentType("application/json").content("""
+            {"courseId":1,"name":"跨课异常","graphEntity":"跨课实体","description":"","prerequisiteIds":[9],"sortOrder":21}
+            """)).andExpect(status().isBadRequest());
+    }
 }

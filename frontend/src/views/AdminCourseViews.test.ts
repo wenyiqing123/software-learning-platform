@@ -158,4 +158,37 @@ describe('administration', () => {
     expect(router.currentRoute.value.path).toBe('/courses')
     wrapper.unmount()
   })
+
+  it('renders prerequisite topological DAG preview and filters questions cleanly', async () => {
+    const baseGet = http.get.getMockImplementation()!
+    http.get.mockImplementation(async (path: string) => {
+      if (path === '/admin/knowledge-points') {
+        return {
+          data: [
+            { id: 11, courseId: 1, name: '需求分析', graphEntity: '需求分析', enabled: true, prerequisiteIds: [] },
+            { id: 12, courseId: 1, name: '数据流图', graphEntity: '数据流图DFD', enabled: true, prerequisiteIds: [11] },
+          ],
+        }
+      }
+      if (path === '/admin/questions') {
+        return {
+          data: [
+            { id: 1, courseId: 1, knowledgePointId: 11, type: 'SINGLE', stem: '题1', options: [{ key: 'A', text: 'a' }, { key: 'B', text: 'b' }], answer: ['A'], explanation: 'e', difficulty: 1, enabled: true, source: 'ADMIN' },
+            { id: 2, courseId: 1, knowledgePointId: 12, type: 'TRUE_FALSE', stem: '题2', options: [{ key: 'TRUE', text: '对' }, { key: 'FALSE', text: '错' }], answer: ['TRUE'], explanation: 'e', difficulty: 1, enabled: false, source: 'ADMIN' },
+          ],
+        }
+      }
+      return baseGet(path)
+    })
+
+    const { wrapper } = await render(AdminView, '/admin')
+    expect(wrapper.get('[data-testid="prerequisite-dag-preview"]').text()).toContain('第 1 阶')
+    expect(wrapper.get('[data-testid="prerequisite-dag-preview"]').text()).toContain('第 2 阶')
+    expect(wrapper.get('[data-testid="prerequisite-dag-preview"]').text()).toContain('前置：需求分析')
+
+    await wrapper.get('select[aria-label="按题型筛选"]').setValue('TRUE_FALSE')
+    expect(wrapper.findAll('.question-row')).toHaveLength(1)
+    expect(wrapper.text()).toContain('题2')
+    wrapper.unmount()
+  })
 })

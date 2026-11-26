@@ -26,6 +26,12 @@ public class AdminController {
     public CourseEntity setCourseEnabled(@PathVariable Long id, @Valid @RequestBody AdminPayloads.EnabledRequest request) { return service.setCourseEnabled(id, request.enabled()); }
     @GetMapping("/knowledge-points")
     public List<AdminService.PointView> points(@RequestParam Long courseId) { return service.knowledgePoints(courseId); }
+    @PostMapping("/knowledge-points") @ResponseStatus(HttpStatus.CREATED)
+    public AdminService.PointView createPoint(@Valid @RequestBody AdminPayloads.KnowledgePointRequest request) { return service.createKnowledgePoint(request); }
+    @PutMapping("/knowledge-points/{id}")
+    public AdminService.PointView updatePoint(@PathVariable Long id, @Valid @RequestBody AdminPayloads.KnowledgePointRequest request) { return service.updateKnowledgePoint(id, request); }
+    @PutMapping("/knowledge-points/{id}/enabled")
+    public AdminService.PointView setPointEnabled(@PathVariable Long id, @Valid @RequestBody AdminPayloads.EnabledRequest request) { return service.setKnowledgePointEnabled(id, request.enabled()); }
     @GetMapping("/courses/{courseId}/prerequisite-quality")
     public PrerequisiteQualityService.QualityReport prerequisiteQuality(@PathVariable Long courseId) {
         return prerequisiteQualityService.quality(courseId);

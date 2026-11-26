@@ -27,7 +27,36 @@ public class AdminService {
     public List<PointView> knowledgePoints(Long courseId) {
         course(courseId);
         return points.selectList(new QueryWrapper<KnowledgePointEntity>().eq("course_id", courseId).orderByAsc("sort_order", "id"))
-            .stream().map(p -> new PointView(p.getId(), p.getCourseId(), p.getName(), p.getGraphEntity(), p.getEnabled())).toList();
+            .stream().map(this::pointView).toList();
+    }
+    @Transactional
+    public PointView createKnowledgePoint(AdminPayloads.KnowledgePointRequest request) {
+        var c = course(request.courseId());
+        if (!Boolean.TRUE.equals(c.getEnabled())) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "请先启用所属课程");
+        List<Long> prereqIds = validatePrerequisites(request.courseId(), null, request.prerequisiteIds());
+        var row = new KnowledgePointEntity();
+        copyPoint(request, prereqIds, row);
+        row.setEnabled(true);
+        try { points.insert(row); }
+        catch (DuplicateKeyException e) { throw new ResponseStatusException(HttpStatus.CONFLICT, "同一课程下图谱实体已存在"); }
+        return pointView(row);
+    }
+    @Transactional
+    public PointView updateKnowledgePoint(Long id, AdminPayloads.KnowledgePointRequest request) {
+        var row = knowledgePoint(id);
+        if (!row.getCourseId().equals(request.courseId())) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "不支持跨课程迁移知识点");
+        List<Long> prereqIds = validatePrerequisites(row.getCourseId(), id, request.prerequisiteIds());
+        copyPoint(request, prereqIds, row);
+        try { points.updateById(row); }
+        catch (DuplicateKeyException e) { throw new ResponseStatusException(HttpStatus.CONFLICT, "同一课程下图谱实体已存在"); }
+        return pointView(row);
+    }
+    @Transactional
+    public PointView setKnowledgePointEnabled(Long id, boolean enabled) {
+        var row = knowledgePoint(id);
+        row.setEnabled(enabled);
+        points.updateById(row);
+        return pointView(row);
     }
     @Transactional
     public CourseEntity createCourse(AdminPayloads.CourseRequest request) {
@@ -100,6 +129,40 @@ public class AdminService {
         var row = id == null ? null : courses.selectById(id);
         if (row == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "课程不存在"); return row;
     }
+    private KnowledgePointEntity knowledgePoint(Long id) {
+        var row = id == null ? null : points.selectById(id);
+        if (row == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "知识点不存在");
+        return row;
+    }
+    private List<Long> validatePrerequisites(Long courseId, Long selfId, List<Long> requested) {
+        if (requested == null || requested.isEmpty()) return List.of();
+        java.util.LinkedHashSet<Long> unique = new java.util.LinkedHashSet<>();
+        for (Long pid : requested) {
+            if (pid == null || pid <= 0) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "先修知识点 ID 必须为正整数");
+            if (selfId != null && selfId.equals(pid)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "知识点不能将自身设为先修");
+            var prereq = points.selectById(pid);
+            if (prereq == null || !courseId.equals(prereq.getCourseId())) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "先修知识点必须属于同一课程");
+            unique.add(pid);
+        }
+        return List.copyOf(unique);
+    }
+    private void copyPoint(AdminPayloads.KnowledgePointRequest r, List<Long> prereqIds, KnowledgePointEntity row) {
+        row.setCourseId(r.courseId());
+        row.setName(r.name().trim());
+        row.setGraphEntity(r.graphEntity().trim());
+        row.setDescription(r.description() == null ? "" : r.description().trim());
+        row.setSortOrder(r.sortOrder() == null ? 0 : r.sortOrder());
+        row.setPrerequisitesJson(prereqIds.isEmpty() ? null : json.writeValueAsString(prereqIds));
+    }
+    private List<Long> readPrerequisiteIds(String raw) {
+        if (raw == null || raw.isBlank()) return List.of();
+        try { return read(raw, new TypeReference<List<Long>>() { }); }
+        catch (RuntimeException ignored) { return List.of(); }
+    }
+    private PointView pointView(KnowledgePointEntity p) {
+        return new PointView(p.getId(), p.getCourseId(), p.getName(), p.getGraphEntity(), p.getEnabled(),
+            p.getDescription() == null ? "" : p.getDescription(), p.getSortOrder() == null ? 0 : p.getSortOrder(), readPrerequisiteIds(p.getPrerequisitesJson()));
+    }
     private QuizQuestionEntity question(Long id) {
         var row = questions.selectById(id);
         if (row == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "题目不存在"); return row;
@@ -110,7 +173,12 @@ public class AdminService {
             read(row.getOptionsJson(), new TypeReference<List<AdminPayloads.Option>>() { }),
             read(row.getAnswerJson(), new TypeReference<List<String>>() { }), row.getExplanation(), row.getDifficulty(), row.getEnabled(), row.getSource());
     }
-    public record PointView(Long id, Long courseId, String name, String graphEntity, Boolean enabled) { }
+    public record PointView(Long id, Long courseId, String name, String graphEntity, Boolean enabled,
+        String description, Integer sortOrder, List<Long> prerequisiteIds) {
+        public PointView(Long id, Long courseId, String name, String graphEntity, Boolean enabled) {
+            this(id, courseId, name, graphEntity, enabled, "", 0, List.of());
+        }
+    }
     /** This DTO (including the answer) is only returned by ADMIN-authorized methods. */
     public record QuestionView(Long id, Long courseId, Long knowledgePointId, String type, String stem,
         List<AdminPayloads.Option> options, List<String> answer, String explanation, Integer difficulty, Boolean enabled, String source) { }

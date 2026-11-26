@@ -168,4 +168,41 @@ describe('QuestionBankView', () => {
 
     wrapper.unmount()
   })
+
+  it('pre-validates JSON rows locally and previews questions inside a version', async () => {
+    const baseGet = http.get.getMockImplementation()!
+    http.get.mockImplementation(async (path: string) => {
+      if (path === '/admin/question-bank/versions/11/questions') {
+        return {
+          data: [
+            {
+              id: 88,
+              courseId: 1,
+              knowledgePointId: 2,
+              type: 'SINGLE',
+              stem: '需求工程首要环节是什么？',
+              options: [{ key: 'A', text: '需求获取' }, { key: 'B', text: '系统发布' }],
+              answer: ['A'],
+              explanation: '先获取业务需求。',
+              difficulty: 2,
+              enabled: false,
+            },
+          ],
+        }
+      }
+      return baseGet(path)
+    })
+
+    const wrapper = mount(QuestionBankView)
+    await flushPromises()
+
+    await wrapper.get('[data-testid="questions-json"]').setValue('[{"courseId":1,"type":"ESSAY"}]')
+    expect(wrapper.get('[data-testid="json-precheck"]').text()).toContain('前端预检提示')
+
+    await wrapper.get('[data-testid="preview-version-11"]').trigger('click')
+    await flushPromises()
+    expect(http.get).toHaveBeenCalledWith('/admin/question-bank/versions/11/questions')
+    expect(wrapper.get('[data-testid="version-preview-panel"]').text()).toContain('需求工程首要环节是什么？')
+    wrapper.unmount()
+  })
 })

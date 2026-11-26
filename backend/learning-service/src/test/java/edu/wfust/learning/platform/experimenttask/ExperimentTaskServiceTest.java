@@ -215,4 +215,22 @@ class ExperimentTaskServiceTest {
         verify(assignments, times(2)).assign(9L, 3L, 101L);
         verify(assignments, times(2)).assign(9L, 3L, 102L);
     }
+
+    @Test
+    void listsAssignmentsForOwnedAdminTask() {
+        var task = new ExperimentTaskEntity(); task.setId(9L); task.setStatus("OPEN");
+        when(tasks.selectById(9L)).thenReturn(task);
+        when(assignments.findTaskAssignmentsForAdmin(9L)).thenReturn(List.of(
+                new ExperimentAssignmentMapper.AdminAssignmentRow(
+                        51L, 9L, 3L, 101L, "stu101", "赵同学", "组A", "METHODS", "A→B",
+                        "IN_PROGRESS", null, null, null, 2L)
+        ));
+
+        var list = service.listAssignments(9L);
+        assertThat(list).singleElement().satisfies(item -> {
+            assertThat(item.username()).isEqualTo("stu101");
+            assertThat(item.runCount()).isEqualTo(2L);
+            assertThat(item.status()).isEqualTo("IN_PROGRESS");
+        });
+    }
 }

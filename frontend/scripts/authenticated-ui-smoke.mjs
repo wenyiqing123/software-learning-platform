@@ -9,7 +9,7 @@ const runName = process.env.UI_REVIEW_RUN || 'latest'
 if (!/^[a-z0-9-]+$/.test(runName)) throw new Error('UI_REVIEW_RUN must be a lowercase label')
 const auditDir = path.join(root, '.ui-visual-review', runName)
 const routes = [
-  '/login', '/', '/dashboard', '/courses', '/admin', '/teaching-dashboard', '/admin/content', '/admin/experiments', '/admin/users', '/admin/teaching-dashboard', '/admin/question-bank',
+  '/login', '/', '/dashboard', '/courses', '/notes', '/admin', '/teaching-dashboard', '/admin/content', '/admin/experiments', '/admin/users', '/admin/teaching-dashboard', '/admin/question-bank',
   '/admin/micro-lessons', '/admin/diagnostics', '/knowledge?entity=%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90',
   '/mastery-map', '/tutor', '/practice', '/adaptive-practice', '/wrong-book', '/review', '/study-plan',
   '/micro-lessons', '/evaluation', '/learning-report', '/admin/evaluations', '/recommendations',
@@ -134,7 +134,12 @@ function apiResponse(url, role, scenario, method) {
     { id: 13, courseId: 3, courseName: course.name, versionName: '软件工程 · 需求章节修订', status: 'DRAFT', sourceFilename: 'requirements.json', questionCount: 12 },
     { id: 10, courseId: 3, courseName: course.name, versionName: '软件工程 · 学期题库', status: 'PUBLISHED', sourceFilename: 'intro.json', questionCount: 48 },
   ])
+  if (/^\/api\/admin\/question-bank\/versions\/\d+\/questions$/.test(path)) return json([{ ...quiz, courseId: 3, knowledgePointId: 12, answer: ['A'], explanation: '用动宾短语描述加工。', difficulty: 2, enabled: true }])
   if (path === '/api/admin/micro-lessons') return json([adminDraft])
+  if (/^\/api\/admin\/micro-lessons\/courses\/\d+\/sections$/.test(path)) {
+    if (role === 'ADMIN' && scenario === 'micro-author-forbidden') return json({ message: '当前账号没有课程阅读权限。' }, 403)
+    return json(courseSections)
+  }
   if (path.includes('/admin/courses/') && path.endsWith('/prerequisite-quality')) return json({ courseId: 3, pointCount: 1, validEdgeCount: 0, errorCount: 0, warningCount: 0, valid: true, issues: [] })
   if (path === '/api/admin/knowledge-points') return json(coursePoints.map(point => ({ ...point, enabled: true })))
   if (path === '/api/admin/questions') return json([{ ...quiz, courseId: 3, knowledgePointId: 12, answer: ['A'], explanation: '用动宾短语描述加工。', difficulty: 2, enabled: true, source: 'MANUAL' }])
@@ -181,6 +186,7 @@ function apiResponse(url, role, scenario, method) {
     ]
   })
   if (path === '/api/admin/experiment-tasks') return json([experimentTask, { ...experimentTask, id: 10, title: '课程阅读后的延后测验', status: 'DRAFT', assignmentCount: 0 }])
+  if (/^\/api\/admin\/experiment-tasks\/\d+\/assignments$/.test(path)) return json([])
   if (path === '/api/experiment-tasks') return json([{ ...experimentTask, id: 41, taskId: 9, groupId: 1, userId: 2, groupName: 'A 组', conditionKey: 'METHODS', status: 'ASSIGNED', taskStatus: 'OPEN', referenceAnswer: '', taskOrder: 'A→B' }])
   if (path === '/api/evaluations/sessions') {
     const sample = { id: 12, conditionKey: 'METHODS', taskKey: '需求分析理解任务', taskOrder: 'A→B', consentVersion: 'evaluation-v2', completedPhases: ['PRE', 'INTERVENTION', 'POST'] }
@@ -196,6 +202,7 @@ function apiResponse(url, role, scenario, method) {
     { id: 2, role: 'ASSISTANT', content: chatAnswer, mode: 'TRIPLES', metadata: { results: [{ mode: 'TRIPLES', answer: chatAnswer, triples: evidence, latencyMs: 920 }] } },
   ])
   if (path.startsWith('/api/learning/notes')) return json(scenario === 'course-notes' ? [{ id: 1, sectionId: 32, title: '先画系统边界', content: '先列出外部实体，再检查每条输入和输出。', tags: ['数据流图'] }] : [])
+  if (path === '/api/learning/bookmarks/list') return json([{ targetType: 'SECTION', targetId: 32, title: '数据流图', courseId: 3, courseName: '软件工程', knowledgePointId: 12, knowledgePointName: '数据流图', graphEntity: '数据流图' }])
   if (path.startsWith('/api/learning/bookmarks')) return json({ bookmarked: false })
   if (path === '/api/ai/feynman/evaluate') return json({
     knowledgePoint: '需求分析',
@@ -493,6 +500,7 @@ const visualScenarios = {
     } },
     { route: '/teaching-dashboard', name: 'teaching-empty', check: page => page.getByText('当前范围内暂无学习活动数据。').waitFor() },
     { route: '/admin/experiments', name: 'experiment-results', async check(page) {
+      await page.locator('#tab-btn-history').click()
       await page.locator('.saved-experiment-list button').first().click()
       await page.getByText('模型服务超时，未生成回答。').waitFor()
       if (await page.locator('.compare-result-card').count() !== 7) throw new Error('Not all experiment conditions rendered')
@@ -558,7 +566,7 @@ try {
     page.on('response', response => {
       if (response.status() < 400) return
       const issue = { path: new URL(response.url()).pathname, status: response.status(), method: response.request().method() }
-      if (scenario === 'micro-author-forbidden' && issue.path === '/api/courses/3/study' && issue.status === 403) expectedHttpErrors.push(issue)
+      if (scenario === 'micro-author-forbidden' && (issue.path === '/api/courses/3/study' || issue.path === '/api/admin/micro-lessons/courses/3/sections') && issue.status === 403) expectedHttpErrors.push(issue)
       else if (scenario === 'study-plan-hint' && issue.path.startsWith('/api/study-plans/tasks/') && issue.status === 409) expectedHttpErrors.push(issue)
       else httpErrors.push(issue)
     })
