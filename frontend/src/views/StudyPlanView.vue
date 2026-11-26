@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PomodoroTimer from '../components/PomodoroTimer.vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ArrowRight, BookOpenCheck, CalendarDays, CircleAlert, Clock3, RotateCcw, SkipForward, X } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
@@ -100,6 +101,7 @@ onBeforeUnmount(clearHintTimer)
         </button>
       </div>
     </Transition>
+    <PomodoroTimer :tasks="plan?.tasks || []" />
   </div>
 </template>
 

@@ -21,6 +21,7 @@ describe('StudentLearningSections', () => {
     { path: '/adaptive-practice', component: { template: '<div />' } },
     { path: '/wrong-book', component: { template: '<div />' } },
     { path: '/review', component: { template: '<div />' } },
+    { path: '/flashcards', component: { template: '<div />' } },
     { path: '/study-plan', component: { template: '<div />' } },
     { path: '/recommendations', component: { template: '<div />' } },
     { path: '/experiment-tasks', component: { template: '<div />' } },

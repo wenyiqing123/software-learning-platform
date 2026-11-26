@@ -20,6 +20,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/adaptive-practice', component: () => import('./views/AdaptivePracticeView.vue'), meta: { roles: ['STUDENT'] } },
   { path: '/wrong-book', component: () => import('./views/WrongBookView.vue'), meta: { roles: ['STUDENT'] } },
   { path: '/review', component: () => import('./views/ReviewView.vue'), meta: { roles: ['STUDENT'] } },
+  { path: '/flashcards', component: () => import('./views/FlashcardsView.vue'), meta: { roles: ['STUDENT'] } },
   { path: '/study-plan', component: () => import('./views/StudyPlanView.vue'), meta: { roles: ['STUDENT'] } },
   { path: '/micro-lessons', component: () => import('./views/MicroLessonView.vue'), meta: { roles: ['STUDENT'] } },
   { path: '/evaluation', component: () => import('./views/EvaluationView.vue'), meta: { roles: ['STUDENT'] } },

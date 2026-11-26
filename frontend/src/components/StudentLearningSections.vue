@@ -21,6 +21,7 @@ export const STUDENT_SECTIONS: Record<string, SectionItem[]> = {
     { path: '/adaptive-practice', label: '专项练习' },
     { path: '/wrong-book', label: '错题整理' },
     { path: '/review', label: '到期复习' },
+    { path: '/flashcards', label: '概念闪卡' },
   ],
   plan: [
     { path: '/study-plan', label: '每日计划' },

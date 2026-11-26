@@ -112,7 +112,7 @@ const userName = computed(() => session.user.value?.displayName || session.user.
 const avatar = computed(() => Array.from(session.user.value?.displayName || session.user.value?.username || '')[0] || '·')
 const homePath = computed(() => isAdmin.value ? '/teaching-dashboard' : '/dashboard')
 const roleNotice = computed(() => route.query.notice === 'admin' ? '当前为管理员视图，不包含学生个人学习记录。' : route.query.notice === 'student' ? '当前为学生视图，管理功能仅对管理员开放。' : '')
-const titles: Record<string, string> = { '/': '学习空间', '/dashboard': '学习概览', '/courses': '课程阅读', '/notes': '笔记与收藏', '/knowledge': '知识图谱', '/mastery-map': '掌握图谱', '/tutor': 'AI 学习助教', '/practice': '课程练习', '/adaptive-practice': '专项练习', '/wrong-book': '错题整理', '/review': '到期复习', '/study-plan': '每日计划', '/micro-lessons': '证据微课', '/evaluation': '学习评估', '/learning-report': '学习报告', '/recommendations': '为我推荐', '/experiment-tasks': '实验任务', '/experiment-run': '实验运行', '/teaching-dashboard': '教学总览', '/admin/content': '内容与题库中心', '/admin/experiments': '实验与评价中心', '/admin/users': '用户管理' }
+const titles: Record<string, string> = { '/': '学习空间', '/dashboard': '学习概览', '/courses': '课程阅读', '/notes': '笔记与收藏', '/knowledge': '知识图谱', '/mastery-map': '掌握图谱', '/tutor': 'AI 学习助教', '/practice': '课程练习', '/adaptive-practice': '专项练习', '/wrong-book': '错题整理', '/review': '到期复习', '/flashcards': '概念闪卡', '/study-plan': '每日计划', '/micro-lessons': '证据微课', '/evaluation': '学习评估', '/learning-report': '学习报告', '/recommendations': '为我推荐', '/experiment-tasks': '实验任务', '/experiment-run': '实验运行', '/teaching-dashboard': '教学总览', '/admin/content': '内容与题库中心', '/admin/experiments': '实验与评价中心', '/admin/users': '用户管理' }
 
 interface StudentNavGroup {
   id: string
@@ -125,7 +125,7 @@ interface StudentNavGroup {
 const studentNavGroups: StudentNavGroup[] = [
   { id: 'overview', path: '/dashboard', label: '概览与课程', icon: LayoutDashboard, subRoutes: ['/dashboard', '/courses', '/notes'] },
   { id: 'graph-tutor', path: '/knowledge', label: '图谱与助教', icon: Network, subRoutes: ['/knowledge', '/mastery-map', '/tutor', '/micro-lessons'] },
-  { id: 'practice', path: '/practice', label: '练习与复习', icon: BookOpenCheck, subRoutes: ['/practice', '/adaptive-practice', '/wrong-book', '/review'] },
+  { id: 'practice', path: '/practice', label: '练习与复习', icon: BookOpenCheck, subRoutes: ['/practice', '/adaptive-practice', '/wrong-book', '/review', '/flashcards'] },
   { id: 'plan', path: '/study-plan', label: '计划与推荐', icon: CalendarCheck, subRoutes: ['/study-plan', '/recommendations'] },
   { id: 'experiment', path: '/experiment-tasks', label: '实验与评估', icon: FlaskConical, subRoutes: ['/experiment-tasks', '/evaluation', '/learning-report'] },
 ]

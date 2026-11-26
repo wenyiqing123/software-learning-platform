@@ -3,6 +3,8 @@ package edu.wfust.learning.platform.security;
 import edu.wfust.learning.platform.experiment.*;
 import edu.wfust.learning.platform.mapper.AiExperimentMapper;
 import edu.wfust.learning.platform.experimenttask.ExperimentTaskService;
+import edu.wfust.learning.platform.flashcard.FlashcardController;
+import edu.wfust.learning.platform.flashcard.FlashcardService;
 import edu.wfust.learning.platform.microcourse.MicroLessonService;
 import edu.wfust.learning.platform.microcourse.PublishedMicroLessonController;
 import edu.wfust.learning.platform.practice.AdaptivePracticeController;
@@ -107,6 +109,16 @@ public class RoleBoundaryMvcTest {
         PublishedMicroLessonController publishedMicroLessonController(MicroLessonService service) {
             return new PublishedMicroLessonController(service);
         }
+
+        @Bean
+        FlashcardService flashcardService() {
+            return mock(FlashcardService.class);
+        }
+
+        @Bean
+        FlashcardController flashcardController(FlashcardService service) {
+            return new FlashcardController(service);
+        }
     }
 
     @Autowired
@@ -121,8 +133,12 @@ public class RoleBoundaryMvcTest {
     @Autowired
     private MicroLessonService microLessonServiceProxy;
 
+    @Autowired
+    private FlashcardService flashcardServiceProxy;
+
     private AdaptivePracticeService adaptivePracticeService;
     private MicroLessonService microLessonService;
+    private FlashcardService flashcardService;
     private MockMvc mockMvc;
 
     @BeforeEach
@@ -132,7 +148,8 @@ public class RoleBoundaryMvcTest {
                 .build();
         adaptivePracticeService = AopTestUtils.getUltimateTargetObject(adaptivePracticeServiceProxy);
         microLessonService = AopTestUtils.getUltimateTargetObject(microLessonServiceProxy);
-        reset(experimentMapper, adaptivePracticeService, microLessonService);
+        flashcardService = AopTestUtils.getUltimateTargetObject(flashcardServiceProxy);
+        reset(experimentMapper, adaptivePracticeService, microLessonService, flashcardService);
     }
 
     @Test
@@ -179,5 +196,16 @@ public class RoleBoundaryMvcTest {
         mockMvc.perform(get("/api/courses/1/study/sections/1/micro-lesson").with(user("3").roles("ADMIN")))
                 .andExpect(status().isForbidden());
         verifyNoInteractions(microLessonService);
+    }
+
+    @Test
+    void studentCanAccessFlashcardsAndAdminIsForbidden() throws Exception {
+        doReturn(List.of()).when(flashcardService).list(1L, null, false);
+        mockMvc.perform(get("/api/flashcards").with(user("1").roles("STUDENT")))
+                .andExpect(status().isOk());
+        verify(flashcardService).list(1L, null, false);
+
+        mockMvc.perform(get("/api/flashcards").with(user("3").roles("ADMIN")))
+                .andExpect(status().isForbidden());
     }
 }

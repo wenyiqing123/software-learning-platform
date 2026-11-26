@@ -112,6 +112,11 @@ describe('daily plan page', () => {
     await wrapper.get('.plan-hint-close').trigger('click')
     expect(wrapper.find('[data-testid="study-plan-hint-toast"]').exists()).toBe(false)
     expect(wrapper.get('.plan-task').classes()).not.toContain('is-prereq-blocked')
+
+    // 每日计划嵌入专注番茄钟（不跳过后端任务完成校验证明）
+    const timer = wrapper.get('[data-testid="pomodoro-timer"]')
+    expect(timer.text()).toContain('25:00')
+    expect(timer.text()).toContain('阅读需求分析')
     wrapper.unmount()
   })
 })

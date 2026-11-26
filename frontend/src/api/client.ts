@@ -3,6 +3,7 @@ import * as admin from './admin'
 import * as course from './course'
 import * as evaluation from './evaluation'
 import * as experiment from './experiment'
+import * as flashcards from './flashcards'
 import * as knowledge from './knowledge'
 import * as notes from './notes'
 import * as practice from './practice'
@@ -26,6 +27,7 @@ export const learningApi = {
   ...practice,
   ...evaluation,
   ...experiment,
+  ...flashcards,
   ...admin,
   ...recommendation,
   ...system,
