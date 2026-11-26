@@ -1,68 +1,12 @@
 <script lang="ts">
-export interface SectionItem {
-  path: string
-  label: string
-}
+import {
+  STUDENT_SECTIONS,
+  findGroupByPath,
+  resolveItemQuery,
+  type SectionItem,
+} from '../domain/navigation'
 
-export const STUDENT_SECTIONS: Record<string, SectionItem[]> = {
-  overview: [
-    { path: '/dashboard', label: '学习概览' },
-    { path: '/courses', label: '课程阅读' },
-    { path: '/notes', label: '笔记与收藏' },
-  ],
-  'graph-tutor': [
-    { path: '/knowledge', label: '知识图谱' },
-    { path: '/mastery-map', label: '掌握图谱' },
-    { path: '/tutor', label: 'AI 学习助教' },
-    { path: '/micro-lessons', label: '证据微课' },
-  ],
-  practice: [
-    { path: '/practice', label: '课程练习' },
-    { path: '/adaptive-practice', label: '专项练习' },
-    { path: '/wrong-book', label: '错题整理' },
-    { path: '/review', label: '到期复习' },
-    { path: '/flashcards', label: '概念闪卡' },
-  ],
-  plan: [
-    { path: '/study-plan', label: '每日计划' },
-    { path: '/recommendations', label: '为我推荐' },
-  ],
-  experiment: [
-    { path: '/experiment-tasks', label: '实验任务' },
-    { path: '/evaluation', label: '学习评估' },
-    { path: '/learning-report', label: '学习报告' },
-  ],
-}
-
-const COURSE_QUERY_KEYS = ['courseId', 'sectionId', 'knowledgePointId', 'entity']
-const EXPERIMENT_QUERY_KEYS = ['taskId', 'assignmentId', 'conditionKey', 'taskKey', 'taskOrder']
-
-export function resolveItemQuery(targetPath: string, rawQuery: Record<string, any> = {}): Record<string, any> | undefined {
-  const clean: Record<string, any> = {}
-  if (targetPath === '/courses') {
-    for (const k of COURSE_QUERY_KEYS) {
-      if (rawQuery[k] !== undefined && rawQuery[k] !== null && rawQuery[k] !== '') {
-        clean[k] = rawQuery[k]
-      }
-    }
-  } else if (['/evaluation', '/experiment-tasks', '/learning-report'].includes(targetPath)) {
-    for (const k of EXPERIMENT_QUERY_KEYS) {
-      if (rawQuery[k] !== undefined && rawQuery[k] !== null && rawQuery[k] !== '') {
-        clean[k] = rawQuery[k]
-      }
-    }
-  }
-  return Object.keys(clean).length > 0 ? clean : undefined
-}
-
-export function findGroupByPath(targetPath: string): string | null {
-  for (const [gid, items] of Object.entries(STUDENT_SECTIONS)) {
-    if (items.some(item => item.path === targetPath)) {
-      return gid
-    }
-  }
-  return null
-}
+export { STUDENT_SECTIONS, findGroupByPath, resolveItemQuery, type SectionItem }
 </script>
 
 <script setup lang="ts">

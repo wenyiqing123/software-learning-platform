@@ -585,6 +585,30 @@ const visualScenarios = {
       await drawer.getByRole('button', { name: '关闭用户画像' }).click()
       await drawer.waitFor({ state: 'detached' })
     } },
+    { route: '/teaching-dashboard', name: 'admin-sidebar-subnav', async check(page) {
+      const primaryItems = page.locator('.primary-nav .nav-item')
+      if (await primaryItems.count() !== 3) throw new Error('Admin sidebar should render 3 grouped primary items')
+      await page.locator('.primary-nav .nav-subitem', { hasText: '用户管理' }).waitFor({ state: 'visible' })
+      await primaryItems.nth(1).click()
+      const diagnosisLink = page.locator('.primary-nav .nav-subitem', { hasText: '错因诊断' })
+      await diagnosisLink.waitFor({ state: 'visible' })
+      await diagnosisLink.click()
+      await page.waitForURL(url => url.pathname === '/admin/content' && url.searchParams.get('tab') === 'diagnosis')
+      const breadcrumbText = await page.locator('.breadcrumb').innerText()
+      if (!breadcrumbText.includes('内容与题库中心') || !breadcrumbText.includes('错因诊断')) {
+        throw new Error(`Admin breadcrumb did not sync submenu state: ${breadcrumbText}`)
+      }
+      await page.getByTestId('sidebar-collapse-toggle').click()
+      await primaryItems.nth(2).hover()
+      const flyout = page.getByTestId('sidebar-flyout-menu')
+      await flyout.waitFor({ state: 'visible' })
+      await flyout.getByText('评价统计').waitFor({ state: 'visible' })
+      await page.mouse.move(480, 480)
+      await flyout.waitFor({ state: 'detached' })
+      await page.getByTestId('sidebar-collapse-toggle').click()
+      await page.locator('.primary-nav .nav-subitem', { hasText: '教学总览' }).click()
+      await page.waitForURL(url => url.pathname === '/teaching-dashboard')
+    } },
   ],
   GUEST: [],
 }

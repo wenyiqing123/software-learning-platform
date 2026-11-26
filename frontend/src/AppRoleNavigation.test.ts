@@ -20,22 +20,81 @@ vi.mock('./composables/useSystemStatus', () => ({
 vi.mock('./api/client', () => ({ learningApi: { logout: vi.fn() } }))
 
 describe('App role navigation', () => {
-  it('renders the administrator navigation instead of an empty sidebar', async () => {
+  it('renders two-level administrator navigation with active submenus, breadcrumb sync and collapsed flyout', async () => {
     session.user.value = { id: 1, username: 'admin', displayName: '管理员', role: 'ADMIN' }
-    const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/teaching-dashboard', component: { template: '<div />' } }] })
+    const routes = [
+      { path: '/teaching-dashboard', component: { template: '<div />' } },
+      { path: '/admin/users', component: { template: '<div />' } },
+      { path: '/admin/content', component: { template: '<div />' } },
+      { path: '/admin/experiments', component: { template: '<div />' } },
+    ]
+    const router = createRouter({ history: createMemoryHistory(), routes })
     await router.push('/teaching-dashboard')
     await router.isReady()
-    const wrapper = mount(App, { global: { plugins: [router] } })
+    const wrapper = mount(App, { attachTo: document.body, global: { plugins: [router] } })
     await flushPromises()
-    expect(wrapper.text()).toContain('管理工作台')
-    expect(wrapper.text()).toContain('教学总览')
-    expect(wrapper.text()).toContain('用户管理')
-    expect(wrapper.text()).not.toContain('学习闭环')
-    expect(wrapper.text()).not.toContain('概览与课程')
-    expect(wrapper.find('.student-sections-strip').exists()).toBe(false)
-    const navItems = wrapper.findAll('.primary-nav .nav-item')
-    expect(navItems).toHaveLength(4)
-    wrapper.unmount()
+
+    try {
+      expect(wrapper.text()).toContain('管理工作台')
+      expect(wrapper.text()).toContain('教学与用户')
+      expect(wrapper.text()).toContain('教学总览')
+      expect(wrapper.text()).toContain('用户管理')
+      expect(wrapper.text()).toContain('内容与题库中心')
+      expect(wrapper.text()).toContain('实验与评价中心')
+      expect(wrapper.text()).not.toContain('学习闭环')
+      expect(wrapper.text()).not.toContain('概览与课程')
+      expect(wrapper.find('.student-sections-strip').exists()).toBe(false)
+
+      const navItems = wrapper.findAll('.primary-nav .nav-item')
+      expect(navItems).toHaveLength(3)
+      expect(navItems[0].classes()).toContain('active')
+
+      const activeSubItems = wrapper.findAll('.primary-nav .nav-subitem')
+      expect(activeSubItems.map(item => item.text())).toEqual(['教学总览', '用户管理'])
+      expect(activeSubItems[0].classes()).toContain('active')
+
+      await navItems[1].trigger('click')
+      await flushPromises()
+      expect(router.currentRoute.value.path).toBe('/admin/content')
+      const contentGroupWrap = wrapper.findAll('.primary-nav .nav-group-wrap')[1]
+      const contentSubItems = contentGroupWrap.findAll('.nav-subitem')
+      expect(contentSubItems.map(item => item.text())).toEqual(['课程与知识点', '题库与版本', '错因诊断', '微课管理'])
+
+      await router.push({ path: '/admin/content', query: { tab: 'diagnosis' } })
+      await flushPromises()
+      const updatedSubItems = wrapper.findAll('.primary-nav .nav-group-wrap')[1].findAll('.nav-subitem')
+      const diagnosisSub = updatedSubItems.find(item => item.text() === '错因诊断')
+      expect(diagnosisSub?.classes()).toContain('active')
+      expect(wrapper.get('.breadcrumb').text()).toContain('内容与题库中心')
+      expect(wrapper.get('.breadcrumb').text()).toContain('错因诊断')
+
+      await wrapper.get('[data-testid="breadcrumb-page-switcher"]').trigger('click')
+      await flushPromises()
+      const switcherMenu = wrapper.get('[data-testid="breadcrumb-menu"]')
+      expect(switcherMenu.text()).toContain('题库与版本')
+      expect(switcherMenu.text()).toContain('微课管理')
+
+      // 再次点击当前已展开的一级菜单可折叠其二级子菜单
+      await wrapper.findAll('.primary-nav .nav-item')[1].trigger('click')
+      await flushPromises()
+      expect(wrapper.findAll('.primary-nav .nav-group-wrap')[1].find('.nav-sublist').exists()).toBe(false)
+
+      // 收起左侧主导航栏后悬停可显示管理端二级悬浮菜单
+      await wrapper.get('[data-testid="sidebar-collapse-toggle"]').trigger('click')
+      await flushPromises()
+      expect(wrapper.find('.app-shell.is-sidebar-collapsed').exists()).toBe(true)
+
+      await wrapper.findAll('.primary-nav .nav-item')[2].trigger('mouseenter')
+      await flushPromises()
+      const flyout = document.body.querySelector('[data-testid="sidebar-flyout-menu"]')
+      expect(flyout).not.toBeNull()
+      expect(flyout?.textContent).toContain('实验与评价中心')
+      expect(flyout?.textContent).toContain('问答对照实验')
+      expect(flyout?.textContent).toContain('任务与分组')
+      expect(flyout?.textContent).toContain('评价统计')
+    } finally {
+      wrapper.unmount()
+    }
   })
 
   it('renders exactly five primary navigation items for student and does not render admin items', async () => {
