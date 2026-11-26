@@ -59,6 +59,36 @@ describe('DashboardView', () => {
     wrapper.unmount()
   })
 
+  it('renders shape-matched skeleton placeholders while initial dashboard requests are pending', async () => {
+    let resolveOverview!: (val: unknown) => void
+    let resolvePoints!: (val: unknown) => void
+    learning.overview.mockReturnValue(new Promise((res) => { resolveOverview = res }))
+    learning.knowledgePoints.mockReturnValue(new Promise((res) => { resolvePoints = res }))
+
+    const router = createRouter({ history: createMemoryHistory(), routes: [
+      { path: '/', component: DashboardView },
+      { path: '/courses', component: { template: '<div />' } },
+      { path: '/practice', component: { template: '<div />' } },
+      { path: '/knowledge', component: { template: '<div />' } },
+      { path: '/tutor', component: { template: '<div />' } },
+      { path: '/review', component: { template: '<div />' } },
+    ] })
+    await router.push('/')
+    await router.isReady()
+    const wrapper = mount(DashboardView, { global: { plugins: [router] } })
+    await flushPromises()
+
+    expect(wrapper.findAll('[data-testid="content-skeleton"]')).toHaveLength(2)
+
+    resolveOverview({ completed: 4, mastery: 42, wrongCount: 2, accuracy: 75, activity: [] })
+    resolvePoints([{ id: 11, courseId: 3, name: '需求分析', graphEntity: '需求分析', mastery: 42, sortOrder: 1 }])
+    await flushPromises()
+
+    expect(wrapper.findAll('[data-testid="content-skeleton"]')).toHaveLength(0)
+    expect(wrapper.findAll('.path-row')).toHaveLength(1)
+    wrapper.unmount()
+  })
+
   it('renders dual-value retention alerts with quick review links and explainable rule copy', async () => {
     learning.overview.mockResolvedValue({
       completed: 8,

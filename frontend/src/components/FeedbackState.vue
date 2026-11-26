@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { CircleAlert, Inbox, LoaderCircle } from '@lucide/vue'
+import ContentSkeleton, { type SkeletonVariant } from './ContentSkeleton.vue'
 
 withDefaults(defineProps<{
   loading?: boolean
   error?: string
   empty?: boolean
+  skeleton?: SkeletonVariant
+  skeletonRows?: number
   loadingTitle?: string
   loadingText?: string
   errorTitle?: string
@@ -16,6 +19,8 @@ withDefaults(defineProps<{
   loading: false,
   error: '',
   empty: false,
+  skeleton: undefined,
+  skeletonRows: 3,
   loadingTitle: '正在加载',
   loadingText: '正在读取真实学习数据，请稍候。',
   errorTitle: '暂时无法完成请求',
@@ -29,7 +34,8 @@ const emit = defineEmits<{ retry: []; action: [] }>()
 </script>
 
 <template>
-  <section v-if="loading" class="feedback-state feedback-loading" role="status" aria-live="polite">
+  <ContentSkeleton v-if="loading && skeleton" :variant="skeleton" :rows="skeletonRows" :label="loadingTitle" />
+  <section v-else-if="loading" class="feedback-state feedback-loading" role="status" aria-live="polite">
     <LoaderCircle class="feedback-icon feedback-spin" :size="24" />
     <strong>{{ loadingTitle }}</strong>
     <span>{{ loadingText }}</span>

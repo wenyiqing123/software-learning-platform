@@ -267,6 +267,7 @@ onBeforeUnmount(() => {
     <FeedbackState
       v-if="loading"
       :loading="true"
+      skeleton="flashcard"
       loading-title="正在整理知识点闪卡"
       loading-text="正在读取课程概念定义、学习目标与个人回忆记录…"
     />

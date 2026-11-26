@@ -8,6 +8,7 @@ import FeedbackState from '../components/FeedbackState.vue'
 import LearningNotesPanel from '../components/LearningNotesPanel.vue'
 import LearningContextActions from '../components/LearningContextActions.vue'
 import MarkdownContent from '../components/MarkdownContent.vue'
+import ContentSkeleton from '../components/ContentSkeleton.vue'
 import { rememberLearningContext } from '../domain/learningContext'
 
 interface Course { id: number; name: string; term: string; description: string }
@@ -353,7 +354,7 @@ onBeforeUnmount(() => {
       <label class="course-picker">当前课程 <select v-model="courseId" aria-label="当前课程" :disabled="loading || saving" @change="chooseCourse"><option v-for="course in courses" :key="course.id" :value="course.id">{{ course.name }} · {{ course.term }}</option></select></label>
     </SectionHeading>
     <div v-if="error" class="study-notice" role="alert">{{ error }} <button class="text-button" @click="loadCourses">重新加载</button></div>
-    <div v-if="loading" class="study-empty" role="status">正在加载课程与阅读进度…</div>
+    <ContentSkeleton v-if="loading" variant="reading" label="正在加载课程与阅读进度…" />
     <div v-else-if="!courses.length && !error" class="study-empty">暂无可学习的课程。课程启用后会显示在这里。</div>
     <template v-else-if="study">
       <section class="study-summary" aria-label="课程阅读进度">

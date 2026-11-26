@@ -5,6 +5,7 @@ import { useLearningMetrics, weeklyActivity } from '../composables/useLearningMe
 import MetricTile from '../components/MetricTile.vue'
 import SectionHeading from '../components/SectionHeading.vue'
 import LearningAnalyticsCharts from '../components/LearningAnalyticsCharts.vue'
+import ContentSkeleton from '../components/ContentSkeleton.vue'
 import { courseHref, readLastLearningContext, practiceHref } from '../domain/learningContext'
 import {
   clampMasteryPercent,
@@ -103,7 +104,8 @@ onBeforeUnmount(() => window.removeEventListener('learning:changed', refreshCont
     </section>
     <div class="dashboard-columns">
       <section class="content-section learning-section"><div class="section-title-row"><div><p class="eyebrow">课程知识路径</p><h2>知识点掌握记录</h2></div><button class="text-button" @click="emit('navigate', 'knowledge')">打开知识图谱 <ArrowUpRight :size="15" /></button></div>
-        <div v-if="milestones.length" class="path-list">
+        <ContentSkeleton v-if="loading && !milestones.length" variant="list" :rows="3" label="正在加载知识点" />
+        <div v-else-if="milestones.length" class="path-list">
           <button v-for="(item, index) in milestones" :key="item.entity" class="path-row" @click="emit('navigate', 'knowledge', item.entity)">
             <span class="path-index">0{{ index + 1 }}</span>
             <span class="path-icon" :class="item.color"><component :is="item.icon" :size="18" /></span>
@@ -118,7 +120,7 @@ onBeforeUnmount(() => window.removeEventListener('learning:changed', refreshCont
             </span>
           </button>
         </div>
-        <div v-else class="empty-state"><strong>{{ loading ? '正在加载知识点' : error ? '知识点暂不可用' : '暂无课程知识点' }}</strong></div>
+        <div v-else class="empty-state"><strong>{{ error ? '知识点暂不可用' : '暂无课程知识点' }}</strong></div>
         <div v-if="atRiskPoints.length" class="dash-retention-alerts" data-testid="dashboard-retention-alerts">
           <div v-for="entry in atRiskPoints" :key="entry.point.id" class="dash-retention-alert-row">
             <div class="dash-retention-alert-copy">
@@ -135,8 +137,9 @@ onBeforeUnmount(() => window.removeEventListener('learning:changed', refreshCont
         <p class="dash-rule-note" data-testid="dashboard-retention-rule">{{ RETENTION_RULE_SUMMARY }}</p>
       </section>
       <section class="content-section activity-section"><div class="section-title-row"><div><p class="eyebrow">近七天 · 北京时间</p><h2>每日答题记录</h2></div><span class="week-total"><Clock3 :size="15" /> {{ days[0].key.slice(5) }} – {{ days[6].key.slice(5) }}</span></div>
-        <div v-if="overview" class="weekly-chart" role="img" aria-label="按 Asia/Shanghai 日期统计的近七天每日答题量柱状图"><div v-for="(day, index) in days" :key="day.key" class="bar-column" :title="day.key + '：' + day.count + ' 题'"><span class="bar-value">{{ day.count }}题</span><div class="bar-track"><i :class="{ today: index === 6 }" :style="{ height: day.count / maxActivity * 100 + '%' }"></i></div><span class="bar-day">{{ day.label }}</span></div></div>
-        <div v-else class="empty-state"><strong>{{ loading ? '正在读取答题记录' : '答题记录暂不可用' }}</strong></div>
+        <ContentSkeleton v-if="loading && !overview" variant="cards" :rows="2" label="正在读取答题记录" />
+        <div v-else-if="overview" class="weekly-chart" role="img" aria-label="按 Asia/Shanghai 日期统计的近七天每日答题量柱状图"><div v-for="(day, index) in days" :key="day.key" class="bar-column" :title="day.key + '：' + day.count + ' 题'"><span class="bar-value">{{ day.count }}题</span><div class="bar-track"><i :class="{ today: index === 6 }" :style="{ height: day.count / maxActivity * 100 + '%' }"></i></div><span class="bar-day">{{ day.label }}</span></div></div>
+        <div v-else class="empty-state"><strong>答题记录暂不可用</strong></div>
         <div class="activity-footer"><span><Flame :size="15" />{{ overview ? '近七天共提交 ' + weeklyTotal + ' 题' : '等待服务端答题记录' }}</span><span class="week-total">按答题次数统计</span></div>
       </section>
     </div>
