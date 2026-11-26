@@ -142,6 +142,67 @@ function apiResponse(url, role, scenario, method) {
   }
   if (path.includes('/admin/courses/') && path.endsWith('/prerequisite-quality')) return json({ courseId: 3, pointCount: 1, validEdgeCount: 0, errorCount: 0, warningCount: 0, valid: true, issues: [] })
   if (path === '/api/admin/knowledge-points') return json(coursePoints.map(point => ({ ...point, enabled: true })))
+  if (path === '/api/admin/content/coverage-audit') return json({
+    courseId: null,
+    courseName: '全部课程',
+    ruleDescription: '按 V18 课程、章节、知识点、启用练习题、启用干扰项错因诊断、已发布微课与概念闪卡关联状态执行只读 SQL 聚合与透明规则检查（不生成黑盒质量评分）。',
+    summary: {
+      totalPoints: 2,
+      fullyCoveredPoints: 1,
+      missingQuestionsCount: 1,
+      missingDiagnosisCount: 1,
+      missingMicroLessonCount: 1,
+      missingFlashcardCount: 0,
+      coveredQuestionsTotal: 4,
+      coveredDiagnosisTotal: 2,
+      publishedMicroLessonsTotal: 1,
+      flashcardReviewRecordsTotal: 3,
+    },
+    items: [
+      {
+        knowledgePointId: 11,
+        courseId: 3,
+        courseName: '软件工程',
+        chapterId: 1,
+        chapterName: '软件需求',
+        knowledgePointName: '需求分析',
+        graphEntity: '需求分析',
+        enabled: true,
+        sectionCount: 1,
+        hasDescription: true,
+        questionCount: 4,
+        diagnosisCount: 2,
+        publishedMicroLessonCount: 1,
+        draftMicroLessonCount: 0,
+        flashcardReviewCount: 3,
+        flashcardReady: true,
+        gaps: [],
+      },
+      {
+        knowledgePointId: 12,
+        courseId: 3,
+        courseName: '软件工程',
+        chapterId: 1,
+        chapterName: '软件需求',
+        knowledgePointName: '数据流图',
+        graphEntity: '数据流图',
+        enabled: true,
+        sectionCount: 1,
+        hasDescription: true,
+        questionCount: 0,
+        diagnosisCount: 0,
+        publishedMicroLessonCount: 0,
+        draftMicroLessonCount: 1,
+        flashcardReviewCount: 0,
+        flashcardReady: true,
+        gaps: [
+          { code: 'NO_QUESTIONS', label: '无练习题', actionLabel: '补录题库', targetTab: 'question-bank' },
+          { code: 'NO_DIAGNOSIS', label: '缺错因诊断', actionLabel: '配置错因', targetTab: 'diagnosis' },
+          { code: 'NO_MICRO_LESSON', label: '无已发布微课', actionLabel: '管理微课', targetTab: 'micro-lessons' },
+        ],
+      },
+    ],
+  })
   if (path === '/api/admin/questions') return json([{ ...quiz, courseId: 3, knowledgePointId: 12, answer: ['A'], explanation: '用动宾短语描述加工。', difficulty: 2, enabled: true, source: 'MANUAL' }])
   if (path === '/api/admin/questions/101/diagnostics') return json([{ id: 1, optionKey: 'B', optionText: quiz.options[1].text, knowledgePointId: 12, knowledgePointName: quiz.knowledgePoint, rationale: '将描述数据存储的名词短语误用为加工名称。', enabled: true }])
   if (path.endsWith('/study')) {
@@ -598,6 +659,18 @@ const visualScenarios = {
       const style = await fileButton.evaluate(element => ({ display: getComputedStyle(element).display, color: getComputedStyle(element).color }))
       if (!['flex', 'inline-flex'].includes(style.display) || style.color === 'rgb(255, 255, 255)') throw new Error('Question bank file picker lost alignment or readable text color')
       await page.locator('.version-row').first().waitFor()
+    } },
+    { route: '/admin/content?tab=coverage', name: 'admin-coverage-audit', async check(page) {
+      await page.getByTestId('coverage-audit-panel').waitFor()
+      await page.getByTestId('coverage-audit-table').waitFor()
+      await page.getByTestId('coverage-filter-NO_DIAGNOSIS').click()
+      if ((await page.locator('[data-testid="coverage-audit-table"] tbody tr').count()) !== 1) {
+        throw new Error('Admin coverage audit gap filter did not narrow rows deterministically')
+      }
+      await page.getByTestId('coverage-filter-ALL').click()
+      if ((await page.locator('[data-testid="coverage-audit-table"] tbody tr').count()) !== 2) {
+        throw new Error('Admin coverage audit reset filter did not restore all rows')
+      }
     } },
     { route: '/teaching-dashboard', name: 'teaching-empty', check: page => page.getByText('当前范围内暂无学习活动数据。').waitFor() },
     { route: '/admin/experiments', name: 'experiment-results', async check(page) {

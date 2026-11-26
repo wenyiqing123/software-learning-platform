@@ -155,3 +155,51 @@ export interface AdminUserProfile {
     updatedAt?: string
   }[]
 }
+
+export type CoverageGapCode = 'NO_QUESTIONS' | 'NO_DIAGNOSIS' | 'NO_MICRO_LESSON' | 'NO_FLASHCARD'
+
+export interface CoverageAuditGap {
+  code: CoverageGapCode
+  label: string
+  actionLabel: string
+  targetTab: 'course' | 'question-bank' | 'diagnosis' | 'micro-lessons'
+}
+
+export interface CoverageAuditItem {
+  knowledgePointId: number
+  courseId: number
+  courseName: string
+  chapterId?: number | null
+  chapterName?: string | null
+  knowledgePointName: string
+  graphEntity: string
+  enabled: boolean
+  sectionCount: number
+  hasDescription: boolean
+  questionCount: number
+  diagnosisCount: number
+  publishedMicroLessonCount: number
+  draftMicroLessonCount: number
+  flashcardReviewCount: number
+  flashcardReady: boolean
+  gaps: CoverageAuditGap[]
+}
+
+export interface CoverageAuditReport {
+  courseId?: number | null
+  courseName: string
+  ruleDescription: string
+  summary: {
+    totalPoints: number
+    fullyCoveredPoints: number
+    missingQuestionsCount: number
+    missingDiagnosisCount: number
+    missingMicroLessonCount: number
+    missingFlashcardCount: number
+    coveredQuestionsTotal: number
+    coveredDiagnosisTotal: number
+    publishedMicroLessonsTotal: number
+    flashcardReviewRecordsTotal: number
+  }
+  items: CoverageAuditItem[]
+}

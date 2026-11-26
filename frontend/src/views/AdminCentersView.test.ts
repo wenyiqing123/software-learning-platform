@@ -109,11 +109,12 @@ describe('administrator workbench centers', () => {
     expect(tablist.attributes('aria-label')).toBe('内容与题库中心')
 
     const tabs = wrapper.findAll('[role="tab"]')
-    expect(tabs).toHaveLength(4)
+    expect(tabs).toHaveLength(5)
     expect(tabs[0].attributes('aria-selected')).toBe('false')
     expect(tabs[1].attributes('aria-selected')).toBe('false')
     expect(tabs[2].attributes('aria-selected')).toBe('true')
     expect(tabs[3].attributes('aria-selected')).toBe('false')
+    expect(tabs[4].attributes('aria-selected')).toBe('false')
     wrapper.unmount()
   })
 

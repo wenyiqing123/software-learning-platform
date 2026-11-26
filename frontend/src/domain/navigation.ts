@@ -44,6 +44,7 @@ export const ADMIN_SECTIONS: Record<string, SectionItem[]> = {
     { path: '/admin/content', label: '题库与版本', query: { tab: 'question-bank' } },
     { path: '/admin/content', label: '错因诊断', query: { tab: 'diagnosis' } },
     { path: '/admin/content', label: '微课管理', query: { tab: 'micro-lessons' } },
+    { path: '/admin/content', label: '覆盖体检', query: { tab: 'coverage' } },
   ],
   'admin-experiments': [
     { path: '/admin/experiments', label: '问答对照实验', query: { tab: 'comparison' } },
@@ -53,7 +54,7 @@ export const ADMIN_SECTIONS: Record<string, SectionItem[]> = {
 }
 
 const ADMIN_TAB_CONFIG: Record<string, { defaultTab: string; validTabs: string[] }> = {
-  '/admin/content': { defaultTab: 'course', validTabs: ['course', 'question-bank', 'diagnosis', 'micro-lessons'] },
+  '/admin/content': { defaultTab: 'course', validTabs: ['course', 'question-bank', 'diagnosis', 'micro-lessons', 'coverage'] },
   '/admin/experiments': { defaultTab: 'comparison', validTabs: ['comparison', 'tasks', 'evaluation'] },
 }
 

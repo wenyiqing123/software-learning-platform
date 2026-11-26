@@ -58,7 +58,7 @@ describe('App role navigation', () => {
       expect(router.currentRoute.value.path).toBe('/admin/content')
       const contentGroupWrap = wrapper.findAll('.primary-nav .nav-group-wrap')[1]
       const contentSubItems = contentGroupWrap.findAll('.nav-subitem')
-      expect(contentSubItems.map(item => item.text())).toEqual(['课程与知识点', '题库与版本', '错因诊断', '微课管理'])
+      expect(contentSubItems.map(item => item.text())).toEqual(['课程与知识点', '题库与版本', '错因诊断', '微课管理', '覆盖体检'])
 
       await router.push({ path: '/admin/content', query: { tab: 'diagnosis' } })
       await flushPromises()

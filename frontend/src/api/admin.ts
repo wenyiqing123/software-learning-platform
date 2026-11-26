@@ -1,5 +1,5 @@
 import { api } from './http'
-import type { AdminExperimentAssignment, AdminUserPage, AdminUserProfile, AdminUserSummary, ExperimentGroup, ExperimentTask } from './types'
+import type { AdminExperimentAssignment, AdminUserPage, AdminUserProfile, AdminUserSummary, CoverageAuditReport, ExperimentGroup, ExperimentTask } from './types'
 
 export const adminExperimentTasks = () => api.get<ExperimentTask[]>('/admin/experiment-tasks').then((r) => r.data)
 export const createAdminExperimentTask = (payload: { title: string; description: string; experimentType: 'METHODS' | 'QWEN_MATRIX'; question: string; referenceAnswer: string; expectedEntities: string[]; includeAblations: boolean }) => api.post<ExperimentTask>('/admin/experiment-tasks', payload).then((r) => r.data)
@@ -30,3 +30,6 @@ export const revokeAdminUserTokens = (id: number) =>
 
 export const getAdminUserProfile = (id: number) =>
   api.get<AdminUserProfile>(`/admin/users/${id}/profile`).then((r) => r.data)
+
+export const adminCoverageAudit = (courseId?: number) =>
+  api.get<CoverageAuditReport>('/admin/content/coverage-audit', { params: courseId ? { courseId } : undefined }).then((r) => r.data)

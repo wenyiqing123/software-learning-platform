@@ -6,6 +6,7 @@ import AdminView from './AdminView.vue'
 import QuestionBankView from './QuestionBankView.vue'
 import AdminDiagnosisView from './AdminDiagnosisView.vue'
 import MicroLessonAdminView from './MicroLessonAdminView.vue'
+import AdminCoverageAuditView from './AdminCoverageAuditView.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -14,6 +15,7 @@ const tabs = [
   { key: 'question-bank', label: '题库与版本', component: QuestionBankView },
   { key: 'diagnosis', label: '错因诊断', component: AdminDiagnosisView },
   { key: 'micro-lessons', label: '微课管理', component: MicroLessonAdminView },
+  { key: 'coverage', label: '覆盖体检', component: AdminCoverageAuditView },
 ]
 const activeKey = computed(() => tabs.some(tab => tab.key === route.query.tab) ? String(route.query.tab) : 'course')
 const activeTab = computed(() => tabs.find(tab => tab.key === activeKey.value) || tabs[0])
