@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computeExperimentCitationCoverage, computeTimingBreakdown } from '../domain/experimentComparisonCharts'
+
 interface ExperimentResult {
   mode?: string
   resultKey?: string
@@ -7,7 +9,7 @@ interface ExperimentResult {
   latencyMs?: number
   triples?: { subject: string; predicate: string; object: string; score?: number }[]
   prompt?: string
-  grounding?: { selectedIds: string[]; candidates: unknown[]; modelCallCount: number }
+  grounding?: { selectedIds: string[]; candidates: unknown[]; modelCallCount: number; selectionMs?: number; answerMs?: number }
   provenance?: Record<string, unknown>
 }
 
@@ -70,6 +72,20 @@ function isRankedMode(mode?: string, resultKey?: string): boolean {
       </dl>
 
       <div class="compare-result-details">
+        <div v-if="!result.error && (computeExperimentCitationCoverage(result) || computeTimingBreakdown(result).hasBreakdown)" class="compare-insights">
+          <span v-if="computeExperimentCitationCoverage(result)" class="experiment-citation-pill" data-testid="experiment-citation-coverage">
+            {{ computeExperimentCitationCoverage(result) }}
+          </span>
+          <div v-if="computeTimingBreakdown(result).hasBreakdown" class="timing-breakdown" data-testid="experiment-timing-breakdown">
+            <div class="timing-bar" aria-hidden="true">
+              <i class="timing-seg-select" :style="{ width: computeTimingBreakdown(result).selectionPct + '%' }"></i>
+              <i class="timing-seg-answer" :style="{ width: computeTimingBreakdown(result).answerPct + '%' }"></i>
+            </div>
+            <small>
+              检索筛选 {{ computeTimingBreakdown(result).selectionMs }}ms · 生成 {{ computeTimingBreakdown(result).answerMs }}ms
+            </small>
+          </div>
+        </div>
         <label v-if="!result.error && !hideRating" class="rating-select">
           人工评分
           <select
@@ -175,6 +191,52 @@ function isRankedMode(mode?: string, resultKey?: string): boolean {
 
 .compare-answer {
   color: var(--text);
+}
+
+.compare-insights {
+  display: grid;
+  gap: 6px;
+}
+
+.experiment-citation-pill {
+  width: fit-content;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.timing-breakdown {
+  display: grid;
+  gap: 3px;
+}
+
+.timing-bar {
+  display: flex;
+  height: 5px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--surface-tint);
+}
+
+.timing-seg-select {
+  display: block;
+  height: 100%;
+  background: var(--info);
+}
+
+.timing-seg-answer {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.timing-breakdown small {
+  color: var(--text-subtle);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
 }
 
 .compare-error {

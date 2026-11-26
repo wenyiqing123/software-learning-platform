@@ -40,4 +40,35 @@ describe('ExperimentResultGrid', () => {
     expect(successCard.text()).toContain('85%')
     wrapper.unmount()
   })
+
+  it('shows citation alignment pill and selectionMs vs answerMs timing bar when returned', () => {
+    const wrapper = mount(ExperimentResultGrid, {
+      props: {
+        results: [
+          {
+            resultKey: 'RANKED',
+            mode: 'RANKED',
+            answer: '数据流图加工应该采用动宾短语形式。',
+            latencyMs: 1000,
+            triples: [
+              { subject: '加工', predicate: '采用', object: '动宾短语' },
+              { subject: '数据存储', predicate: '命名', object: '名词短语' },
+            ],
+            grounding: { selectedIds: ['1'], candidates: [1, 2], modelCallCount: 2, selectionMs: 250, answerMs: 750 },
+          },
+        ],
+        ratings: {},
+        metrics: { RANKED: { rougeL: 0.72, bleu4: 0.5, entityRecall: 1 } },
+        modeNames: { RANKED: '排序评分' },
+        score: (v?: number) => (v != null ? `${v * 100}%` : '—'),
+        onRate: vi.fn(),
+      },
+    })
+
+    expect(wrapper.get('[data-testid="experiment-citation-coverage"]').text()).toBe('引用覆盖 1/2 条检索证据')
+    const timing = wrapper.get('[data-testid="experiment-timing-breakdown"]')
+    expect(timing.text()).toContain('检索筛选 250ms')
+    expect(timing.text()).toContain('生成 750ms')
+    wrapper.unmount()
+  })
 })

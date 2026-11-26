@@ -426,4 +426,46 @@ describe('serial batch runner (M3-T13)', () => {
     // 验证未发出的项保持在队列中，不会无限发送
     expect(experimentApi.runExperiment.mock.calls.length).toBeLessThan(8)
   })
+
+  it('displays multi-condition comparison chart and +delta vs DIRECT baseline for latest run', async () => {
+    experimentApi.listExperiments.mockResolvedValueOnce([
+      {
+        id: 'run-cmp-1',
+        question: '什么是数据流图平衡？',
+        createdAt: '2026-11-26T09:00:00Z',
+        results: [
+          { resultKey: 'DIRECT', mode: 'DIRECT', answer: '保持平衡即可', latencyMs: 420 },
+          {
+            resultKey: 'RANKED',
+            mode: 'RANKED',
+            answer: '数据流图分层分解时遵循输入输出守恒规则。',
+            latencyMs: 910,
+            triples: [{ subject: '数据流图', predicate: '遵循', object: '输入输出守恒' }],
+            grounding: { selectedIds: ['1'], candidates: [1], modelCallCount: 2, selectionMs: 210, answerMs: 700 },
+          },
+        ],
+        ratings: {},
+        evaluation: {
+          source: 'SERVER_AI_SERVICE',
+          experimentType: 'METHODS',
+          metricsByMode: {
+            DIRECT: { rougeL: 0.45, bleu4: 0.2, entityRecall: 0.5 },
+            RANKED: { rougeL: 0.75, bleu4: 0.55, entityRecall: 1.0 },
+          },
+        },
+      },
+    ])
+
+    const wrapper = await renderExperiments()
+    await wrapper.get('.saved-experiment-list button').trigger('click')
+    await flushPromises()
+    const charts = wrapper.get('[data-testid="experiment-comparison-charts"]')
+    expect(charts.text()).toContain('多条件客观指标对比与基线差值')
+    const deltaStrip = wrapper.get('[data-testid="experiment-delta-strip"]')
+    expect(deltaStrip.text()).toContain('+30%')
+    expect(deltaStrip.text()).toContain('+50%')
+    expect(wrapper.get('[data-testid="experiment-citation-coverage"]').text()).toContain('引用覆盖 1/1 条检索证据')
+    expect(wrapper.get('[data-testid="experiment-timing-breakdown"]').text()).toContain('检索筛选 210ms')
+    wrapper.unmount()
+  })
 })

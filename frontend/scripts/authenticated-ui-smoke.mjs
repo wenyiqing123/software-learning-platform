@@ -11,7 +11,7 @@ const auditDir = path.join(root, '.ui-visual-review', runName)
 const routes = [
   '/login', '/', '/dashboard', '/courses', '/notes', '/admin', '/teaching-dashboard', '/admin/content', '/admin/experiments', '/admin/users', '/admin/teaching-dashboard', '/admin/question-bank',
   '/admin/micro-lessons', '/admin/diagnostics', '/knowledge?entity=%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90',
-  '/mastery-map', '/tutor', '/practice', '/adaptive-practice', '/wrong-book', '/review', '/study-plan',
+  '/mastery-map', '/tutor', '/practice', '/adaptive-practice', '/wrong-book', '/review', '/flashcards', '/study-plan',
   '/micro-lessons', '/evaluation', '/learning-report', '/admin/evaluations', '/recommendations',
   '/experiments', '/experiment-tasks', '/experiment-run', '/admin/experiment-tasks',
 ]
@@ -173,6 +173,11 @@ function apiResponse(url, role, scenario, method) {
   if (path === '/api/spaced-reviews/due') return json([reviewCard])
   if (path === '/api/spaced-reviews/paused') return json([])
   if (path === '/api/spaced-reviews/21/review') return json({ attemptId: 8, questionId: 101, correct: true, correctAnswer: ['A'], explanation: '加工名称应能说明数据变换。', recallRating: 2, intervalMinutes: 4320, nextDueAt: '2026-11-26T08:00:00', mastered: false, consecutiveSuccessfulReviews: 1 })
+  if (path === '/api/flashcards') return json([
+    { knowledgePointId: 11, courseId: 3, courseName: '软件工程', chapterName: '软件需求', sectionId: 31, sectionTitle: '需求分析', objectives: ['区分系统边界、业务目标与约束'], name: '需求分析', graphEntity: '需求分析', summary: '需求分析梳理目标、场景和系统边界。', masteryScore: 85, recallRating: 2, reviewCount: 1, intervalMinutes: 4320, due: true, nextDueAt: '2026-11-26T08:00:00' },
+    { knowledgePointId: 12, courseId: 3, courseName: '软件工程', chapterName: '软件需求', sectionId: 32, sectionTitle: '数据流图', objectives: ['检查父图与子图的平衡'], name: '数据流图', graphEntity: '数据流图DFD', summary: '刻画系统内部数据流的变换与存储。', masteryScore: 48, recallRating: null, reviewCount: 0, intervalMinutes: null, due: true, nextDueAt: null },
+  ])
+  if (/^\/api\/flashcards\/\d+\/review$/.test(path)) return json({ knowledgePointId: 11, courseId: 3, courseName: '软件工程', chapterName: '软件需求', sectionId: 31, sectionTitle: '需求分析', objectives: ['区分系统边界、业务目标与约束'], name: '需求分析', graphEntity: '需求分析', summary: '需求分析梳理目标、场景和系统边界。', masteryScore: 85, recallRating: 3, reviewCount: 2, intervalMinutes: 10080, due: false, nextDueAt: '2026-12-03T08:00:00' })
   if (path === '/api/study-plans/today') return json({ id: 1, date: '2026-11-21', budgetMinutes: 30, tasks: planTasks })
   if (/^\/api\/study-plans\/tasks\/\d+$/.test(path) && method === 'PUT' && scenario === 'study-plan-hint') {
     return json({ message: '请先完成对应课程阅读、正确作答或复习，再标记计划任务完成' }, 409)
@@ -363,7 +368,27 @@ const visualScenarios = {
         const highlighted = document.querySelector('[data-testid="evidence-triple-1"]')
         return Boolean(d?.hasAttribute('open') && highlighted?.classList.contains('is-highlighted'))
       })
+      await page.getByTestId('tutor-citation-drawer').waitFor({ state: 'visible' })
+      await page.getByTestId('tutor-citation-close').click()
+      await page.getByTestId('tutor-citation-drawer').waitFor({ state: 'detached' })
       await page.getByText('需求规格说明书').first().waitFor()
+    } },
+    { route: '/flashcards', name: 'flashcards-recall', async check(page) {
+      await page.getByTestId('flashcard-front').waitFor()
+      await page.getByTestId('flashcard-flip-btn').click()
+      await page.getByTestId('flashcard-back').waitFor()
+      await page.getByTestId('flashcard-rate-3').click()
+      await page.getByTestId('flashcards-notice').waitFor()
+    } },
+    { route: '/dashboard', name: 'theme-and-cmdk', async check(page) {
+      await page.getByTestId('theme-toggle-btn').click()
+      await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark')
+      await page.getByTestId('theme-toggle-btn').click()
+      await page.waitForFunction(() => document.documentElement.dataset.theme === 'light')
+      await page.getByTestId('command-palette-trigger').click()
+      await page.getByTestId('command-palette-dialog').waitFor({ state: 'visible' })
+      await page.keyboard.press('Escape')
+      await page.getByTestId('command-palette-dialog').waitFor({ state: 'detached' })
     } },
     { route: '/tutor?activity=feynman&courseId=3&entity=%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90', name: 'feynman-teachback', async check(page) {
       if (await page.locator('.tutor-mode-selector, .compare-toggle, .tutor-aside').count()) throw new Error('Legacy mode selector leaked in feynman mode')

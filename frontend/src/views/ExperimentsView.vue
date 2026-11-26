@@ -5,6 +5,7 @@ import { ArrowDownToLine, CircleHelp, FlaskConical, Play, Plus, Timer, X } from 
 import { apiError, learningApi, type ExperimentAssignment, type FixedExperimentCase, type FixedExperimentSuite } from '../api/client'
 import SectionHeading from '../components/SectionHeading.vue'
 import { experimentCsv, experimentJson, type ExperimentExportRun } from '../domain/experimentExport'
+import ExperimentComparisonCharts from '../components/ExperimentComparisonCharts.vue'
 import ExperimentResultGrid from '../components/ExperimentResultGrid.vue'
 
 const props = withDefaults(defineProps<{ embedded?: boolean; studentTaskMode?: boolean }>(), {
@@ -713,6 +714,11 @@ defineExpose({
           </div>
           <span class="history-count"><Timer :size="13" />{{ new Date(latest.createdAt).toLocaleString('zh-CN') }}</span>
         </div>
+        <ExperimentComparisonCharts
+          :results="latest.results"
+          :metrics="latest.evaluation?.metricsByMode"
+          :mode-names="modeNames"
+        />
         <ExperimentResultGrid
           :results="latest.results"
           :ratings="latest.ratings"
