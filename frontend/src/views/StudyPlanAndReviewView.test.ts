@@ -62,6 +62,16 @@ describe('spaced review page', () => {
     wrapper.unmount()
   })
 
+  it('displays fixed interval previews per rating and 7-day forecast histogram', async () => {
+    const wrapper = await mountWithRouter(ReviewView, '/review'); await flushPromises()
+    const previews = wrapper.findAll('[data-testid="review-interval-preview"]').map((el) => el.text())
+    expect(previews).toEqual(['答对 10 分钟后', '答对 1 天后', '答对 3 天后', '答对 7 天后'])
+    const chart = wrapper.get('[data-testid="review-forecast-chart"]')
+    expect(chart.text()).toContain('未来 7 天到期复习分布')
+    expect(chart.text()).toContain('当前到期 1 题')
+    wrapper.unmount()
+  })
+
 })
 
 describe('daily plan page', () => {

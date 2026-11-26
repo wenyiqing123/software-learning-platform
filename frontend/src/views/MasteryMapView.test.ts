@@ -111,6 +111,15 @@ describe('personal mastery map', () => {
 
     await wrapper.get('[data-testid="mastery-filter-ALL"]').trigger('click')
     expect(wrapper.findAll('.mastery-node')).toHaveLength(2)
+
+    await wrapper.get('[data-testid="mastery-view-roadmap"]').trigger('click')
+    const board = wrapper.get('[data-testid="mastery-roadmap-board"]')
+    expect(board.text()).toContain('第 1 阶段 · 基础起点')
+    expect(board.text()).toContain('第 2 阶段 · 进阶路径')
+    expect(board.text()).toContain('先修: 需求分析')
+
+    await wrapper.get('[data-testid="mastery-view-graph"]').trigger('click')
+    expect(wrapper.find('[data-testid="mastery-roadmap-board"]').exists()).toBe(false)
     wrapper.unmount()
   })
 })

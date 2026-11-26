@@ -95,4 +95,38 @@ describe('knowledge graph view modes', () => {
     expect(wrapper.text()).toContain('0 条关系')
     wrapper.unmount()
   })
+
+  it('supports 2-hop cumulative exploration and dual-entity bridge path discovery', async () => {
+    graphApi.graph.mockImplementation(async (target: string) => {
+      if (target === '系统设计') {
+        return {
+          nodes: [{ id: '系统设计', label: '系统设计' }, { id: '架构模式', label: '架构模式' }],
+          edges: [{ source: '系统设计', target: '架构模式', label: '采用' }],
+          evidence: [], available: true,
+        }
+      }
+      return {
+        nodes: [{ id: '需求分析', label: '需求分析' }, { id: '系统设计', label: '系统设计' }],
+        edges: [{ source: '需求分析', target: '系统设计', label: '引出' }],
+        evidence: [], available: true,
+      }
+    })
+
+    const wrapper = await renderGraphMode()
+    await wrapper.get('[data-testid="graph-hop-2"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('3 个实体')
+    expect(wrapper.text()).toContain('2 条关系')
+
+    await wrapper.get('[data-testid="graph-bridge-input"]').setValue('架构模式')
+    await wrapper.get('[data-testid="graph-bridge-btn"]').trigger('click')
+    await flushPromises()
+
+    const bridgeBox = wrapper.get('[data-testid="graph-bridge-result"]')
+    expect(bridgeBox.text()).toContain('需求分析')
+    expect(bridgeBox.text()).toContain('系统设计')
+    expect(bridgeBox.text()).toContain('架构模式')
+    wrapper.unmount()
+  })
 })

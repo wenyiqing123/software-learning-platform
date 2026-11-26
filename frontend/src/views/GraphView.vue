@@ -2,8 +2,10 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Graph } from '@antv/g6'
-import { ArrowUpRight, BookOpen, CheckSquare, CircleHelp, Clock3, GraduationCap, Network, Sparkles } from '@lucide/vue'
+import { ArrowUpRight, BookOpen, CheckSquare, CircleHelp, Clock3, GitCommitHorizontal, GraduationCap, Network, Plus, Sparkles } from '@lucide/vue'
 import { learningApi, type GraphResponse, type KnowledgePoint } from '../api/client'
+import { useTheme } from '../composables/useTheme'
+import { computeNodeDegrees, findEntityBridgePath, mergeGraphResponses } from '../domain/graphAlgorithms'
 import { bindGraphViewportSync, graphViewportPadding, type GraphViewportInstance } from '../domain/graphViewport'
 import { effectiveMasteryPercent, peakMasteryPercent, retentionAlertLabel } from '../domain/masteryRetention'
 import SectionHeading from '../components/SectionHeading.vue'
@@ -28,9 +30,20 @@ let searchTimer: ReturnType<typeof setTimeout> | null = null
 const graphUnavailable = computed(() => !loading.value && !error.value && !graphData.value.available)
 const renderMode = ref<'2d' | '3d'>('2d')
 const isFullscreen = ref(false)
+const hopDepth = ref<1 | 2>(1)
+const expandingHop = ref(false)
+const bridgeTarget = ref('')
+const bridgeChecked = ref(false)
 const relationFilter = ref('ALL')
+const { isDark } = useTheme()
 const relationOptions = computed(() => Array.from(new Set(graphData.value.edges.map(edge => edge.label))).sort())
 const visibleEdges = computed(() => relationFilter.value === 'ALL' ? graphData.value.edges : graphData.value.edges.filter(edge => edge.label === relationFilter.value))
+const nodeDegrees = computed(() => computeNodeDegrees(graphData.value.nodes, visibleEdges.value))
+const bridgeResult = computed(() => {
+  if (!bridgeChecked.value || !bridgeTarget.value.trim()) return null
+  return findEntityBridgePath(visibleEdges.value, selectedNode.value, bridgeTarget.value)
+})
+const bridgeNodeSet = computed(() => new Set(bridgeResult.value?.found ? bridgeResult.value.nodeIds : []))
 const averageEvidenceScore = computed(() => { const values = visibleEdges.value.map(edge => edge.score).filter((score): score is number => typeof score === 'number'); return values.length ? (values.reduce((sum, score) => sum + score, 0) / values.length).toFixed(2) : '—' })
 const evidenceOpen = ref(false)
 const selectedEvidence = computed<EvidenceTriple[]>(() => graphData.value.evidence.filter((value): value is EvidenceTriple => {
@@ -54,23 +67,55 @@ async function drawGraph() {
   destroyGraph()
   if (!graphData.value.nodes.length || !graphData.value.edges.length) return
 
+  const dark = isDark.value
   const instance = new Graph({
     container: graphHost.value,
     autoResize: true,
     autoFit: 'view',
     padding: graphViewportPadding(isFullscreen.value),
     data: {
-      nodes: graphData.value.nodes.map((node) => ({
-        id: node.id,
-        data: { label: node.label },
-        style: { fill: node.id === selectedNode.value ? '#176b57' : '#e6f3ed', stroke: '#348b70', lineWidth: 1.4, size: node.id === selectedNode.value ? 58 : 44, labelText: node.label, labelFill: '#19332c', labelFontSize: 12, labelPlacement: 'bottom', labelOffsetY: 7 },
-      })),
+      nodes: graphData.value.nodes.map((node) => {
+        const isSelected = node.id === selectedNode.value
+        const isBridge = bridgeNodeSet.value.has(node.id)
+        const degree = nodeDegrees.value.get(node.id) || 0
+        const computedSize = isSelected ? 60 : Math.min(62, 38 + degree * 5)
+        return {
+          id: node.id,
+          data: { label: node.label },
+          style: {
+            fill: isSelected
+              ? (dark ? '#40b8a8' : '#176b57')
+              : isBridge
+                ? (dark ? '#2b4b43' : '#cdebe1')
+                : (dark ? '#1b2b27' : '#e6f3ed'),
+            stroke: isBridge ? (dark ? '#6fe0cf' : '#0b514b') : (dark ? '#40b8a8' : '#348b70'),
+            lineWidth: isSelected || isBridge ? 2.2 : 1.4,
+            size: computedSize,
+            labelText: node.label,
+            labelFill: dark ? '#e6f0ed' : '#19332c',
+            labelFontSize: 12,
+            labelPlacement: 'bottom',
+            labelOffsetY: 7,
+          },
+        }
+      }),
       edges: visibleEdges.value.map((edge, index) => ({
         id: 'edge-' + index,
         source: edge.source,
         target: edge.target,
         data: { label: edge.label },
-        style: { stroke: '#849b95', lineWidth: 1.4, endArrow: true, labelText: edge.label, labelFill: '#475b56', labelFontSize: 12, labelBackground: true, labelBackgroundFill: '#f7f8fa' },
+        style: {
+          stroke: bridgeNodeSet.value.has(edge.source) && bridgeNodeSet.value.has(edge.target)
+            ? (dark ? '#5dd0c0' : '#0f665e')
+            : (dark ? '#5c7870' : '#849b95'),
+          lineWidth: bridgeNodeSet.value.has(edge.source) && bridgeNodeSet.value.has(edge.target) ? 2.2 : 1.4,
+          endArrow: true,
+          labelText: edge.label,
+          labelFill: dark ? '#adc2bc' : '#475b56',
+          labelFontSize: 12,
+          labelBackground: true,
+          labelBackgroundFill: dark ? '#172320' : '#f7f8fa',
+        },
       })),
     },
     layout: { type: 'force', preventOverlap: true, linkDistance: 160, nodeSize: 56, gravity: 14 },
@@ -99,7 +144,20 @@ async function searchEntity(value = entity.value) {
   loading.value = true
   error.value = ''
   try {
-    graphData.value = await learningApi.graph(normalized)
+    const base = await learningApi.graph(normalized)
+    let merged = base
+    if (hopDepth.value === 2 && base.available && base.nodes.length) {
+      const neighbors = base.nodes.filter((n) => n.id !== normalized).slice(0, 3)
+      if (neighbors.length) {
+        const expansions = await Promise.allSettled(neighbors.map((n) => learningApi.graph(n.id)))
+        for (const res of expansions) {
+          if (res.status === 'fulfilled' && res.value?.available) {
+            merged = mergeGraphResponses(merged, res.value)
+          }
+        }
+      }
+    }
+    graphData.value = merged
     if (renderMode.value === '2d') void drawGraph()
   } catch {
     graphData.value = { nodes: [], edges: [], evidence: [], available: false }
@@ -167,7 +225,49 @@ async function switchRenderMode(next: '2d' | '3d') {
   if (next === '3d') { destroyGraph(); return }
   if (graphData.value.available && graphData.value.nodes.length) await drawGraph()
 }
+async function expandSelectedNode() {
+  const target = selectedNode.value.trim()
+  if (!target || expandingHop.value || loading.value) return
+  expandingHop.value = true
+  try {
+    const expansion = await learningApi.graph(target)
+    if (expansion?.available) {
+      graphData.value = mergeGraphResponses(graphData.value, expansion)
+      if (renderMode.value === '2d') void drawGraph()
+    }
+  } finally {
+    expandingHop.value = false
+  }
+}
+
+async function analyzeBridgePath(fetchTargetIfMissing = false) {
+  const target = bridgeTarget.value.trim()
+  if (!target) return
+  bridgeChecked.value = true
+  if (fetchTargetIfMissing && !graphData.value.nodes.some((n) => n.id === target)) {
+    expandingHop.value = true
+    try {
+      const extra = await learningApi.graph(target)
+      if (extra?.available) {
+        graphData.value = mergeGraphResponses(graphData.value, extra)
+      }
+    } finally {
+      expandingHop.value = false
+    }
+  }
+  if (renderMode.value === '2d' && graphData.value.nodes.length) {
+    void drawGraph()
+  }
+}
+
+function setHopDepth(depth: 1 | 2) {
+  if (hopDepth.value === depth) return
+  hopDepth.value = depth
+  if (mode.value === 'graph') void searchEntity(entity.value)
+}
+
 watch(relationFilter, () => { if (renderMode.value === '2d') void drawGraph() })
+watch(isDark, () => { if (mode.value === 'graph' && renderMode.value === '2d' && graphData.value.available) void drawGraph() })
 
 onMounted(() => {
   void loadKnowledgePoints()
@@ -203,6 +303,15 @@ onBeforeUnmount(() => {
       <span class="graph-count"><Network :size="16" />{{ graphData.nodes.length }} 个实体</span>
       <span class="graph-count">{{ graphData.edges.length }} 条关系</span>
       <span class="graph-count">当前查询：{{ selectedNode }}</span>
+      <div class="graph-hop-controls">
+        <div class="graph-hop-pills" role="group" aria-label="图谱探索跳数">
+          <button type="button" class="graph-hop-btn" :class="{ active: hopDepth === 1 }" data-testid="graph-hop-1" @click="setHopDepth(1)">1 跳邻域</button>
+          <button type="button" class="graph-hop-btn" :class="{ active: hopDepth === 2 }" data-testid="graph-hop-2" @click="setHopDepth(2)">2 跳扩展</button>
+        </div>
+        <button type="button" class="button button-outline button-small" :disabled="expandingHop || loading || !selectedNode" data-testid="graph-expand-node" @click="expandSelectedNode()">
+          <Plus :size="14" /><span>{{ expandingHop ? '扩展中…' : `展开「${selectedNode}」+1跳` }}</span>
+        </button>
+      </div>
     </section>
     <section class="graph-explore-layout">
       <div class="graph-panel">
@@ -245,6 +354,30 @@ onBeforeUnmount(() => {
         </div>
         <div v-if="renderMode === '3d'" class="graph-analysis"><p class="mini-heading">交互分析</p><label>关系筛选<select v-model="relationFilter" aria-label="关系类型筛选"><option value="ALL">全部关系</option><option v-for="item in relationOptions" :key="item" :value="item">{{ item }}</option></select></label><div><span>节点度数</span><strong>{{ selectedRelations.length }}</strong></div><div><span>平均证据分</span><strong>{{ averageEvidenceScore }}</strong></div></div>
         <div class="relation-list"><p class="mini-heading">相邻知识</p><div v-if="selectedRelations.length === 0" class="empty-relations">搜索并加载图谱后查看相邻知识。</div><button v-for="edge in selectedRelations" :key="edge.source + edge.label + edge.target" class="relation-item" @click="searchEntity(edge.source === selectedNode ? edge.target : edge.source)"><span>{{ edge.source === selectedNode ? edge.label + ' →' : '← ' + edge.label }}</span><strong>{{ edge.source === selectedNode ? edge.target : edge.source }}</strong><ArrowUpRight :size="14" /></button></div>
+        <div class="graph-bridge-panel" data-testid="graph-bridge-panel">
+          <p class="mini-heading"><GitCommitHorizontal :size="14" /> 概念桥梁路径发现</p>
+          <div class="graph-bridge-form">
+            <input v-model="bridgeTarget" type="text" list="graph-bridge-suggestions" placeholder="输入目标概念（如 数据字典）" aria-label="桥梁发现目标概念" data-testid="graph-bridge-input" @keyup.enter="analyzeBridgePath(false)" />
+            <datalist id="graph-bridge-suggestions">
+              <option v-for="n in graphData.nodes" :key="n.id" :value="n.id" />
+              <option v-for="kp in coursePoints" :key="'kp-' + kp.id" :value="kp.graphEntity || kp.name" />
+            </datalist>
+            <button type="button" class="button button-outline button-small" :disabled="!bridgeTarget.trim() || expandingHop" data-testid="graph-bridge-btn" @click="analyzeBridgePath(true)">查找桥接</button>
+          </div>
+          <div v-if="bridgeResult" class="graph-bridge-result" data-testid="graph-bridge-result">
+            <template v-if="bridgeResult.found">
+              <p v-if="!bridgeResult.steps.length">「{{ selectedNode }}」与目标概念为同一节点。</p>
+              <ol v-else class="graph-bridge-steps">
+                <li v-for="(step, sIdx) in bridgeResult.steps" :key="sIdx">
+                  <strong>{{ step.from }}</strong>
+                  <span>{{ step.relation }}</span>
+                  <strong>{{ step.to }}</strong>
+                </li>
+              </ol>
+            </template>
+            <p v-else class="graph-bridge-empty">当前已加载子图中暂未发现「{{ selectedNode }}」到「{{ bridgeTarget }}」的连通路径，可点击上方扩展邻域或切换 2 跳后再试。</p>
+          </div>
+        </div>
          <GraphEvidenceDrawer v-model="evidenceOpen" :node="selectedNode" :triples="selectedEvidence" @ask="emit('navigate', 'tutor', $event)" />
       </aside>
     </section>
@@ -302,5 +435,80 @@ onBeforeUnmount(() => {
   gap: 3px;
   color: var(--warning-strong);
   font-weight: 600;
+}
+.graph-hop-controls {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.graph-hop-pills {
+  display: inline-flex;
+  padding: 2px;
+  background: var(--surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+}
+.graph-hop-btn {
+  padding: 4px 10px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.graph-hop-btn.active {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+}
+.graph-bridge-panel {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+}
+.graph-bridge-panel .mini-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+.graph-bridge-form {
+  display: flex;
+  gap: 6px;
+}
+.graph-bridge-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12.5px;
+}
+.graph-bridge-result {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.graph-bridge-steps {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+}
+.graph-bridge-steps span {
+  margin: 0 5px;
+  color: var(--accent-strong);
+}
+.graph-bridge-empty {
+  margin: 0;
+  line-height: 1.5;
 }
 </style>

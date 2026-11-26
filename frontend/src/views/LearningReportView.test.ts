@@ -31,6 +31,8 @@ describe('learning report page', () => {
     await wrapper.get('[data-testid="report-days"]').setValue('14')
     await flushPromises()
     expect(learning.learningReport).toHaveBeenLastCalledWith(14, undefined)
+    expect(wrapper.find('[data-testid="learning-analytics-charts"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="analytics-heatmap-chart"]').exists()).toBe(true)
     wrapper.unmount()
   })
 })

@@ -4,6 +4,7 @@ import { ArrowUpRight, BookOpen, BrainCircuit, CalendarCheck, CircleCheck, Clock
 import { useLearningMetrics, weeklyActivity } from '../composables/useLearningMetrics'
 import MetricTile from '../components/MetricTile.vue'
 import SectionHeading from '../components/SectionHeading.vue'
+import LearningAnalyticsCharts from '../components/LearningAnalyticsCharts.vue'
 import { courseHref, readLastLearningContext, practiceHref } from '../domain/learningContext'
 import {
   clampMasteryPercent,
@@ -61,6 +62,12 @@ const atRiskPoints = computed(() =>
     .slice(0, 3),
 )
 const days = computed(() => weeklyActivity(overview.value?.activity || [], now.value))
+const radarPoints = computed(() =>
+  points.value.map((point) => ({
+    name: point.name,
+    value: effectiveMasteryPercent(point),
+  })),
+)
 const weeklyTotal = computed(() => days.value.reduce((sum, day) => sum + day.count, 0))
 const maxActivity = computed(() => Math.max(...days.value.map(day => day.count), 1))
 const accuracyDetail = computed(() => !overview.value ? '答题记录暂不可用'
@@ -133,6 +140,7 @@ onBeforeUnmount(() => window.removeEventListener('learning:changed', refreshCont
         <div class="activity-footer"><span><Flame :size="15" />{{ overview ? '近七天共提交 ' + weeklyTotal + ' 题' : '等待服务端答题记录' }}</span><span class="week-total">按答题次数统计</span></div>
       </section>
     </div>
+    <LearningAnalyticsCharts :show-heatmap="false" :radar-points="radarPoints" radar-title="知识点保持度能力分布" />
     <section class="recommend-strip"><div class="recommend-symbol"><Sparkles :size="20" /></div><div><p class="eyebrow">学习建议</p><h2>从知识图谱中选择概念，或先完成一组练习</h2><span>答题与复习记录将用于生成个性化学习建议</span></div><button class="button button-dark" @click="emit('navigate', 'recommendations')">查看推荐 <ArrowUpRight :size="16" /></button><CircleCheck class="recommend-check" :size="20" /></section>
   </div>
 </template>

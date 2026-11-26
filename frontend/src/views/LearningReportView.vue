@@ -4,6 +4,7 @@ import { BarChart3, BookOpenCheck, CircleAlert, Download, RotateCcw, Target } fr
 import { api, apiError, learningApi, type LearningReport } from '../api/client'
 import SectionHeading from '../components/SectionHeading.vue'
 import FeedbackState from '../components/FeedbackState.vue'
+import LearningAnalyticsCharts from '../components/LearningAnalyticsCharts.vue'
 
 interface Course { id: number; name: string; term: string }
 const courses = ref<Course[]>([])
@@ -15,6 +16,20 @@ const exporting = ref(false)
 const error = ref('')
 const completionRate = computed(() => report.value?.reading.totalSections ? Math.round(report.value.reading.completedSections / report.value.reading.totalSections * 100) : 0)
 const planRate = computed(() => report.value?.plans.totalTasks ? Math.round(report.value.plans.completedTasks / report.value.plans.totalTasks * 100) : 0)
+const reportHeatmapDays = computed(() =>
+  (report.value?.dailyActivity ?? []).map((day) => ({
+    date: day.date,
+    count: (day.attempts || 0) + (day.readingCompleted || 0),
+    correct: day.correct,
+    readingCompleted: day.readingCompleted,
+  })),
+)
+const reportRadarPoints = computed(() =>
+  (report.value?.knowledge ?? []).map((kp) => ({
+    name: kp.pointName,
+    value: kp.mastery,
+  })),
+)
 
 async function loadCourses() { try { courses.value = (await api.get<Course[]>('/courses')).data } catch { courses.value = [] } }
 async function load() { loading.value = true; error.value = ''; try { report.value = await learningApi.learningReport(days.value, courseId.value) } catch (cause) { error.value = apiError(cause, '阶段性学习报告暂时无法加载。') } finally { loading.value = false } }
@@ -38,6 +53,7 @@ onMounted(async () => { await loadCourses(); await load() })
     <FeedbackState v-if="loading" :loading="loading" loading-title="正在汇总学习记录" loading-text="正在读取阅读、练习、复习和计划数据，请稍候。" />
     <template v-else-if="report">
       <section class="report-kpis"><article><span>课程阅读</span><strong>{{ report.reading.completedSections }} / {{ report.reading.totalSections }}</strong><small>总完成率 {{ completionRate }}% · 本期新增 {{ report.reading.completedInPeriod }} 节</small></article><article><span>练习正确率</span><strong>{{ report.practice.accuracy }}%</strong><small>{{ report.practice.correct }} / {{ report.practice.attempts }} 次答题</small></article><article><span>复习正确率</span><strong>{{ report.reviews.accuracy }}%</strong><small>{{ report.reviews.correct }} / {{ report.reviews.reviews }} 次到期复习</small></article><article><span>计划执行</span><strong>{{ report.plans.completedMinutes }} / {{ report.plans.plannedMinutes }} 分钟</strong><small>{{ report.plans.completedTasks }} / {{ report.plans.totalTasks }} 个任务 · {{ planRate }}%</small></article></section>
+      <LearningAnalyticsCharts :heatmap-days="reportHeatmapDays" :radar-points="reportRadarPoints" />
       <section class="report-columns">
         <div class="report-panel">
           <div class="report-panel-heading"><h2 id="report-activity-title">每日学习活动</h2><Target :size="18" /></div>

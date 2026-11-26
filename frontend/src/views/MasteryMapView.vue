@@ -2,8 +2,10 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Graph } from '@antv/g6'
-import { ArrowRight, CircleAlert, Clock3, Network, RotateCcw } from '@lucide/vue'
+import { ArrowRight, CircleAlert, Clock3, GitFork, ListTree, Network, RotateCcw } from '@lucide/vue'
 import { api, apiError, learningApi, type MasteryMap, type MasteryMapNode } from '../api/client'
+import { useTheme } from '../composables/useTheme'
+import { buildPrerequisiteRoadmapStages } from '../domain/graphAlgorithms'
 import { bindGraphViewportSync, graphViewportPadding, type GraphViewportInstance } from '../domain/graphViewport'
 import {
   effectiveMasteryPercent,
@@ -29,9 +31,11 @@ const map = ref<MasteryMap | null>(null)
 const loading = ref(true)
 const error = ref('')
 const renderMode = ref<'2d' | '3d'>('2d')
+const mapViewMode = ref<'graph' | 'roadmap'>('graph')
 const isFullscreen = ref(false)
 const selectedNodeId = ref<number | undefined>()
 const evidenceOpen = ref(false)
+const { isDark } = useTheme()
 let graph: GraphViewportInstance | null = null
 let viewportSync: ReturnType<typeof bindGraphViewportSync> | null = null
 
@@ -64,14 +68,50 @@ async function draw() {
   await nextTick()
   if (!host.value || !map.value) return
   destroyGraph()
+  const dark = isDark.value
   const instance = new Graph({
     container: host.value,
     autoResize: true,
     autoFit: 'view',
     padding: graphViewportPadding(isFullscreen.value),
     data: {
-      nodes: map.value.nodes.map(node => ({ id: String(node.id), data: { label: node.name }, style: { fill: node.status === 'MASTERED' ? '#d9eee0' : node.status === 'BLOCKED' ? '#f4e2da' : '#fff4d8', stroke: node.status === 'MASTERED' ? '#4b986b' : node.status === 'BLOCKED' ? '#b86d59' : '#c79a42', lineWidth: 1.5, size: 50, labelText: node.name, labelFill: '#19332c', labelFontSize: 11, labelPlacement: 'bottom', labelOffsetY: 7 } })),
-      edges: map.value.edges.map((edge, index) => ({ id: 'mastery-edge-' + index, source: String(edge.source), target: String(edge.target), data: { label: edge.relation }, style: { stroke: '#9bafa3', lineWidth: 1.2, endArrow: true, labelText: edge.relation, labelFill: '#60766e', labelFontSize: 9 } })),
+      nodes: map.value.nodes.map(node => ({
+        id: String(node.id),
+        data: { label: node.name },
+        style: {
+          fill: node.status === 'MASTERED'
+            ? (dark ? '#183b32' : '#d9eee0')
+            : node.status === 'BLOCKED'
+              ? (dark ? '#38201e' : '#f4e2da')
+              : (dark ? '#362b16' : '#fff4d8'),
+          stroke: node.status === 'MASTERED'
+            ? (dark ? '#40b8a8' : '#4b986b')
+            : node.status === 'BLOCKED'
+              ? (dark ? '#e28175' : '#b86d59')
+              : (dark ? '#dfa34b' : '#c79a42'),
+          lineWidth: 1.5,
+          size: 50,
+          labelText: node.name,
+          labelFill: dark ? '#e6f0ed' : '#19332c',
+          labelFontSize: 11,
+          labelPlacement: 'bottom',
+          labelOffsetY: 7,
+        },
+      })),
+      edges: map.value.edges.map((edge, index) => ({
+        id: 'mastery-edge-' + index,
+        source: String(edge.source),
+        target: String(edge.target),
+        data: { label: edge.relation },
+        style: {
+          stroke: dark ? '#5a766d' : '#9bafa3',
+          lineWidth: 1.2,
+          endArrow: true,
+          labelText: edge.relation,
+          labelFill: dark ? '#adc2bc' : '#60766e',
+          labelFontSize: 9,
+        },
+      })),
     },
     layout: { type: 'force', preventOverlap: true, linkDistance: 150, nodeSize: 56, gravity: 14 },
     behaviors: ['drag-canvas', 'zoom-canvas', 'drag-element'],
@@ -100,6 +140,20 @@ async function load() {
 }
 const graphNodes = computed(() => map.value?.nodes.map(node => ({ id: String(node.id), label: node.name })) || [])
 const graphEdges = computed(() => map.value?.edges.map(edge => ({ source: String(edge.source), target: String(edge.target), label: edge.relation })) || [])
+const roadmapStages = computed(() => buildPrerequisiteRoadmapStages(filteredNodes.value, map.value?.edges ?? []))
+const nodeNameById = computed(() => {
+  const dict = new Map<number, string>()
+  for (const n of map.value?.nodes ?? []) dict.set(n.id, n.name)
+  return dict
+})
+function switchMapViewMode(next: 'graph' | 'roadmap') {
+  mapViewMode.value = next
+  if (next === 'roadmap') destroyGraph()
+  else if (renderMode.value === '2d' && map.value) void draw()
+}
+watch(isDark, () => {
+  if (mapViewMode.value === 'graph' && renderMode.value === '2d' && map.value) void draw()
+})
 function switchRenderMode(next: '2d' | '3d') { renderMode.value = next; if (next === '3d') destroyGraph(); else void draw() }
 function onFullscreenChange(fullscreen: boolean) {
   isFullscreen.value = fullscreen
@@ -139,10 +193,38 @@ onBeforeUnmount(destroyGraph)
       <button class="button button-outline" :disabled="loading" @click="load"><RotateCcw :size="15" />刷新</button>
     </SectionHeading>
     <div v-if="error" class="inline-notice" role="alert"><CircleAlert :size="16" />{{ error }}<button class="text-button" @click="load">重试</button></div>
-    <section class="mastery-controls"><label><Network :size="15" />课程<select v-model.number="courseId" @change="onCourseChange"><option :value="undefined">全部课程</option><option v-for="course in courses" :key="course.id" :value="course.id">{{ course.name }} · {{ course.term }}</option></select></label><span v-if="map" class="mastery-summary">{{ map.courseName }} · {{ map.nodes.length }} 个知识点 · {{ map.edges.length }} 条先修关系</span></section>
+    <section class="mastery-controls"><label><Network :size="15" />课程<select v-model.number="courseId" @change="onCourseChange"><option :value="undefined">全部课程</option><option v-for="course in courses" :key="course.id" :value="course.id">{{ course.name }} · {{ course.term }}</option></select></label><div class="mastery-view-switch" role="tablist" aria-label="掌握视图形态"><button type="button" role="tab" class="mastery-view-btn" :class="{ active: mapViewMode === 'graph' }" :aria-selected="mapViewMode === 'graph'" data-testid="mastery-view-graph" @click="switchMapViewMode('graph')"><GitFork :size="14" />关系画布</button><button type="button" role="tab" class="mastery-view-btn" :class="{ active: mapViewMode === 'roadmap' }" :aria-selected="mapViewMode === 'roadmap'" data-testid="mastery-view-roadmap" @click="switchMapViewMode('roadmap')"><ListTree :size="14" />能力路线图</button></div><span v-if="map" class="mastery-summary">{{ map.courseName }} · {{ map.nodes.length }} 个知识点 · {{ map.edges.length }} 条先修关系</span></section>
     <div v-if="loading" class="empty-state"><span class="spinner"></span><strong>正在汇总个人掌握记录</strong></div>
     <template v-else-if="map">
-      <VisualizationViewport title="个人掌握关系" description="颜色表示当前掌握状态；可切换 2D/3D 视图并从节点继续学习。" :mode="renderMode" :status="renderMode === '3d' ? 'Three.js 3D' : 'G6 2D'" :loading="loading" :error="error" :empty="!map.nodes.length" @retry="load" @reset="load" @focus="focusSelected" @mode-change="switchRenderMode" @fullscreen-change="onFullscreenChange">
+      <section v-if="mapViewMode === 'roadmap'" class="roadmap-board" data-testid="mastery-roadmap-board" aria-label="先修分层能力路线图">
+        <div v-if="!roadmapStages.length" class="empty-state"><strong>当前筛选条件下暂无路线图节点</strong></div>
+        <div v-for="stage in roadmapStages" :key="stage.stageIndex" class="roadmap-stage">
+          <div class="roadmap-stage-rail">
+            <span class="roadmap-stage-badge">{{ stage.stageIndex }}</span>
+            <h3>{{ stage.title }}</h3>
+            <small>{{ stage.nodes.length }} 个知识点</small>
+          </div>
+          <div class="roadmap-stage-cards">
+            <article v-for="node in stage.nodes" :key="node.id" class="roadmap-card" :class="[statusClass(node.status), { selected: selectedNodeId === node.id }]" @click="selectedNodeId = node.id; evidenceOpen = true">
+              <div class="roadmap-card-head">
+                <strong>{{ node.name }}</strong>
+                <span class="roadmap-status-pill">{{ statusLabel(node.status) }}</span>
+              </div>
+              <div class="mastery-progress">
+                <span class="mastery-progress-peak" :style="{ width: peakMasteryPercent(node) + '%' }"></span>
+                <i :style="{ width: effectiveMasteryPercent(node) + '%' }"></i>
+              </div>
+              <p class="roadmap-card-meta">保持度 {{ effectiveMasteryPercent(node) }}% · 峰值 {{ peakMasteryPercent(node) }}%<template v-if="node.prerequisiteIds.length"> · 先修: {{ node.prerequisiteIds.map(pid => nodeNameById.get(pid) || `#${pid}`).join('、') }}</template></p>
+              <div class="roadmap-card-actions">
+                <button type="button" class="text-button" @click.stop="study(node)">课程阅读<ArrowRight :size="13" /></button>
+                <button type="button" class="text-button" @click.stop="practice(node)">专项练习<ArrowRight :size="13" /></button>
+                <button v-if="retentionAlertLabel(node) || node.dueReviewCount > 0" type="button" class="text-button mastery-review-btn" @click.stop="review()">间隔复习<ArrowRight :size="13" /></button>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+      <VisualizationViewport v-else title="个人掌握关系" description="颜色表示当前掌握状态；可切换 2D/3D 视图并从节点继续学习。" :mode="renderMode" :status="renderMode === '3d' ? 'Three.js 3D' : 'G6 2D'" :loading="loading" :error="error" :empty="!map.nodes.length" @retry="load" @reset="load" @focus="focusSelected" @mode-change="switchRenderMode" @fullscreen-change="onFullscreenChange">
         <ThreeGraphCanvas v-if="renderMode === '3d'" :nodes="graphNodes" :edges="graphEdges" :selected-id="selectedNodeId ? String(selectedNodeId) : undefined" @select="selectedNodeId = Number($event)" />
         <div v-else ref="host" class="mastery-canvas" aria-label="个人掌握关系图"></div>
         <template #footer><div class="mastery-legend"><strong class="mastery-legend-title">掌握程度</strong><span><i class="legend-dot legend-mastered"></i>已掌握</span><span><i class="legend-dot legend-in-progress"></i>学习中/下一步</span><span><i class="legend-dot legend-blocked"></i>先修阻塞</span></div></template>
@@ -244,5 +326,24 @@ onBeforeUnmount(destroyGraph)
 .mastery-filter-bar{display:flex;flex-wrap:wrap;gap:8px}
 .mastery-filter-chip{min-height:30px;padding:4px 12px;color:var(--text-muted);background:var(--surface);border:1px solid var(--border-default);border-radius:var(--radius-pill);font-size:12px;font-weight:600;cursor:pointer}
 .mastery-filter-chip.active{color:var(--accent-strong);background:var(--accent-soft);border-color:var(--border-focus)}
-@media(max-width:700px){.mastery-summary{width:100%;margin-left:0}.mastery-node{grid-template-columns:minmax(0,1fr)}.mastery-canvas{min-height:320px}}
+.mastery-view-switch{display:inline-flex;gap:4px;padding:3px;background:var(--surface);border:1px solid var(--border-default);border-radius:var(--radius-sm)}
+.mastery-view-btn{display:inline-flex;align-items:center;gap:5px;min-height:28px;padding:4px 10px;border:0;border-radius:var(--radius-xs);background:transparent;color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer}
+.mastery-view-btn.active{color:var(--accent-strong);background:var(--accent-soft)}
+.roadmap-board{display:grid;gap:14px}
+.roadmap-stage{display:grid;grid-template-columns:210px minmax(0,1fr);gap:14px;padding:16px;background:var(--surface);border:1px solid var(--border-default);border-radius:var(--radius-md);box-shadow:var(--shadow-xs)}
+.roadmap-stage-rail{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding-right:12px;border-right:1px solid var(--border-soft)}
+.roadmap-stage-rail h3{margin:2px 0 0;font-size:14px;color:var(--text)}
+.roadmap-stage-rail small{color:var(--text-subtle);font-size:12px}
+.roadmap-stage-badge{width:24px;height:24px;display:grid;place-items:center;border-radius:50%;background:var(--accent-soft);color:var(--accent-strong);font-size:12px;font-weight:700}
+.roadmap-stage-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.roadmap-card{display:grid;gap:8px;padding:12px;background:var(--surface-soft);border:1px solid var(--border-soft);border-radius:var(--radius-sm);cursor:pointer}
+.roadmap-card.selected{border-color:var(--border-focus);background:var(--accent-soft)}
+.roadmap-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.roadmap-card-head strong{font-size:13.5px;color:var(--text)}
+.roadmap-status-pill{padding:2px 7px;border-radius:var(--radius-pill);font-size:11px;font-weight:600;background:var(--warning-soft);color:var(--warning)}
+.roadmap-card.mastery-mastered .roadmap-status-pill{color:var(--accent-strong);background:var(--accent-soft)}
+.roadmap-card.mastery-blocked .roadmap-status-pill{color:var(--danger);background:var(--danger-soft)}
+.roadmap-card-meta{margin:0;color:var(--text-muted);font-size:12px;line-height:1.45}
+.roadmap-card-actions{display:flex;flex-wrap:wrap;gap:8px}
+@media(max-width:700px){.mastery-summary{width:100%;margin-left:0}.mastery-node{grid-template-columns:minmax(0,1fr)}.mastery-canvas{min-height:320px}.roadmap-stage{grid-template-columns:1fr}.roadmap-stage-rail{padding-right:0;padding-bottom:10px;border-right:0;border-bottom:1px solid var(--border-soft)}}
 </style>

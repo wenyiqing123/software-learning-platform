@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ArrowRight, BookOpen, Check, CircleAlert, CircleCheck, CircleX, Clock3, Pause, RotateCcw } from '@lucide/vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { learningApi, type SpacedReviewCard, type SpacedReviewResult } from '../api/client'
+import { buildSevenDayReviewForecast, getSpacedRatingPreviews } from '../domain/graphAlgorithms'
 import SectionHeading from '../components/SectionHeading.vue'
 import LearningContextActions from '../components/LearningContextActions.vue'
 
@@ -21,6 +22,9 @@ const error = ref('')
 const cards = computed(() => showingPaused.value ? pausedCards.value : dueCards.value)
 const current = computed(() => cards.value[index.value])
 const answers = computed(() => result.value?.correctAnswer ?? [])
+const ratingPreviews = getSpacedRatingPreviews()
+const forecast = computed(() => buildSevenDayReviewForecast(dueCards.value, pausedCards.value))
+const maxForecastCount = computed(() => Math.max(1, ...forecast.value.buckets.map((b) => b.dueCount)))
 
 function clearAnswer() {
   selected.value = []
@@ -144,10 +148,12 @@ onBeforeUnmount(() => {
       <template v-else-if="!result">
         <fieldset class="recall-rating">
           <legend>不看提示，刚才回忆答案的难度</legend>
-          <label v-for="item in [{ value: 0, label: '忘记了' }, { value: 1, label: '困难' }, { value: 2, label: '一般' }, { value: 3, label: '轻松' }]" :key="item.value" class="rating-choice">
-            <input v-model="rating" type="radio" name="recall-rating" :value="item.value" /><span>{{ item.label }}</span>
+          <label v-for="item in ratingPreviews" :key="item.rating" class="rating-choice">
+            <input v-model="rating" type="radio" name="recall-rating" :value="item.rating" />
+            <span>{{ item.label }}</span>
+            <small class="rating-interval-preview" data-testid="review-interval-preview">答对 {{ item.correctText }}</small>
           </label>
-          <small>答题错误时，下次间隔会缩短到 10 分钟；评分仍用于记录你的主观回忆。</small>
+          <small>答题错误时，下次间隔固定缩短到 10 分钟；评分仅用于按既定固定间隔（10分钟/1天/3天/7天）安排下次复习。</small>
         </fieldset>
         <div class="review-actions"><button class="button button-outline" @click="setState('PAUSED')"><Pause :size="15" />暂停此题</button><button class="button button-dark" :disabled="!selected.length || rating === null || submitting" @click="submit">{{ submitting ? '提交中…' : '提交复习' }}<ArrowRight :size="15" /></button></div>
       </template>
@@ -171,5 +177,97 @@ onBeforeUnmount(() => {
       </div>
     </section>
     <section v-else class="empty-state"><CircleCheck :size="25" /><strong>{{ showingPaused ? '没有暂停的错题' : dueCards.length ? '本次到期复习已完成' : '目前没有到期复习' }}</strong><span>{{ dueCards.length ? '稍后刷新查看新到期任务。' : '错题答错后会进入复习队列。' }}</span><button v-if="showingPaused" class="button button-outline" @click="showDue">返回到期队列</button><button v-else class="button button-outline" @click="router.push('/study-plan')">查看每日计划<ArrowRight :size="15" /></button></section>
+    <section v-if="!loading && (dueCards.length || pausedCards.length)" class="review-forecast-card" data-testid="review-forecast-chart" aria-label="未来七天到期复习分布">
+      <div class="review-forecast-head">
+        <div>
+          <p class="eyebrow">REVIEW LOAD FORECAST</p>
+          <h3>未来 7 天到期复习分布</h3>
+        </div>
+        <span class="review-forecast-meta">当前到期 {{ dueCards.length }} 题 · 已暂停 {{ forecast.pausedCount }} 题</span>
+      </div>
+      <div class="review-forecast-bars" role="img" aria-label="按到期日期统计的未来七天待复习题目数量">
+        <div v-for="(bucket, bIdx) in forecast.buckets" :key="bucket.key" class="review-forecast-col">
+          <span class="review-forecast-num">{{ bucket.dueCount }}</span>
+          <div class="review-forecast-track">
+            <i :class="{ 'is-today': bIdx === 0 }" :style="{ height: (bucket.dueCount / maxForecastCount * 100) + '%' }"></i>
+          </div>
+          <span class="review-forecast-day">{{ bucket.label }}</span>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
+
+<style scoped>
+.rating-interval-preview {
+  display: block;
+  margin-top: 2px;
+  color: var(--accent-strong);
+  font-size: 11px;
+  font-weight: 500;
+}
+.review-forecast-card {
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
+}
+.review-forecast-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+}
+.review-forecast-head h3,
+.review-forecast-head p {
+  margin: 0;
+}
+.review-forecast-head h3 {
+  font-size: 15px;
+  color: var(--text);
+}
+.review-forecast-meta {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.review-forecast-bars {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+  align-items: end;
+}
+.review-forecast-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.review-forecast-num,
+.review-forecast-day {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.review-forecast-track {
+  width: min(26px, 85%);
+  height: 64px;
+  display: flex;
+  align-items: flex-end;
+  background: var(--surface-tint);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.review-forecast-track i {
+  width: 100%;
+  display: block;
+  background: color-mix(in srgb, var(--accent) 52%, var(--surface));
+  border-radius: inherit;
+}
+.review-forecast-track i.is-today {
+  background: var(--accent);
+}
+</style>
