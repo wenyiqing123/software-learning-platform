@@ -9,6 +9,7 @@ const api = vi.hoisted(() => ({
   startEvaluation: vi.fn(),
   recordEvaluationMeasurement: vi.fn(),
   completeEvaluation: vi.fn(),
+  abandonEvaluation: vi.fn(),
   currentUser: vi.fn(),
 }))
 vi.mock('../api/client', () => ({
@@ -25,6 +26,7 @@ describe('EvaluationView', () => {
     api.startEvaluation.mockResolvedValue({ id: 12, conditionKey: 'METHODS', taskKey: 'TASK-1', taskOrder: 'A→B', consentVersion: 'evaluation-v2', startedAt: '2026-11-20T00:00:00Z', completedPhases: [] })
     api.recordEvaluationMeasurement.mockResolvedValue(undefined)
     api.completeEvaluation.mockResolvedValue({ id: 12, conditionKey: 'METHODS', taskKey: 'TASK-1', taskOrder: 'A→B', consentVersion: 'evaluation-v2', startedAt: '2026-11-20T00:00:00Z', completedAt: '2026-11-20T00:10:00Z', completedPhases: ['PRE', 'POST'] })
+    api.abandonEvaluation.mockResolvedValue(undefined)
     api.currentUser.mockResolvedValue({ id: 1, role: 'STUDENT' })
   })
 
@@ -200,5 +202,29 @@ describe('EvaluationView', () => {
     await router.push('/experiment-run')
     await router.isReady()
     expect(router.currentRoute.value.path).toBe('/teaching-dashboard')
+  })
+
+  it('confirms and abandons an active uncompleted session on the server', async () => {
+    const memoryRouter = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/evaluation', component: EvaluationView }]
+    })
+    await memoryRouter.push('/evaluation')
+    await memoryRouter.isReady()
+    const wrapper = mount(EvaluationView, { global: { plugins: [memoryRouter] } })
+    await flushPromises()
+
+    await wrapper.get('input[type="checkbox"]').setValue(true)
+    await wrapper.get('button.button-dark').trigger('click')
+    await flushPromises()
+
+    await wrapper.findAll('button').find(b => b.text().includes('放弃本次'))!.trigger('click')
+    await flushPromises()
+    ;(document.body.querySelector('[data-testid="confirm-dialog-confirm"]') as HTMLButtonElement | null)?.click()
+    await flushPromises()
+
+    expect(api.abandonEvaluation).toHaveBeenCalledWith(12)
+    expect(wrapper.text()).toContain('开始评估')
+    wrapper.unmount()
   })
 })

@@ -15,7 +15,7 @@ const tabs = [
 ]
 const activeKey = computed(() => tabs.some(tab => tab.key === route.query.tab) ? String(route.query.tab) : 'comparison')
 const activeTab = computed(() => tabs.find(tab => tab.key === activeKey.value) || tabs[0])
-function selectTab(key: string) { void router.replace({ path: '/admin/experiments', query: { tab: key } }) }
+function selectTab(key: string) { void router.replace({ path: '/admin/experiments', query: { ...route.query, tab: key } }) }
 </script>
 
 <template>
@@ -35,6 +35,8 @@ function selectTab(key: string) { void router.replace({ path: '/admin/experiment
         {{ tab.label }}
       </button>
     </nav>
-    <component :is="activeTab.component" embedded />
+    <KeepAlive>
+      <component :is="activeTab.component" embedded />
+    </KeepAlive>
   </div>
 </template>

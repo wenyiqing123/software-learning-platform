@@ -88,4 +88,33 @@ class MicroLessonServiceTest {
         verify(drafts).archivePublished(1L, 21L, 11L);
         verify(drafts).markPublished(eq(11L), any());
     }
+
+    @Test
+    void listsAdminSectionsAndUpdatesDraftContentOnlyWhenDraft() {
+        var course = new CourseEntity(); course.setId(1L); course.setEnabled(false);
+        when(courses.selectById(1L)).thenReturn(course);
+        when(study.chapters(1L)).thenReturn(List.of(new CourseStudyMapper.ChapterRow(2L, 1L, "需求工程", "说明", 1)));
+        when(study.sections(1L)).thenReturn(List.of(new CourseStudyMapper.SectionRow(21L, 1L, 2L, 31L,
+            "理解数据流图", "[]", "[]", "[]", 1, "数据流图 DFD", "数据流图DFD")));
+
+        var sections = service.sections(1L);
+        assertThat(sections).singleElement().satisfies(s -> {
+            assertThat(s.chapterName()).isEqualTo("需求工程");
+            assertThat(s.title()).isEqualTo("理解数据流图");
+        });
+
+        var row = new MicroLessonDraftEntity();
+        row.setId(11L); row.setCourseId(1L); row.setSectionId(21L); row.setStatus("DRAFT");
+        row.setTitle("旧标题"); row.setGeneratedText("旧正文");
+        when(drafts.selectById(11L)).thenReturn(row);
+
+        var updated = service.updateDraft(11L, new MicroLessonService.UpdateDraftRequest("新标题", "更新后的正文"));
+        assertThat(updated.title()).isEqualTo("新标题");
+        assertThat(updated.generatedText()).isEqualTo("更新后的正文");
+        verify(drafts).updateById(row);
+
+        row.setStatus("PUBLISHED");
+        assertThatThrownBy(() -> service.updateDraft(11L, new MicroLessonService.UpdateDraftRequest("标题", "正文")))
+            .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    }
 }

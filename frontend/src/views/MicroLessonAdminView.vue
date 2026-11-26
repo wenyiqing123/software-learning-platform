@@ -3,6 +3,7 @@ import { onMounted, ref, watch } from 'vue'
 import { api, apiError, type Course, type MicroLessonDraft } from '../api/client'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 import FeedbackState from '../components/FeedbackState.vue'
+import MarkdownContent from '../components/MarkdownContent.vue'
 import SectionHeading from '../components/SectionHeading.vue'
 
 const props = withDefaults(defineProps<{
@@ -11,8 +12,7 @@ const props = withDefaults(defineProps<{
   embedded: false
 })
 
-interface StudySection { id: number; title: string; knowledgePointName?: string; objectives?: string[] }
-interface StudyResponse { chapters?: { sections?: StudySection[] }[] }
+interface StudySection { id: number; chapterName?: string; title: string; knowledgePointName?: string }
 const courses = ref<Course[]>([])
 const sections = ref<StudySection[]>([])
 const drafts = ref<MicroLessonDraft[]>([])
@@ -21,6 +21,9 @@ const sectionId = ref<number>()
 const loading = ref(true)
 const working = ref(false)
 const confirmPublishLessonId = ref<number | null>(null)
+const editingDraftId = ref<number | null>(null)
+const editTitle = ref('')
+const editGeneratedText = ref('')
 const error = ref('')
 const notice = ref('')
 
@@ -31,8 +34,7 @@ async function loadCourses() {
 async function loadSections() {
   if (!courseId.value) { sections.value = []; sectionId.value = undefined; return }
   try {
-    const data = (await api.get<StudyResponse>('/courses/' + courseId.value + '/study')).data
-    sections.value = (data.chapters || []).flatMap(chapter => chapter.sections || [])
+    sections.value = (await api.get<StudySection[]>('/admin/micro-lessons/courses/' + courseId.value + '/sections')).data
     if (!sectionId.value || !sections.value.some(section => section.id === sectionId.value)) sectionId.value = sections.value[0]?.id
   } catch (cause) { error.value = apiError(cause, '课程小节暂时无法加载。') }
 }
@@ -46,6 +48,36 @@ async function generate() {
   working.value = true; error.value = ''; notice.value = ''
   try { await api.post('/admin/micro-lessons/generate', { courseId: courseId.value, sectionId: sectionId.value }); notice.value = '证据微课草稿已生成，发布前不会影响正式课程正文。'; await loadDrafts() }
   catch (cause) { error.value = apiError(cause, '证据微课生成失败。') }
+  finally { working.value = false }
+}
+function startEditDraft(draft: MicroLessonDraft) {
+  editingDraftId.value = draft.id
+  editTitle.value = draft.title
+  editGeneratedText.value = draft.generatedText
+  error.value = ''
+  notice.value = ''
+}
+function cancelEditDraft() {
+  editingDraftId.value = null
+  editTitle.value = ''
+  editGeneratedText.value = ''
+}
+async function saveEditDraft() {
+  if (!editingDraftId.value || working.value) return
+  if (!editTitle.value.trim() || !editGeneratedText.value.trim()) {
+    error.value = '微课标题和正文内容不能为空。'
+    return
+  }
+  working.value = true; error.value = ''; notice.value = ''
+  try {
+    await api.put('/admin/micro-lessons/' + editingDraftId.value, {
+      title: editTitle.value.trim(),
+      generatedText: editGeneratedText.value.trim(),
+    })
+    editingDraftId.value = null
+    notice.value = '微课草稿内容已更新。'
+    await loadDrafts()
+  } catch (cause) { error.value = apiError(cause, '微课草稿保存失败。') }
   finally { working.value = false }
 }
 function publish(id: number) {
@@ -114,8 +146,19 @@ onMounted(async () => { await loadCourses(); await loadSections(); await loadDra
             </div>
             <span :class="['status-tag', draft.status.toLowerCase()]">{{ draft.status === 'DRAFT' ? '草稿' : draft.status === 'PUBLISHED' ? '已发布' : '已归档' }}</span>
           </div>
-          <p>{{ draft.generatedText }}</p>
+          <form v-if="editingDraftId === draft.id" class="draft-editor" @submit.prevent="saveEditDraft">
+            <label>微课标题<input v-model="editTitle" :aria-label="'编辑微课标题 ' + draft.id" maxlength="160" :disabled="working" /></label>
+            <label>微课正文（Markdown）<textarea v-model="editGeneratedText" :aria-label="'编辑微课正文 ' + draft.id" rows="6" maxlength="12000" :disabled="working"></textarea></label>
+            <div class="draft-editor-actions">
+              <button type="button" class="text-button" :disabled="working" @click="cancelEditDraft">取消</button>
+              <button type="submit" class="primary-button" :disabled="working || !editTitle.trim() || !editGeneratedText.trim()">保存修改</button>
+            </div>
+          </form>
+          <div v-else class="draft-markdown">
+            <MarkdownContent :content="draft.generatedText" />
+          </div>
           <div class="draft-actions">
+            <button v-if="draft.status === 'DRAFT' && editingDraftId !== draft.id" type="button" class="text-button" :aria-label="'编辑微课 ' + draft.id" :disabled="working" @click="startEditDraft(draft)">编辑草稿</button>
             <button v-if="draft.status === 'DRAFT'" class="text-button" :aria-label="'发布微课 ' + draft.id" :disabled="working" @click="publish(draft.id)">发布微课</button>
             <span v-else class="published-note">学生可见</span>
           </div>
@@ -268,6 +311,35 @@ onMounted(async () => { await loadCourses(); await loadSections(); await loadDra
 .draft-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 14px;
+}
+
+.draft-markdown {
+  margin: 12px 0;
+}
+
+.draft-editor {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+}
+
+.draft-editor label {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.draft-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
 }
 
 .text-button {

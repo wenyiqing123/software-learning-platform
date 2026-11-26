@@ -16,6 +16,12 @@ public interface EvaluationMapper {
     List<SessionRow> listOwned(@Param("userId") long userId);
     @Insert("INSERT INTO learning_evaluation_measurement(session_id,user_id,phase,score,responses_json) VALUES(#{sessionId},#{userId},#{phase},#{score},#{responsesJson}) ON DUPLICATE KEY UPDATE score=VALUES(score),responses_json=VALUES(responses_json),measured_at=CURRENT_TIMESTAMP(6)")
     int upsertMeasurement(@Param("userId") long userId,@Param("sessionId") long sessionId,@Param("phase") String phase,@Param("score") double score,@Param("responsesJson") String responsesJson,@Param("measuredAt") LocalDateTime measuredAt);
+    @Delete("DELETE FROM learning_evaluation_measurement WHERE user_id=#{userId} AND session_id=#{sessionId}")
+    int deleteMeasurements(@Param("userId") long userId, @Param("sessionId") long sessionId);
+
+    @Delete("DELETE FROM learning_evaluation_session WHERE user_id=#{userId} AND id=#{id} AND completed_at IS NULL")
+    int deleteUncompletedSession(@Param("userId") long userId, @Param("id") long id);
+
     @Update("UPDATE learning_evaluation_session SET completed_at=#{completedAt},elapsed_seconds=#{elapsedSeconds},psychological_effort=#{effort},feedback=#{feedback} WHERE user_id=#{userId} AND id=#{id}")
     int complete(@Param("userId") long userId,@Param("id") long id,@Param("elapsedSeconds") int elapsedSeconds,@Param("effort") int effort,@Param("feedback") String feedback,@Param("completedAt") LocalDateTime completedAt);
     @Select("""

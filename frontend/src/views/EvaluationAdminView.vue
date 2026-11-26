@@ -9,14 +9,30 @@ defineProps<{ embedded?: boolean }>()
 
 const rows = ref<EvaluationSummary[]>([])
 const condition = ref('')
+const knownConditions = ref<string[]>(['METHODS', 'QWEN_MATRIX', 'LEARNING_TASK'])
 const loading = ref(true)
 const error = ref('')
+
+const CONDITION_LABELS: Record<string, string> = {
+  METHODS: '问答方法对照',
+  QWEN_MATRIX: 'Qwen 基座与 LoRA 对照',
+  LEARNING_TASK: '课程学习任务',
+}
+
+function conditionLabel(key: string) {
+  return CONDITION_LABELS[key] || key
+}
 
 async function load() {
   loading.value = true
   error.value = ''
   try {
     rows.value = await learningApi.evaluationSummary(condition.value || undefined)
+    const merged = new Set(knownConditions.value)
+    for (const row of rows.value) {
+      if (row.conditionKey) merged.add(row.conditionKey)
+    }
+    knownConditions.value = [...merged]
   } catch (cause) {
     error.value = apiError(cause, '评估汇总暂时无法读取')
   } finally {
@@ -26,7 +42,7 @@ async function load() {
 
 async function download() {
   try {
-    const blob = await learningApi.exportEvaluationSummary()
+    const blob = await learningApi.exportEvaluationSummary(condition.value || undefined)
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
@@ -54,9 +70,7 @@ onMounted(() => void load())
       <label>条件筛选
         <select v-model="condition" @change="load">
           <option value="">全部条件</option>
-          <option value="METHODS">问答方法对照</option>
-          <option value="QWEN_MATRIX">Qwen 基座与 LoRA 对照</option>
-          <option value="LEARNING_TASK">课程学习任务</option>
+          <option v-for="item in knownConditions" :key="item" :value="item">{{ conditionLabel(item) }}</option>
         </select>
       </label>
       <span>成绩、心理努力与用时分开呈现。</span>
@@ -71,6 +85,7 @@ onMounted(() => void load())
             <th scope="col">样本量</th>
             <th scope="col">前测 (0–100)</th>
             <th scope="col">后测 (0–100)</th>
+            <th scope="col">前后测增益</th>
             <th scope="col">延后测验 (0–100)</th>
             <th scope="col">Paas 心理努力 (1–9)</th>
             <th scope="col">用时 (秒)</th>
@@ -83,7 +98,8 @@ onMounted(() => void load())
             <td>{{ row.sampleCount }}</td>
             <td>{{ row.meanPreScore ?? '—' }} / {{ row.medianPreScore ?? '—' }}<small>SD {{ row.stddevPreScore ?? '—' }} · IQR {{ row.iqrPreScore ?? '—' }}</small></td>
             <td>{{ row.meanPostScore ?? '—' }} / {{ row.medianPostScore ?? '—' }}<small>SD {{ row.stddevPostScore ?? '—' }} · IQR {{ row.iqrPostScore ?? '—' }}</small></td>
-            <td>{{ row.meanDelayedScore ?? '—' }} / {{ row.medianDelayedScore ?? '—' }}<small>IQR {{ row.iqrDelayedScore ?? '—' }}</small></td>
+            <td>{{ row.meanGain != null ? (row.meanGain > 0 ? '+' : '') + row.meanGain : '—' }}</td>
+            <td>{{ row.meanDelayedScore ?? '—' }} / {{ row.medianDelayedScore ?? '—' }}<small>SD {{ row.stddevDelayedScore ?? '—' }} · IQR {{ row.iqrDelayedScore ?? '—' }}</small></td>
             <td>{{ row.meanEffort ?? '—' }} / {{ row.medianEffort ?? '—' }}<small>SD {{ row.stddevEffort ?? '—' }} · IQR {{ row.iqrEffort ?? '—' }}</small></td>
             <td>{{ row.meanElapsedSeconds ?? '—' }} / {{ row.medianElapsedSeconds ?? '—' }} 秒<small>SD {{ row.stddevElapsedSeconds ?? '—' }} · IQR {{ row.iqrElapsedSeconds ?? '—' }}</small></td>
             <td>{{ row.feedbackCount }}</td>
@@ -170,7 +186,7 @@ onMounted(() => void load())
   display: block;
   margin-top: 3px;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.45;
 }
 </style>

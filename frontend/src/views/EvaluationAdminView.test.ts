@@ -14,7 +14,8 @@ beforeEach(() => {
     conditionKey: 'METHODS', sampleCount: 12,
     meanPreScore: 3.5, medianPreScore: 4, stddevPreScore: 1.1, iqrPreScore: 2,
     meanPostScore: 7.5, medianPostScore: 8, stddevPostScore: 0.9, iqrPostScore: 1,
-    meanDelayedScore: 7, medianDelayedScore: 7, iqrDelayedScore: 1,
+    meanDelayedScore: 7, medianDelayedScore: 7, stddevDelayedScore: 0.5, iqrDelayedScore: 1,
+    meanGain: 4,
     meanEffort: 4.2, medianEffort: 4, stddevEffort: 1.2, iqrEffort: 2,
     meanElapsedSeconds: 96, medianElapsedSeconds: 90, stddevElapsedSeconds: 12, iqrElapsedSeconds: 18,
     feedbackCount: 10,
@@ -32,6 +33,8 @@ describe('EvaluationAdminView', () => {
     expect(wrapper.text()).toContain('12')
     expect(wrapper.text()).toContain('3.5 / 4')
     expect(wrapper.text()).toContain('SD 1.1 · IQR 2')
+    expect(wrapper.text()).toContain('+4')
+    expect(wrapper.text()).toContain('SD 0.5 · IQR 1')
 
     // 验证原生语义表格、caption 与 scope
     const table = wrapper.find('table')

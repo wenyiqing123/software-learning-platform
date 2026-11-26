@@ -17,11 +17,19 @@ public class MicroLessonController {
     @GetMapping
     public List<MicroLessonService.DraftView> list(@RequestParam(required = false) @Positive Long courseId) { return service.list(courseId); }
 
+    @GetMapping("/courses/{courseId}/sections")
+    public List<MicroLessonService.SectionOption> sections(@PathVariable Long courseId) { return service.sections(courseId); }
+
     @PostMapping("/generate")
     @ResponseStatus(HttpStatus.CREATED)
     public MicroLessonService.DraftView generate(Authentication authentication, @RequestHeader("Authorization") String authorization,
                                                   @Valid @RequestBody MicroLessonService.GenerateRequest request) {
         return service.generate(Long.parseLong(authentication.getName()), authorization, request);
+    }
+
+    @PutMapping("/{id}")
+    public MicroLessonService.DraftView updateDraft(@PathVariable Long id, @Valid @RequestBody MicroLessonService.UpdateDraftRequest request) {
+        return service.updateDraft(id, request);
     }
 
     @PutMapping("/{id}/publish")

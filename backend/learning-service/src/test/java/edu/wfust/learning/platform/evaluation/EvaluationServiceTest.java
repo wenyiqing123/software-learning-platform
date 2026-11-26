@@ -299,4 +299,31 @@ class EvaluationServiceTest {
         verify(mapper).complete(eq(7L), eq(30L), eq(300), eq(5), eq("完成总结"), eq(fixedNow));
         verify(tService).completeRun(7L, 88L, true);
     }
+
+    @Test void abandonsUncompletedOwnedSessionAndBlocksAbandoningCompleted() {
+        var uncompleted = new EvaluationMapper.SessionRow(40L, 7L, "METHODS", "TASK-1", "A→B", null, "v1", null, null, null, null, null, null);
+        when(mapper.findSession(7L, 40L)).thenReturn(uncompleted);
+        service.abandon(7L, 40L);
+        verify(mapper).deleteMeasurements(7L, 40L);
+        verify(mapper).deleteUncompletedSession(7L, 40L);
+
+        var completed = new EvaluationMapper.SessionRow(41L, 7L, "METHODS", "TASK-1", "A→B", null, "v1", null, null, LocalDateTime.now(), 120, 5, "ok");
+        when(mapper.findSession(7L, 41L)).thenReturn(completed);
+        assertThatThrownBy(() -> service.abandon(7L, 41L))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode().value()).isEqualTo(409));
+    }
+
+    @Test void summaryExposesDelayedStddevAndIqrWhenDelayedScoresExist() {
+        when(mapper.completedRows(null)).thenReturn(List.of(
+                new EvaluationMapper.DetailRow(7L, "METHODS", "TASK-1", "A→B", 100, 4, 60.0, 80.0, 70.0, true),
+                new EvaluationMapper.DetailRow(8L, "METHODS", "TASK-1", "A→B", 120, 6, 70.0, 90.0, 90.0, true)
+        ));
+        var rows = service.summary(null);
+        assertThat(rows).singleElement().satisfies(r -> {
+            assertThat(r.meanDelayedScore()).isEqualTo(80.0);
+            assertThat(r.stddevDelayedScore()).isEqualTo(10.0);
+            assertThat(r.iqrDelayedScore()).isEqualTo(10.0);
+        });
+    }
 }

@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Check, CircleAlert, Clock3, FileCheck2, ShieldCheck } from '@lucide/vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { apiError, learningApi, type EvaluationSession } from '../api/client'
+import ConfirmDialog from '../components/ConfirmDialog.vue'
 import SectionHeading from '../components/SectionHeading.vue'
 
 const route = useRoute()
@@ -19,6 +20,7 @@ const session = ref<EvaluationSession | null>(null)
 const history = ref<EvaluationSession[]>([])
 const loading = ref(true)
 const saving = ref(false)
+const confirmAbandonOpen = ref(false)
 const error = ref('')
 const notice = ref('')
 const elapsed = ref(0)
@@ -88,6 +90,21 @@ const wizardSteps = computed(() => [
   }
 ])
 
+function stopTimer() {
+  if (timer) {
+    clearInterval(timer)
+    timer = undefined
+  }
+}
+
+function syncTimer() {
+  stopTimer()
+  if (session.value && !session.value.completedAt) {
+    updateTimer()
+    timer = setInterval(updateTimer, 1000)
+  }
+}
+
 function updateTimer() {
   if (!session.value?.startedAt || session.value.completedAt) return
   elapsed.value = Math.max(0, Math.floor((Date.now() - new Date(session.value.startedAt).getTime()) / 1000))
@@ -106,7 +123,7 @@ async function load() {
     if (match) {
       session.value = match
       notice.value = '已从服务器恢复进行中的评估会话。'
-      updateTimer()
+      syncTimer()
     }
   } catch (cause) {
     error.value = apiError(cause, '评估记录暂时无法读取。')
@@ -128,7 +145,7 @@ async function start() {
       consentVersion: 'evaluation-v2',
       consentAccepted: true
     })
-    timer = setInterval(updateTimer, 1000)
+    syncTimer()
     notice.value = '评估会话已开始，请按当前顺序完成前测、学习任务、后测和主观反馈。'
   } catch (cause) {
     error.value = apiError(cause, '无法开始评估，请检查输入和服务连接。')
@@ -186,7 +203,7 @@ async function complete() {
     session.value = finished
     history.value = [finished, ...history.value.filter(item => item.id !== finished.id)]
     notice.value = '评估已完成，数据仅用于匿名聚合分析。'
-    if (timer) clearInterval(timer)
+    stopTimer()
   } catch (cause) {
     error.value = apiError(cause, '评估完成信息保存失败，请重试。')
   } finally {
@@ -194,7 +211,16 @@ async function complete() {
   }
 }
 
-function reset() {
+async function reset() {
+  if (saving.value) return
+  if (session.value && !session.value.completedAt) {
+    confirmAbandonOpen.value = true
+    return
+  }
+  clearLocalSession()
+}
+
+function clearLocalSession() {
   session.value = null
   preScore.value = null
   postScore.value = null
@@ -204,16 +230,35 @@ function reset() {
   notice.value = ''
   error.value = ''
   consentAccepted.value = false
-  if (timer) clearInterval(timer)
+  elapsed.value = 0
+  stopTimer()
+}
+
+async function confirmAbandon() {
+  const active = session.value
+  if (!active || saving.value) return
+  saving.value = true
+  error.value = ''
+  try {
+    await learningApi.abandonEvaluation(active.id)
+    confirmAbandonOpen.value = false
+    history.value = history.value.filter(item => item.id !== active.id)
+    clearLocalSession()
+    notice.value = '已放弃本次未完成评估，服务器记录已清除。'
+  } catch (cause) {
+    confirmAbandonOpen.value = false
+    error.value = apiError(cause, '放弃评估会话失败，请重试。')
+  } finally {
+    saving.value = false
+  }
 }
 
 onMounted(() => {
   void load()
-  timer = setInterval(updateTimer, 1000)
 })
 
 onBeforeUnmount(() => {
-  if (timer) clearInterval(timer)
+  stopTimer()
 })
 </script>
 
@@ -321,6 +366,17 @@ onBeforeUnmount(() => {
         <button class="button button-outline button-small" :disabled="saving || delayedScore === null" @click="measure('DELAYED')">保存延后测验</button>
       </section>
     </section>
+
+    <ConfirmDialog
+      :open="confirmAbandonOpen"
+      title="放弃本次评估"
+      message="放弃后将删除服务端当前未完成的评估会话及已录入的阶段测量，确认继续吗？"
+      confirm-label="确认放弃"
+      tone="danger"
+      :busy="saving"
+      @cancel="confirmAbandonOpen = false"
+      @confirm="confirmAbandon"
+    />
 
     <section v-if="!loading && history.length" class="content-section evaluation-history">
       <div class="section-title-row"><h2>最近评估会话</h2><span>{{ history.length }} 条</span></div>

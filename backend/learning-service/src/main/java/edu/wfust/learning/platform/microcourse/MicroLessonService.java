@@ -12,8 +12,10 @@ import edu.wfust.learning.platform.mapper.CourseMapper;
 import edu.wfust.learning.platform.mapper.KnowledgePointMapper;
 import edu.wfust.learning.platform.mapper.MicroLessonMapper;
 import edu.wfust.learning.platform.mapper.QuizQuestionMapper;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -86,7 +88,7 @@ public class MicroLessonService {
 
     @PreAuthorize("hasRole('ADMIN')")
     public List<DraftView> list(Long courseId) {
-        if (courseId != null) enabledCourse(courseId);
+        if (courseId != null) course(courseId);
         var query = new QueryWrapper<MicroLessonDraftEntity>().orderByDesc("id");
         if (courseId != null) query.eq("course_id", courseId);
         return drafts.selectList(query).stream().map(row -> view(row, sectionTitle(row))).toList();
@@ -131,6 +133,43 @@ public class MicroLessonService {
             row.getCreatedAt(), row.getPublishedAt());
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<SectionOption> sections(Long courseId) {
+        course(courseId);
+        Map<Long, String> chapterNames = study.chapters(courseId).stream()
+            .collect(java.util.stream.Collectors.toMap(CourseStudyMapper.ChapterRow::id, CourseStudyMapper.ChapterRow::name, (a, b) -> a));
+        return study.sections(courseId).stream()
+            .map(s -> new SectionOption(s.id(), chapterNames.getOrDefault(s.chapterId(), "课程章节"), s.title(),
+                s.knowledgePointId(), s.knowledgePointName(), s.graphEntity()))
+            .toList();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public DraftView updateDraft(Long id, UpdateDraftRequest request) {
+        MicroLessonDraftEntity row = draft(id);
+        if (!"DRAFT".equals(row.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "仅草稿状态微课允许编辑");
+        }
+        String nextTitle = request.title().strip();
+        String nextText = request.generatedText().strip();
+        if (nextTitle.isEmpty() || nextText.isEmpty()) {
+            throw bad("微课标题和正文不能为空");
+        }
+        row.setTitle(nextTitle);
+        row.setGeneratedText(nextText);
+        row.setSummary(nextText.length() > 120 ? nextText.substring(0, 120) : nextText);
+        row.setUpdatedAt(LocalDateTime.now(clock));
+        drafts.updateById(row);
+        return view(row, sectionTitle(row));
+    }
+
+    private CourseEntity course(Long id) {
+        CourseEntity row = id == null ? null : courses.selectById(id);
+        if (row == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "课程不存在");
+        return row;
+    }
+
     private String sectionTitle(MicroLessonDraftEntity row) {
         if (row.getTitle() != null && !row.getTitle().isBlank()) return row.getTitle();
         var section = study.section(row.getCourseId(), row.getSectionId());
@@ -164,6 +203,9 @@ public class MicroLessonService {
     private String writeJson(Object value) { return json.writeValueAsString(value); }
 
     public record GenerateRequest(@NotNull @Positive Long courseId, @NotNull @Positive Long sectionId) { }
+    public record UpdateDraftRequest(@NotBlank @jakarta.validation.constraints.Size(max = 160) String title,
+                                     @NotBlank @jakarta.validation.constraints.Size(max = 12000) String generatedText) { }
+    public record SectionOption(Long id, String chapterName, String title, Long knowledgePointId, String knowledgePointName, String graphEntity) { }
     public record SourceBundle(String title, List<String> objectives, String contentJson, List<TripleView> triples,
                                List<CommonErrorView> commonErrors, List<SelfTestView> selfTests, List<PrerequisiteView> prerequisites) { }
     public record TripleView(String subject, String predicate, String object, double score) { }

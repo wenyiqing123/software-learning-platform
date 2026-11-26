@@ -36,7 +36,7 @@ describe('LearningNotesPanel', () => {
     wrapper.unmount()
 
     http.get.mockImplementation(async (path: string) => {
-      if (path === '/learning/notes') return { data: [{ id: 7, sectionId: 101, title: '验收条件', content: '记录验收条件', tags: ['需求'] }] }
+      if (path === '/learning/notes') return { data: [{ id: 7, sectionId: 101, title: '验收条件', content: '记录验收条件', tags: ['需求', '验收'] }] }
       if (path === '/learning/bookmarks') return { data: { targetType: 'SECTION', targetId: 101, bookmarked: true } }
       throw new Error('unexpected path: ' + path)
     })
@@ -44,6 +44,13 @@ describe('LearningNotesPanel', () => {
     const confirmSpy = vi.spyOn(window, 'confirm')
     const wrapper2 = mount(LearningNotesPanel, { props: { sectionId: 101, knowledgePointId: 2 } })
     await flushPromises()
+    await wrapper2.get('[aria-label="编辑笔记 7"]').trigger('click')
+    await wrapper2.get('form.notes-editor').trigger('submit')
+    await flushPromises()
+    expect(http.put).toHaveBeenCalledWith('/learning/notes/7', {
+      sectionId: 101, title: '验收条件', content: '记录验收条件', tags: ['需求', '验收'],
+    })
+
     await wrapper2.get('[aria-label="删除笔记 7"]').trigger('click')
     await flushPromises()
     expect(confirmSpy).not.toHaveBeenCalled()

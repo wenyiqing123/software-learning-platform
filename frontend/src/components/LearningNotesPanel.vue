@@ -4,6 +4,9 @@ import { Bookmark, ChevronDown, FilePlus2, Pencil, Save, Trash2, X } from '@luci
 import { api, apiError, type LearningBookmark, type LearningNote } from '../api/client'
 import ConfirmDialog from './ConfirmDialog.vue'
 
+interface SectionDraft { editingId: number | null; title: string; content: string; tags: string }
+const draftCache = new Map<number, SectionDraft>()
+
 const props = defineProps<{ sectionId: number; knowledgePointId?: number; startCollapsed?: boolean }>()
 const notes = ref<LearningNote[]>([])
 const bookmarked = ref(false)
@@ -16,9 +19,15 @@ const confirmDeleteNote = ref<LearningNote | null>(null)
 const collapsed = ref(Boolean(props.startCollapsed))
 const draft = reactive({ title: '', content: '', tags: '' })
 
-function resetDraft() { editingId.value = null; draft.title = ''; draft.content = ''; draft.tags = '' }
+function resetDraft(clearCache = true) {
+  editingId.value = null
+  draft.title = ''
+  draft.content = ''
+  draft.tags = ''
+  if (clearCache) draftCache.delete(props.sectionId)
+}
 function failure(cause: unknown) { return apiError(cause, '学习记录暂时无法保存，请稍后重试。') }
-function tags() { return [...new Set(draft.tags.split(/[,，]/).map(tag => tag.trim()).filter(Boolean))].slice(0, 10) }
+function tags() { return [...new Set(draft.tags.split(/[,，、]/).map(tag => tag.trim()).filter(Boolean))].slice(0, 10) }
 async function load() {
   loading.value = true; error.value = ''; notice.value = ''
   try {
@@ -31,7 +40,7 @@ async function load() {
   } catch (cause) { error.value = failure(cause) }
   finally { loading.value = false }
 }
-function edit(note: LearningNote) { editingId.value = note.id; draft.title = note.title; draft.content = note.content; draft.tags = note.tags.join('、'); notice.value = '' }
+function edit(note: LearningNote) { editingId.value = note.id; draft.title = note.title; draft.content = note.content; draft.tags = note.tags.join(', '); notice.value = '' }
 async function save() {
   if (!draft.content.trim() || saving.value) return
   saving.value = true; error.value = ''; notice.value = ''
@@ -68,20 +77,37 @@ async function toggleBookmark() {
   catch (cause) { error.value = failure(cause) }
   finally { saving.value = false }
 }
-watch(() => props.sectionId, () => { resetDraft(); void load() })
+watch(() => props.sectionId, (nextId, prevId) => {
+  if (prevId && (draft.title.trim() || draft.content.trim() || draft.tags.trim() || editingId.value !== null)) {
+    draftCache.set(prevId, { editingId: editingId.value, title: draft.title, content: draft.content, tags: draft.tags })
+  } else if (prevId) {
+    draftCache.delete(prevId)
+  }
+  const restored = draftCache.get(nextId)
+  if (restored) {
+    editingId.value = restored.editingId
+    draft.title = restored.title
+    draft.content = restored.content
+    draft.tags = restored.tags
+    notice.value = '已恢复此小节未保存的笔记草稿'
+  } else {
+    resetDraft(false)
+  }
+  void load()
+})
 onMounted(() => void load())
 </script>
 
 <template>
   <section class="learning-notes-panel" aria-label="我的学习记录">
     <header class="notes-panel-heading">
-      <div><h3>我的学习记录</h3><span>笔记和收藏只对当前账户可见</span></div>
+      <div><h3>我的学习记录（{{ notes.length }}）</h3><span>{{ bookmarked ? '已收藏本节 · ' : '' }}笔记和收藏只对当前账户可见</span></div>
       <button class="notes-collapse icon-button" type="button" :aria-expanded="!collapsed" :aria-label="collapsed ? '展开笔记' : '收起笔记'" :title="collapsed ? '展开笔记' : '收起笔记'" @click="collapsed = !collapsed"><ChevronDown :size="16" :class="{ rotated: collapsed }" /></button>
       <button class="notes-bookmark icon-button" :class="{ active: bookmarked }" :aria-label="bookmarked ? '取消收藏本节' : '收藏本节'" :title="bookmarked ? '取消收藏本节' : '收藏本节'" :aria-pressed="bookmarked" :disabled="saving || loading" @click="toggleBookmark"><Bookmark :size="16" :fill="bookmarked ? 'currentColor' : 'none'" /></button>
     </header>
     <div v-if="!collapsed">
     <div v-if="error" class="notes-message error" role="alert">{{ error }}</div><div v-if="notice" class="notes-message success" role="status">{{ notice }}</div>
-    <form class="notes-editor" @submit.prevent="save"><div class="notes-editor-top"><strong>{{ editingId ? '编辑笔记' : '添加一条笔记' }}</strong><button v-if="editingId" type="button" class="icon-button" aria-label="取消编辑笔记" @click="resetDraft"><X :size="15" /></button></div><input v-model="draft.title" aria-label="笔记标题" maxlength="160" placeholder="标题（可选）" /><textarea v-model="draft.content" aria-label="笔记内容" rows="3" maxlength="10000" placeholder="记录你的理解、疑问或易错点"></textarea><div class="notes-editor-bottom"><input v-model="draft.tags" aria-label="笔记标签" placeholder="标签，用逗号分隔" /><button class="button button-dark button-small" type="submit" aria-label="保存笔记" :disabled="saving || !draft.content.trim()"><Save :size="14" />保存</button></div></form>
+    <form class="notes-editor" @submit.prevent="save"><div class="notes-editor-top"><strong>{{ editingId ? '编辑笔记' : '添加一条笔记' }}</strong><button v-if="editingId" type="button" class="icon-button" aria-label="取消编辑笔记" @click="resetDraft()"><X :size="15" /></button></div><input v-model="draft.title" aria-label="笔记标题" maxlength="160" placeholder="标题（可选）" /><textarea v-model="draft.content" aria-label="笔记内容" rows="3" maxlength="10000" placeholder="记录你的理解、疑问或易错点"></textarea><div class="notes-editor-bottom"><input v-model="draft.tags" aria-label="笔记标签" placeholder="标签，用逗号分隔" /><button class="button button-dark button-small" type="submit" aria-label="保存笔记" :disabled="saving || !draft.content.trim()"><Save :size="14" />保存</button></div></form>
     <div v-if="loading" class="notes-empty">正在读取学习记录…</div><div v-else-if="!notes.length" class="notes-empty"><FilePlus2 :size="20" /><span>还没有笔记，写下本节最重要的一个理解。</span></div><div v-else class="notes-list"><article v-for="note in notes" :key="note.id" class="note-item"><div class="note-item-heading"><strong>{{ note.title || '未命名笔记' }}</strong><div><button class="icon-button" :aria-label="'编辑笔记 ' + note.id" @click="edit(note)"><Pencil :size="14" /></button><button class="icon-button" :aria-label="'删除笔记 ' + note.id" @click="remove(note)"><Trash2 :size="14" /></button></div></div><p>{{ note.content }}</p><div class="note-tags"><span v-for="tag in note.tags" :key="tag">#{{ tag }}</span></div></article></div>
     </div>
     <ConfirmDialog

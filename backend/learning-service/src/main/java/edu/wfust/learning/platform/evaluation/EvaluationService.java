@@ -135,6 +135,16 @@ public class EvaluationService {
         return view(mapper.findSession(userId,sessionId));
     }
 
+    @Transactional
+    public void abandon(long userId, long sessionId) {
+        var row = owned(userId, sessionId);
+        if (row.getCompletedAt() != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "已完成的评估会话不可放弃删除");
+        }
+        mapper.deleteMeasurements(userId, sessionId);
+        mapper.deleteUncompletedSession(userId, sessionId);
+    }
+
     public List<SummaryView> summary(String conditionKey){
         var details=mapper.completedRows(conditionKey);
         if(details!=null&&!details.isEmpty()){
@@ -145,7 +155,7 @@ public class EvaluationService {
                 return toSummary(EvaluationStatistics.summarize(entry.getKey(),rows),feedback);
             }).toList();
         }
-        return mapper.summary(conditionKey).stream().map(row->new SummaryView(row.conditionKey(),row.sampleCount(),null,null,null,round(row.meanPreScore()),round(row.meanPostScore()),null,null,null,null,null,round(row.meanGain()),round(row.meanEffort()),null,null,null,round(row.meanElapsedSeconds()),null,null,null,row.feedbackCount())).toList();
+        return mapper.summary(conditionKey).stream().map(row->new SummaryView(row.conditionKey(),row.sampleCount(),null,null,null,round(row.meanPreScore()),round(row.meanPostScore()),null,null,null,null,null,null,null,round(row.meanGain()),round(row.meanEffort()),null,null,null,round(row.meanElapsedSeconds()),null,null,null,row.feedbackCount())).toList();
     }
 
     public String exportAnonymized(String conditionKey){
@@ -157,7 +167,7 @@ public class EvaluationService {
     private EvaluationMapper.SessionRow owned(long userId,long id){var row=mapper.findSession(userId,id);if(row==null)throw new ResponseStatusException(HttpStatus.NOT_FOUND,"评估会话不存在或不属于当前用户");return row;}
     private boolean ownsAssignment(long userId,long assignmentId){ExperimentAssignmentEntity assignment=assignments.selectById(assignmentId);return assignment!=null&&Long.valueOf(userId).equals(assignment.getUserId());}
     private SessionView view(EvaluationMapper.SessionRow row){return new SessionView(row.getId(),row.getConditionKey(),row.getTaskKey(),row.getTaskOrder(),row.getAssignmentId(),row.getConsentVersion(),row.getStartedAt(),row.getCompletedAt(),row.getElapsedSeconds(),row.getPsychologicalEffort(),row.getFeedback());}
-    private SummaryView toSummary(EvaluationStatistics.Summary stats,long feedbackCount){return new SummaryView(stats.conditionKey(),(long)stats.sampleCount(),stats.medianPreScore(),stats.stddevPreScore(),stats.iqrPreScore(),stats.meanPreScore(),stats.meanPostScore(),stats.medianPostScore(),stats.stddevPostScore(),stats.iqrPostScore(),stats.meanDelayedScore(),stats.medianDelayedScore(),stats.meanGain(),stats.meanEffort(),stats.medianEffort(),stats.stddevEffort(),stats.iqrEffort(),stats.meanElapsedSeconds(),stats.medianElapsedSeconds(),stats.stddevElapsedSeconds(),stats.iqrElapsedSeconds(),feedbackCount);}
+    private SummaryView toSummary(EvaluationStatistics.Summary stats,long feedbackCount){return new SummaryView(stats.conditionKey(),(long)stats.sampleCount(),stats.medianPreScore(),stats.stddevPreScore(),stats.iqrPreScore(),stats.meanPreScore(),stats.meanPostScore(),stats.medianPostScore(),stats.stddevPostScore(),stats.iqrPostScore(),stats.meanDelayedScore(),stats.medianDelayedScore(),stats.stddevDelayedScore(),stats.iqrDelayedScore(),stats.meanGain(),stats.meanEffort(),stats.medianEffort(),stats.stddevEffort(),stats.iqrEffort(),stats.meanElapsedSeconds(),stats.medianElapsedSeconds(),stats.stddevElapsedSeconds(),stats.iqrElapsedSeconds(),feedbackCount);}
     private String write(List<String> responses){try{return json.writeValueAsString(responses==null?List.of():responses);}catch(Exception e){throw new IllegalStateException("无法保存测量答案",e);}}
     private static Double round(Double value){return value==null?null:Math.round(value*100.0)/100.0;}
     private static String csv(Object value){if(value==null)return "";String text=String.valueOf(value).replace("\"","\"\"");return text.contains(",")||text.contains("\n")?"\""+text+"\"":text;}
@@ -194,5 +204,5 @@ public class EvaluationService {
             this(id,conditionKey,taskKey,taskOrder,assignmentId,consentVersion,startedAt,completedAt,elapsedSeconds,psychologicalEffort,feedback,List.of());
         }
     }
-    public record SummaryView(String conditionKey,Long sampleCount,Double medianPreScore,Double stddevPreScore,Double iqrPreScore,Double meanPreScore,Double meanPostScore,Double medianPostScore,Double stddevPostScore,Double iqrPostScore,Double meanDelayedScore,Double medianDelayedScore,Double meanGain,Double meanEffort,Double medianEffort,Double stddevEffort,Double iqrEffort,Double meanElapsedSeconds,Double medianElapsedSeconds,Double stddevElapsedSeconds,Double iqrElapsedSeconds,Long feedbackCount) { }
+    public record SummaryView(String conditionKey,Long sampleCount,Double medianPreScore,Double stddevPreScore,Double iqrPreScore,Double meanPreScore,Double meanPostScore,Double medianPostScore,Double stddevPostScore,Double iqrPostScore,Double meanDelayedScore,Double medianDelayedScore,Double stddevDelayedScore,Double iqrDelayedScore,Double meanGain,Double meanEffort,Double medianEffort,Double stddevEffort,Double iqrEffort,Double meanElapsedSeconds,Double medianElapsedSeconds,Double stddevElapsedSeconds,Double iqrElapsedSeconds,Long feedbackCount) { }
 }

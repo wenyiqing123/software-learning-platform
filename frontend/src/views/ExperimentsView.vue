@@ -101,12 +101,12 @@ const batchFailedCount = computed(() => batchItems.value.filter(i => i.status ==
 // Tab 分段支持：run（实验与结果）、summary（个人统计）、history（实验历史）
 type ExperimentTab = 'run' | 'summary' | 'history'
 const activeTab = ref<ExperimentTab>(
-  typeof route?.query?.tab === 'string' && ['run', 'summary', 'history'].includes(route.query.tab)
-    ? (route.query.tab as ExperimentTab)
+  typeof route?.query?.expTab === 'string' && ['run', 'summary', 'history'].includes(route.query.expTab)
+    ? (route.query.expTab as ExperimentTab)
     : 'run'
 )
 
-watch(() => route?.query?.tab, (newTab) => {
+watch(() => route?.query?.expTab, (newTab) => {
   if (typeof newTab === 'string' && ['run', 'summary', 'history'].includes(newTab)) {
     activeTab.value = newTab as ExperimentTab
   }
@@ -115,9 +115,31 @@ watch(() => route?.query?.tab, (newTab) => {
 function setTab(tab: ExperimentTab) {
   activeTab.value = tab
   if (router && route) {
-    void router.replace({ query: { ...route.query, tab } })
+    void router.replace({ query: { ...route.query, expTab: tab } })
   }
 }
+
+const matrixStatus = ref<'IDLE' | 'CHECKING' | 'UP' | 'DOWN'>('IDLE')
+const matrixStatusDetail = ref('')
+
+async function probeMatrixHealth() {
+  if (isStudentMode.value || typeof learningApi.matrixHealth !== 'function') return
+  matrixStatus.value = 'CHECKING'
+  try {
+    const info = await learningApi.matrixHealth()
+    matrixStatus.value = info?.status === 'UP' ? 'UP' : 'DOWN'
+    matrixStatusDetail.value = info?.status === 'UP'
+      ? `${info.qwenMatrixBaseModel || 'Qwen 基座'} + ${info.qwenMatrixAdapterModel || 'LoRA'}`
+      : '本地矩阵推理节点未就绪，运行时可能不可用'
+  } catch {
+    matrixStatus.value = 'DOWN'
+    matrixStatusDetail.value = '无法连接矩阵健康探针'
+  }
+}
+
+watch(experimentType, (next) => {
+  if (next === 'QWEN_MATRIX') void probeMatrixHealth()
+})
 
 function selectRun(run: Run) {
   latest.value = run
@@ -624,7 +646,12 @@ defineExpose({
             <option value="METHODS">方法对照：固定默认模型</option>
             <option value="QWEN_MATRIX">模型对照：Qwen 基座 × LoRA × 三种方法</option>
           </select>
-          <p v-if="experimentType === 'QWEN_MATRIX'" class="matrix-notice">此方案只调用本地 Qwen 基座和 LoRA，不调用 DeepSeek/M3E；六种组合共用一次图谱检索，逐项运行。训练标签尚未经教师审校，结果仅作探索性比较。</p>
+          <p v-if="experimentType === 'QWEN_MATRIX'" class="matrix-notice">
+            此方案只调用本地 Qwen 基座和 LoRA，不调用 DeepSeek/M3E；六种组合共用一次图谱检索，逐项运行。训练标签尚未经教师审校，结果仅作探索性比较。
+            <span v-if="matrixStatus !== 'IDLE'" class="matrix-health-pill" :class="matrixStatus === 'UP' ? 'is-up' : 'is-down'">
+              {{ matrixStatus === 'CHECKING' ? '正在检测节点…' : matrixStatus === 'UP' ? `节点就绪 · ${matrixStatusDetail}` : `节点未就绪 · ${matrixStatusDetail}` }}
+            </span>
+          </p>
         </template>
         <div class="experiment-input-pair" :class="{ 'student-mode-input': isStudentMode }">
           <label v-if="!isStudentMode" for="experiment-question">
@@ -698,24 +725,11 @@ defineExpose({
         <small class="local-history-note">{{ latest.evaluation?.note || '早期导入记录，未生成可复核的实验指标。自动指标与人工评分分别呈现，不等同于事实正确性。' }}</small>
       </section>
 
-      <!-- 历史记录快速选择区（仅管理端全功能模式展示） -->
-      <section v-if="!isStudentMode" class="content-section experiment-history">
-        <div class="section-title-row">
-          <h2>实验历史</h2>
-          <span class="history-count">{{ history.length }} 条</span>
-        </div>
-        <div v-if="history.length" class="saved-experiment-list">
-          <button v-for="run in history" :key="run.id" @click="selectRun(run)">
-            <span>{{ run.question }}</span>
-            <small>{{ new Date(run.createdAt).toLocaleString('zh-CN') }}</small>
-          </button>
-        </div>
-        <div v-else class="empty-state compact-empty">
-          <FlaskConical :size="24" />
-          <strong>还没有实验记录</strong>
-          <span>运行一次对比，记录会保存到当前账户。</span>
-        </div>
-      </section>
+      <!-- 最近实验速览入口（完整列表在“实验历史”选项卡） -->
+      <div v-if="!isStudentMode && history.length" class="experiment-history-shortcut">
+        <span>已累计保存 <strong>{{ history.length }}</strong> 条实验历史</span>
+        <button type="button" class="text-button" @click="setTab('history')">前往实验历史查看 →</button>
+      </div>
     </div>
 
     <!-- 选项卡 2：个人实验统计（仅管理端全功能模式渲染） -->
@@ -1219,6 +1233,42 @@ defineExpose({
 .batch-item-error {
   color: var(--danger);
   font-size: 12px;
+}
+
+.experiment-history-shortcut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: 10px 14px;
+  background: var(--surface-tint);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.matrix-health-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--surface-soft);
+  color: var(--text-muted);
+}
+
+.matrix-health-pill.is-up {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.matrix-health-pill.is-down {
+  background: var(--warning-soft);
+  color: var(--warning-strong);
 }
 
 @media (max-width: 700px) {
