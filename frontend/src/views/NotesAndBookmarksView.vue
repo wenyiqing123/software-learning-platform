@@ -5,6 +5,7 @@ import { RouterLink } from 'vue-router'
 import { apiError, type LearningBookmarkItem, type LearningNote } from '../api/client'
 import * as notesApi from '../api/notes'
 import { buildNotesMarkdown, triggerMarkdownDownload } from '../domain/studyExport'
+import { parseNoteTags } from '../domain/noteTags'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 import SectionHeading from '../components/SectionHeading.vue'
 
@@ -64,10 +65,6 @@ function formatTimestamp(value?: string) {
   return value.replace('T', ' ').slice(0, 16)
 }
 
-function parseTags(raw: string) {
-  return [...new Set(raw.split(/[,，、]/).map((tag) => tag.trim()).filter(Boolean))].slice(0, 10)
-}
-
 function startEdit(note: LearningNote) {
   editingNoteId.value = note.id
   editDraft.title = note.title || ''
@@ -115,7 +112,7 @@ async function saveEdit(note: LearningNote) {
       knowledgePointId: note.knowledgePointId,
       title: editDraft.title.trim(),
       content: editDraft.content.trim(),
-      tags: parseTags(editDraft.tags),
+      tags: parseNoteTags(editDraft.tags),
     })
     cancelEdit()
     await loadAll()

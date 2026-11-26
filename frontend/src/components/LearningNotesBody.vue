@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { FilePlus2, Pencil, Save, Trash2, X } from '@lucide/vue'
+import { computed, ref, watch } from 'vue'
+import { Check, FilePlus2, Pencil, Plus, Save, Trash2, X } from '@lucide/vue'
 import type { LearningNote } from '../api/client'
+import { MAX_NOTE_TAGS, parseNoteTags, SYSTEM_NOTE_TAGS, toggleNoteTag } from '../domain/noteTags'
 
-defineProps<{
+const props = defineProps<{
   notes: LearningNote[]
   loading: boolean
   saving: boolean
@@ -13,6 +14,7 @@ defineProps<{
   title: string
   content: string
   tags: string
+  quickTags?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -26,6 +28,27 @@ const emit = defineEmits<{
 }>()
 
 const contentInputRef = ref<HTMLTextAreaElement | null>(null)
+// 本地同步副本确保同一渲染帧内连续点击多个系统标签不会因父组件 prop 尚未刷新而相互覆盖
+const liveTags = ref(props.tags)
+watch(() => props.tags, (next) => {
+  liveTags.value = next
+})
+
+const resolvedQuickTags = computed(() => (props.quickTags?.length ? props.quickTags : [...SYSTEM_NOTE_TAGS]))
+const selectedTags = computed(() => parseNoteTags(liveTags.value))
+const selectedTagSet = computed(() => new Set(selectedTags.value))
+
+function handleToggleQuickTag(tag: string) {
+  const next = toggleNoteTag(liveTags.value, tag)
+  liveTags.value = next
+  emit('update:tags', next)
+}
+
+function handleTagsInput(event: Event) {
+  const next = (event.target as HTMLInputElement).value
+  liveTags.value = next
+  emit('update:tags', next)
+}
 
 function focusContent() {
   contentInputRef.value?.focus()
@@ -68,11 +91,31 @@ defineExpose({ focusContent })
         @input="emit('update:content', ($event.target as HTMLTextAreaElement).value)"
       ></textarea>
       <div class="notes-editor-bottom">
+        <div class="notes-quick-tags" role="group" aria-label="系统预设标签" data-testid="note-quick-tags">
+          <span class="notes-quick-tags-label">系统标签</span>
+          <div class="notes-quick-tags-list">
+            <button
+              v-for="tag in resolvedQuickTags"
+              :key="tag"
+              type="button"
+              class="note-preset-tag"
+              :class="{ active: selectedTagSet.has(tag) }"
+              :aria-pressed="selectedTagSet.has(tag)"
+              :disabled="saving || (!selectedTagSet.has(tag) && selectedTags.length >= MAX_NOTE_TAGS)"
+              :data-testid="'note-preset-tag-' + tag"
+              @click="handleToggleQuickTag(tag)"
+            >
+              <Check v-if="selectedTagSet.has(tag)" :size="12" aria-hidden="true" />
+              <Plus v-else :size="12" aria-hidden="true" />
+              <span>{{ tag }}</span>
+            </button>
+          </div>
+        </div>
         <input
-          :value="tags"
+          :value="liveTags"
           aria-label="笔记标签"
-          placeholder="标签，用逗号分隔"
-          @input="emit('update:tags', ($event.target as HTMLInputElement).value)"
+          placeholder="自定义标签，用逗号分隔，或点击上方系统标签"
+          @input="handleTagsInput"
         />
         <button
           class="button button-dark button-small"
@@ -197,6 +240,62 @@ defineExpose({ focusContent })
 .notes-editor .button {
   justify-self: end;
   cursor: pointer;
+}
+
+.notes-quick-tags {
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+}
+
+.notes-quick-tags-label {
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.notes-quick-tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.note-preset-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 26px;
+  padding: 3px 10px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--motion), border-color var(--motion), background var(--motion);
+}
+
+.note-preset-tag:hover:not(:disabled),
+.note-preset-tag.active {
+  color: var(--accent-strong);
+  border-color: var(--border-focus);
+  background: var(--accent-soft);
+}
+
+.note-preset-tag.active {
+  font-weight: 600;
+}
+
+.note-preset-tag:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .notes-empty {

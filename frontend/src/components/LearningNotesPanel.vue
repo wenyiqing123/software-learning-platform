@@ -2,13 +2,14 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { Bookmark, ChevronDown, NotebookPen, X } from '@lucide/vue'
 import { api, apiError, type LearningBookmark, type LearningNote } from '../api/client'
+import { buildQuickNoteTags, parseNoteTags } from '../domain/noteTags'
 import ConfirmDialog from './ConfirmDialog.vue'
 import LearningNotesBody from './LearningNotesBody.vue'
 
 interface SectionDraft { editingId: number | null; title: string; content: string; tags: string }
 const draftCache = new Map<number, SectionDraft>()
 
-const props = defineProps<{ sectionId: number; knowledgePointId?: number; sectionTitle?: string; startCollapsed?: boolean }>()
+const props = defineProps<{ sectionId: number; knowledgePointId?: number; knowledgePointName?: string; sectionTitle?: string; startCollapsed?: boolean }>()
 const emit = defineEmits<{
   'bookmark-change': [bookmarked: boolean]
   'notes-count-change': [count: number]
@@ -31,6 +32,7 @@ let prevBodyOverflow: string | null = null
 let prevFocusedEl: HTMLElement | null = null
 
 const modalTitle = computed(() => (props.sectionTitle ? `课程笔记 · ${props.sectionTitle}` : '课程笔记'))
+const quickTags = computed(() => buildQuickNoteTags(props.knowledgePointName))
 
 async function openComposer() {
   collapsed.value = false
@@ -69,7 +71,6 @@ function resetDraft(clearCache = true) {
   if (clearCache) draftCache.delete(props.sectionId)
 }
 function failure(cause: unknown) { return apiError(cause, '学习记录暂时无法保存，请稍后重试。') }
-function tags() { return [...new Set(draft.tags.split(/[,，、]/).map(tag => tag.trim()).filter(Boolean))].slice(0, 10) }
 async function load() {
   loading.value = true; error.value = ''; notice.value = ''
   try {
@@ -94,7 +95,7 @@ function edit(note: LearningNote) {
 async function save() {
   if (!draft.content.trim() || saving.value) return
   saving.value = true; error.value = ''; notice.value = ''
-  const payload = { sectionId: props.sectionId, title: draft.title.trim(), content: draft.content.trim(), tags: tags() }
+  const payload = { sectionId: props.sectionId, title: draft.title.trim(), content: draft.content.trim(), tags: parseNoteTags(draft.tags) }
   try {
     if (editingId.value) await api.put('/learning/notes/' + editingId.value, payload)
     else await api.post('/learning/notes', payload)
@@ -210,6 +211,7 @@ onBeforeUnmount(restoreModalEnvironment)
         v-model:title="draft.title"
         v-model:content="draft.content"
         v-model:tags="draft.tags"
+        :quick-tags="quickTags"
         :notes="notes"
         :loading="loading"
         :saving="saving"
@@ -262,6 +264,7 @@ onBeforeUnmount(restoreModalEnvironment)
               v-model:title="draft.title"
               v-model:content="draft.content"
               v-model:tags="draft.tags"
+              :quick-tags="quickTags"
               :notes="notes"
               :loading="loading"
               :saving="saving"

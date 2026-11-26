@@ -247,6 +247,11 @@ const visualScenarios = {
       await dialog.waitFor({ state: 'hidden' })
       await page.getByTestId('course-footer-note').click()
       await dialog.waitFor({ state: 'visible' })
+      await page.getByTestId('note-quick-tags').waitFor({ state: 'visible' })
+      const presetTag = page.getByTestId('note-preset-tag-核心概念')
+      await presetTag.click()
+      if (await presetTag.getAttribute('aria-pressed') !== 'true') throw new Error('System preset tag did not toggle active state')
+      if (!await page.getByLabel('笔记标签').inputValue().then(v => v.includes('核心概念'))) throw new Error('System preset tag did not append to tag input')
     } },
     { route: '/courses?courseId=3&sectionId=32', name: 'course-scroll-read', async check(page) {
       await page.getByRole('button', { name: '标记本节已读' }).waitFor()

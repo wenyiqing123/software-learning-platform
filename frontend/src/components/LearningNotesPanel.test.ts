@@ -99,4 +99,59 @@ describe('LearningNotesPanel', () => {
     expect(document.body.style.overflow).toBe('')
     wrapper.unmount()
   })
+
+  it('adds and toggles quick system tags inside the note composer dialog', async () => {
+    const wrapper = mount(LearningNotesPanel, {
+      props: {
+        sectionId: 101,
+        knowledgePointId: 2,
+        knowledgePointName: '用例图',
+        sectionTitle: '用例建模基础',
+        startCollapsed: true,
+      },
+    })
+    await flushPromises()
+
+    await (wrapper.vm as unknown as { openComposer: () => Promise<void> }).openComposer()
+    await flushPromises()
+
+    const dialog = document.body.querySelector('[data-testid="note-composer-dialog"]')
+    expect(dialog).not.toBeNull()
+
+    const kpChip = dialog!.querySelector('[data-testid="note-preset-tag-用例图"]') as HTMLButtonElement
+    const coreChip = dialog!.querySelector('[data-testid="note-preset-tag-核心概念"]') as HTMLButtonElement
+    const pitfallChip = dialog!.querySelector('[data-testid="note-preset-tag-易错点"]') as HTMLButtonElement
+    const tagInput = dialog!.querySelector('[aria-label="笔记标签"]') as HTMLInputElement
+    const contentInput = dialog!.querySelector('[aria-label="笔记内容"]') as HTMLTextAreaElement
+
+    expect(kpChip).not.toBeNull()
+    expect(coreChip).not.toBeNull()
+    expect(pitfallChip).not.toBeNull()
+
+    kpChip.click()
+    coreChip.click()
+    pitfallChip.click()
+    await flushPromises()
+    expect(tagInput.value).toBe('用例图, 核心概念, 易错点')
+    expect(coreChip.getAttribute('aria-pressed')).toBe('true')
+
+    coreChip.click()
+    await flushPromises()
+    expect(tagInput.value).toBe('用例图, 易错点')
+    expect(coreChip.getAttribute('aria-pressed')).toBe('false')
+
+    contentInput.value = '快速添加系统标签测试'
+    contentInput.dispatchEvent(new Event('input'))
+    await flushPromises()
+    ;(dialog!.querySelector('form.notes-editor') as HTMLFormElement).dispatchEvent(new Event('submit'))
+    await flushPromises()
+
+    expect(http.post).toHaveBeenCalledWith('/learning/notes', {
+      sectionId: 101,
+      title: '',
+      content: '快速添加系统标签测试',
+      tags: ['用例图', '易错点'],
+    })
+    wrapper.unmount()
+  })
 })
