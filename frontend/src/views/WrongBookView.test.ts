@@ -11,6 +11,7 @@ async function mountPage() {
   const router = createRouter({ history: createMemoryHistory(), routes: [
     { path: '/wrong-book', component: WrongBookView },
     { path: '/practice', component: { template: '<div />' } },
+    { path: '/tutor', component: { template: '<div />' } },
   ] })
   await router.push('/wrong-book')
   await router.isReady()
@@ -66,6 +67,50 @@ describe('WrongBookView', () => {
 
     await wrapper.get('[data-testid="wrong-print"]').trigger('click')
     expect(printSpy).toHaveBeenCalledTimes(1)
+
+    vi.restoreAllMocks()
+    wrapper.unmount()
+  })
+
+  it('aggregates deterministic knowledge-point distribution pills and filters rows on click', async () => {
+    learning.wrongBook.mockResolvedValue([
+      { id: 21, questionId: 101, question: '数据流图加工如何命名？', knowledgePoint: '数据流图', wrongCount: 3, status: 'UNMASTERED' },
+      { id: 22, questionId: 102, question: '需求分析的交付文档是什么？', knowledgePoint: '需求分析', wrongCount: 1, status: 'UNMASTERED' },
+      { id: 23, questionId: 103, question: '外部实体符号代表什么？', knowledgePoint: '数据流图', wrongCount: 2, status: 'UNMASTERED' },
+    ])
+
+    const { wrapper } = await mountPage()
+    const dist = wrapper.get('[data-testid="wrong-kp-distribution"]')
+    expect(dist.text()).toContain('3 题分布于 2 个知识点')
+
+    const dfdPill = wrapper.get('[data-testid="wrong-kp-pill-数据流图"]')
+    expect(dfdPill.text()).toContain('2 题 · 67%')
+    expect(dfdPill.text()).toContain('错 5 次')
+
+    await dfdPill.trigger('click')
+    expect(dfdPill.classes()).toContain('active')
+    expect(wrapper.findAll('article.wrong-row')).toHaveLength(2)
+
+    await dfdPill.trigger('click')
+    expect(dfdPill.classes()).not.toContain('active')
+    expect(wrapper.findAll('article.wrong-row')).toHaveLength(3)
+    wrapper.unmount()
+  })
+
+  it('navigates to /tutor with question stem prefill without triggering LLM request or leaking answers', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    const { wrapper, router } = await mountPage()
+
+    await wrapper.get('[data-testid="wrong-ask-tutor-21"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.path).toBe('/tutor')
+    expect(router.currentRoute.value.query.entity).toBe('数据流图')
+    const prompt = String(router.currentRoute.value.query.prompt || '')
+    expect(prompt).toContain('数据流图加工如何命名？')
+    expect(prompt).toContain('梳理关键概念边界与解题思路')
+    expect(prompt).not.toContain('标准答案')
+    expect(fetchSpy).not.toHaveBeenCalled()
 
     vi.restoreAllMocks()
     wrapper.unmount()

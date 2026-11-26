@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowRight, BookOpenCheck, Check, CircleAlert, Clock3, Download, Printer, RotateCcw, Search, Sparkles } from '@lucide/vue'
+import { ArrowRight, BookOpenCheck, Check, CircleAlert, Clock3, Download, MessageSquarePlus, Printer, RotateCcw, Search, Sparkles } from '@lucide/vue'
 import { learningApi } from '../api/client'
 import { buildWrongBookMarkdown, triggerMarkdownDownload } from '../domain/studyExport'
 import SectionHeading from '../components/SectionHeading.vue'
@@ -9,9 +9,12 @@ import LearningContextActions from '../components/LearningContextActions.vue'
 import ContentSkeleton from '../components/ContentSkeleton.vue'
 
 interface WrongQuestion { id: number; questionId: number; question: string; knowledgePoint?: string; wrongCount: number; status?: string }
+interface WrongKpStat { name: string; count: number; wrongSum: number; pct: number }
+
 const router = useRouter()
 const rows = ref<WrongQuestion[]>([])
 const filterStatus = ref<'UNMASTERED' | 'MASTERED' | 'ALL'>('UNMASTERED')
+const selectedKnowledgePoint = ref('')
 const includesMasteredLoaded = ref(false)
 const loading = ref(true)
 const loaded = ref(false)
@@ -24,14 +27,49 @@ let requestId = 0
 let active = true
 const pending = computed(() => rows.value.filter(item => item.status !== 'MASTERED'))
 const masteredRows = computed(() => rows.value.filter(item => item.status === 'MASTERED'))
-const items = computed(() => {
-  const query = search.value.trim().toLocaleLowerCase()
-  const base = filterStatus.value === 'ALL'
+const statusRows = computed(() => (
+  filterStatus.value === 'ALL'
     ? rows.value
     : filterStatus.value === 'MASTERED'
       ? masteredRows.value
       : pending.value
-  return base.filter(item => (item.question || '').toLocaleLowerCase().includes(query) || (item.knowledgePoint || '').toLocaleLowerCase().includes(query))
+))
+
+function kpLabelOf(item: WrongQuestion): string {
+  return (item.knowledgePoint || '').trim() || '未关联知识点'
+}
+
+const wrongKpStats = computed<WrongKpStat[]>(() => {
+  const source = statusRows.value
+  const total = source.length
+  if (!total) return []
+  const grouped = new Map<string, { count: number; wrongSum: number }>()
+  for (const item of source) {
+    const key = kpLabelOf(item)
+    const entry = grouped.get(key) || { count: 0, wrongSum: 0 }
+    entry.count += 1
+    entry.wrongSum += Math.max(1, Number(item.wrongCount || 1))
+    grouped.set(key, entry)
+  }
+  return Array.from(grouped.entries())
+    .sort((a, b) => b[1].count - a[1].count || b[1].wrongSum - a[1].wrongSum || a[0].localeCompare(b[0], 'zh-CN'))
+    .map(([name, info]) => ({
+      name,
+      count: info.count,
+      wrongSum: info.wrongSum,
+      pct: Math.round((info.count / total) * 100),
+    }))
+})
+
+const items = computed(() => {
+  const query = search.value.trim().toLocaleLowerCase()
+  const activeKp = selectedKnowledgePoint.value
+  return statusRows.value.filter((item) => {
+    const kpMatch = !activeKp || kpLabelOf(item) === activeKp
+    if (!kpMatch) return false
+    if (!query) return true
+    return (item.question || '').toLocaleLowerCase().includes(query) || (item.knowledgePoint || '').toLocaleLowerCase().includes(query)
+  })
 })
 async function load(forceIncludeMastered = filterStatus.value !== 'UNMASTERED') {
   const request = ++requestId
@@ -56,9 +94,33 @@ async function load(forceIncludeMastered = filterStatus.value !== 'UNMASTERED') 
 }
 function setFilter(next: 'UNMASTERED' | 'MASTERED' | 'ALL') {
   filterStatus.value = next
+  selectedKnowledgePoint.value = ''
   if (next !== 'UNMASTERED' && !includesMasteredLoaded.value) {
     void load(true)
   }
+}
+function toggleKnowledgePointFilter(name: string) {
+  selectedKnowledgePoint.value = selectedKnowledgePoint.value === name ? '' : name
+}
+function clearWrongFilters() {
+  search.value = ''
+  selectedKnowledgePoint.value = ''
+}
+function buildWrongStemTutorPrompt(item: WrongQuestion): string {
+  const stem = (item.question || '').trim()
+  const kp = (item.knowledgePoint || '').trim()
+  const scope = kp ? `围绕知识点「${kp}」` : '针对这道错题'
+  return `我在复习以下错题时答错了（累计 ${Math.max(1, Number(item.wrongCount || 1))} 次），请${scope}帮我梳理关键概念边界与解题思路，先引导我排查易混点：\n题干：「${stem}」`
+}
+function askTutorWithStem(item: WrongQuestion) {
+  const kp = (item.knowledgePoint || '').trim()
+  void router.push({
+    path: '/tutor',
+    query: {
+      ...(kp ? { entity: kp } : {}),
+      prompt: buildWrongStemTutorPrompt(item),
+    },
+  })
 }
 function review(item?: WrongQuestion) {
   if (!item || !Number.isSafeInteger(item.questionId) || item.questionId <= 0) {
@@ -145,11 +207,40 @@ function printHandout() {
     <div v-if="loadError" class="inline-notice" role="alert"><CircleAlert :size="16" /><span>{{ loadError }}</span><button class="text-button" :disabled="loading" @click="load()">重试加载</button></div>
     <div v-if="actionError" class="inline-notice" role="alert"><CircleAlert :size="16" /><span>{{ actionError }}</span><button v-if="retryId !== null" class="text-button" :disabled="busyId !== null" @click="markMastered(retryId)">重试更新</button></div>
     <section class="wrong-summary"><div><p class="eyebrow">待处理错题</p><strong>{{ loaded ? pending.length : '—' }}</strong><span>{{ loaded ? '道题目待复习（不受搜索筛选影响）' : loading ? '正在读取个人错题记录' : '数量暂不可用' }}</span></div><div class="wrong-summary-note"><span class="summary-icon"><Sparkles :size="17" /></span><span>重新作答将记录复习结果；也可以在确认理解后标记为已掌握或从已掌握重新开启复习。</span></div></section>
+    <section v-if="loaded && wrongKpStats.length" class="wrong-kp-distribution" data-testid="wrong-kp-distribution" aria-label="知识点错题分布统计">
+      <div class="wrong-kp-dist-head">
+        <div>
+          <p class="eyebrow">知识点错题分布（确定性计数统计）</p>
+          <span class="wrong-kp-summary-note">当前共 {{ statusRows.length }} 题分布于 {{ wrongKpStats.length }} 个知识点，点击标签可筛选对应错题。</span>
+        </div>
+        <button v-if="selectedKnowledgePoint" type="button" class="text-button wrong-kp-clear-btn" data-testid="wrong-kp-clear" @click="selectedKnowledgePoint = ''">显示全部</button>
+      </div>
+      <div class="wrong-kp-pills" role="group" aria-label="按知识点筛选错题">
+        <button
+          v-for="kp in wrongKpStats"
+          :key="kp.name"
+          type="button"
+          class="wrong-kp-pill"
+          :class="{ active: selectedKnowledgePoint === kp.name }"
+          :aria-pressed="selectedKnowledgePoint === kp.name"
+          :data-testid="`wrong-kp-pill-${kp.name}`"
+          @click="toggleKnowledgePointFilter(kp.name)"
+        >
+          <span class="wrong-kp-pill-top">
+            <span class="wrong-kp-name">{{ kp.name }}</span>
+            <span class="wrong-kp-count">{{ kp.count }} 题 · {{ kp.pct }}%（错 {{ kp.wrongSum }} 次）</span>
+          </span>
+          <span class="wrong-kp-track" aria-hidden="true">
+            <span class="wrong-kp-fill" :style="{ width: `${Math.max(kp.pct, 6)}%` }" />
+          </span>
+        </button>
+      </div>
+    </section>
     <section class="content-section wrong-list-section"><div class="section-title-row"><div><p class="eyebrow">逐题巩固</p><h2>{{ filterStatus === 'MASTERED' ? '已掌握错题' : filterStatus === 'ALL' ? '全部错题记录' : '待复习题目' }}</h2></div><div class="wrong-tools"><div class="wrong-filter-pills" role="tablist" aria-label="错题状态筛选"><button type="button" role="tab" class="wrong-filter-pill" :class="{ active: filterStatus === 'UNMASTERED' }" :aria-selected="filterStatus === 'UNMASTERED'" @click="setFilter('UNMASTERED')">待复习</button><button type="button" role="tab" class="wrong-filter-pill" :class="{ active: filterStatus === 'MASTERED' }" :aria-selected="filterStatus === 'MASTERED'" @click="setFilter('MASTERED')">已掌握</button><button type="button" role="tab" class="wrong-filter-pill" :class="{ active: filterStatus === 'ALL' }" :aria-selected="filterStatus === 'ALL'" @click="setFilter('ALL')">全部</button></div><label class="search-field"><Search :size="16" /><input v-model="search" placeholder="搜索题目或知识点" /></label></div></div>
       <ContentSkeleton v-if="loading" variant="list" :rows="3" label="正在加载错题" />
       <div v-else-if="loadError" class="empty-state"><CircleAlert :size="24" /><strong>暂时无法读取错题</strong><span>连接恢复后再查看真实待复习记录。</span><button class="text-button" @click="load()">重试加载 <RotateCcw :size="14" /></button></div>
-      <div v-else-if="items.length" class="wrong-list"><article v-for="item in items" :key="item.id" class="wrong-row"><span class="wrong-mark"><CircleAlert :size="18" /></span><div class="wrong-content"><strong>{{ item.question }}</strong><div><span v-if="item.knowledgePoint" class="topic-chip">{{ item.knowledgePoint }}</span><span v-if="item.status === 'MASTERED'" class="mastered-chip">已掌握</span><span class="wrong-meta"><RotateCcw :size="13" />答错 {{ item.wrongCount }} 次</span></div><LearningContextActions compact :context="{ entity: item.knowledgePoint }" /></div><template v-if="item.status !== 'MASTERED'"><button class="button button-outline button-small" :disabled="busyId !== null" @click="review(item)">重新练习 <ArrowRight :size="14" /></button><button class="icon-button mastered-button" :disabled="busyId !== null" :aria-label="'标记为已掌握：' + item.question" :title="busyId === item.id ? '正在保存' : '标记为已掌握'" @click="markMastered(item.id)"><Check :size="17" /></button></template><button v-else class="button button-outline button-small" :disabled="busyId !== null" data-testid="wrong-reopen" @click="reopenWrong(item.id)">重新加入待复习</button></article></div>
-      <div v-else class="empty-state"><span class="empty-check"><BookOpenCheck :size="24" /></span><strong>{{ search ? '没有匹配的错题' : filterStatus === 'MASTERED' ? '暂无已掌握的历史错题' : '当前没有待复习错题' }}</strong><span>{{ search ? '调整搜索词查看其他题目。' : filterStatus === 'MASTERED' ? '完成复习或手动确认掌握的错题会保留在此。' : '完成课程练习后，答错的题目会自动整理到这里。' }}</span><button class="text-button" @click="router.push('/practice')">去做练习 <ArrowRight :size="14" /></button></div>
+      <div v-else-if="items.length" class="wrong-list"><article v-for="item in items" :key="item.id" class="wrong-row"><span class="wrong-mark"><CircleAlert :size="18" /></span><div class="wrong-content"><strong>{{ item.question }}</strong><div><span v-if="item.knowledgePoint" class="topic-chip">{{ item.knowledgePoint }}</span><span v-if="item.status === 'MASTERED'" class="mastered-chip">已掌握</span><span class="wrong-meta"><RotateCcw :size="13" />答错 {{ item.wrongCount }} 次</span></div><LearningContextActions compact :context="{ entity: item.knowledgePoint }" /></div><div class="wrong-row-actions"><button type="button" class="wrong-ask-tutor-btn" :data-testid="`wrong-ask-tutor-${item.id}`" @click="askTutorWithStem(item)"><MessageSquarePlus :size="14" />带题干问助教</button><button v-if="item.status !== 'MASTERED'" class="button button-outline button-small" :disabled="busyId !== null" @click="review(item)">重新练习 <ArrowRight :size="14" /></button><button v-else class="button button-outline button-small" :disabled="busyId !== null" data-testid="wrong-reopen" @click="reopenWrong(item.id)">重新加入待复习</button></div><button v-if="item.status !== 'MASTERED'" class="icon-button mastered-button" :disabled="busyId !== null" :aria-label="'标记为已掌握：' + item.question" :title="busyId === item.id ? '正在保存' : '标记为已掌握'" @click="markMastered(item.id)"><Check :size="17" /></button></article></div>
+      <div v-else class="empty-state"><span class="empty-check"><BookOpenCheck :size="24" /></span><strong>{{ search || selectedKnowledgePoint ? '没有匹配的错题' : filterStatus === 'MASTERED' ? '暂无已掌握的历史错题' : '当前没有待复习错题' }}</strong><span>{{ search || selectedKnowledgePoint ? '调整搜索词或清除知识点筛选以查看其他题目。' : filterStatus === 'MASTERED' ? '完成复习或手动确认掌握的错题会保留在此。' : '完成课程练习后，答错的题目会自动整理到这里。' }}</span><button v-if="search || selectedKnowledgePoint" type="button" class="text-button" @click="clearWrongFilters">重置筛选条件</button><button v-else class="text-button" @click="router.push('/practice')">去做练习 <ArrowRight :size="14" /></button></div>
     </section>
     <div class="review-tip"><Clock3 :size="16" /><span>建议隔一段时间重新作答，结合解析检查自己是否真正理解。</span></div>
   </div>
@@ -159,8 +250,31 @@ function printHandout() {
 .inline-notice { flex-wrap: wrap; }
 .wrong-heading-actions,
 .wrong-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.wrong-kp-distribution { display: grid; gap: 10px; padding: 14px 16px; background: var(--surface-soft); border: 1px solid var(--border-default); border-radius: var(--radius-md); }
+.wrong-kp-dist-head { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 8px 14px; }
+.wrong-kp-dist-head .eyebrow { margin: 0 0 2px; }
+.wrong-kp-summary-note { color: var(--text-muted); font-size: 12px; }
+.wrong-kp-clear-btn { font-size: 12px; }
+.wrong-kp-pills { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; }
+.wrong-kp-pill { display: grid; gap: 6px; padding: 9px 11px; color: var(--text); background: var(--surface); border: 1px solid var(--border-default); border-radius: var(--radius-sm); text-align: left; cursor: pointer; transition: border-color var(--motion), background-color var(--motion), box-shadow var(--motion); }
+.wrong-kp-pill:hover,
+.wrong-kp-pill:focus-visible { border-color: var(--border-focus); outline: none; }
+.wrong-kp-pill.active { background: var(--accent-soft); border-color: var(--accent); box-shadow: var(--shadow-xs); }
+.wrong-kp-pill-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
+.wrong-kp-name { font-size: 13px; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+.wrong-kp-pill.active .wrong-kp-name { color: var(--accent-strong); }
+.wrong-kp-count { color: var(--text-muted); font-size: 11.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wrong-kp-track { display: block; width: 100%; height: 4px; background: var(--surface-tint); border-radius: var(--radius-pill); overflow: hidden; }
+.wrong-kp-fill { display: block; height: 100%; background: var(--accent); border-radius: var(--radius-pill); }
 .wrong-filter-pills { display: inline-flex; gap: 4px; padding: 3px; background: var(--surface-soft); border: 1px solid var(--border-default); border-radius: var(--radius-sm); }
 .wrong-filter-pill { min-height: 28px; padding: 3px 10px; color: var(--text-muted); background: transparent; border: 0; border-radius: var(--radius-xs); font-size: 12px; font-weight: 600; cursor: pointer; }
 .wrong-filter-pill.active { color: var(--accent-strong); background: var(--surface); box-shadow: var(--shadow-xs); }
+.wrong-row-actions { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+.wrong-ask-tutor-btn { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 0 10px; color: var(--accent-strong); background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent); border-radius: var(--radius-sm); font-size: 12.5px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: background-color var(--motion), border-color var(--motion); }
+.wrong-ask-tutor-btn:hover,
+.wrong-ask-tutor-btn:focus-visible { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); border-color: var(--border-focus); outline: none; }
 .mastered-chip { display: inline-flex; align-items: center; padding: 2px 8px; color: var(--success); background: var(--success-soft); border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; }
+@media (max-width: 720px) {
+  .wrong-row > .wrong-row-actions { grid-column: 2; justify-self: start; justify-content: flex-start; }
+}
 </style>

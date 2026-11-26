@@ -471,6 +471,15 @@ const visualScenarios = {
       if (await reason.evaluate(element => element.scrollWidth > element.clientWidth + 1 || getComputedStyle(element).whiteSpace === 'nowrap')) throw new Error('Full recommendation reason is not readable')
     } },
     { route: '/wrong-book', name: 'wrong-search', async check(page) {
+      const dist = page.getByTestId('wrong-kp-distribution')
+      await dist.waitFor()
+      const kpPill = page.locator('[data-testid^="wrong-kp-pill-"]').first()
+      await kpPill.waitFor()
+      await kpPill.click()
+      if (!await kpPill.evaluate(el => el.classList.contains('active'))) throw new Error('Wrong-book KP distribution pill did not toggle active state')
+      await kpPill.click()
+      const askBtn = page.locator('[data-testid^="wrong-ask-tutor-"]').first()
+      await askBtn.waitFor()
       const search = page.getByPlaceholder('搜索题目或知识点')
       await search.fill('数据流图')
       if (await page.locator('.wrong-row').count() !== 1) throw new Error('Wrong-book filter did not narrow the list')
