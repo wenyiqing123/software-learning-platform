@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Check, CircleAlert, Code2, Copy, Download, GitBranch, Maximize2, RotateCcw, X, ZoomIn, ZoomOut } from '@lucide/vue'
+import { useTheme } from '../composables/useTheme'
 
 const props = defineProps<{
   code: string
@@ -19,19 +20,28 @@ const zoomScale = ref(1)
 const inlineContainer = ref<HTMLElement | null>(null)
 const zoomContainer = ref<HTMLElement | null>(null)
 
+const { isDark } = useTheme()
 let renderSequence = 0
 let copyResetTimer: ReturnType<typeof setTimeout> | null = null
 let mermaidModulePromise: Promise<typeof import('mermaid')['default']> | null = null
 
-async function getMermaid() {
-  if (!mermaidModulePromise) {
-    mermaidModulePromise = import('mermaid').then((mod) => {
-      const instance = mod.default
-      instance.initialize({
-        startOnLoad: false,
-        securityLevel: 'strict',
-        theme: 'base',
-        themeVariables: {
+function buildMermaidConfig(dark: boolean) {
+  return {
+    startOnLoad: false,
+    securityLevel: 'strict' as const,
+    theme: (dark ? 'dark' : 'base') as 'dark' | 'base',
+    themeVariables: dark
+      ? {
+          background: '#111a18',
+          primaryColor: '#183631',
+          primaryTextColor: '#e6f0ed',
+          primaryBorderColor: '#40b8a8',
+          lineColor: '#86a099',
+          secondaryColor: '#172320',
+          tertiaryColor: '#1e2e2a',
+          fontFamily: "'DM Sans','Noto Sans SC','Microsoft YaHei',sans-serif",
+        }
+      : {
           background: '#ffffff',
           primaryColor: '#e9f3f1',
           primaryTextColor: '#172b27',
@@ -41,11 +51,16 @@ async function getMermaid() {
           tertiaryColor: '#eef2f3',
           fontFamily: "'DM Sans','Noto Sans SC','Microsoft YaHei',sans-serif",
         },
-      })
-      return instance
-    })
   }
-  return mermaidModulePromise
+}
+
+async function getMermaid() {
+  if (!mermaidModulePromise) {
+    mermaidModulePromise = import('mermaid').then((mod) => mod.default)
+  }
+  const instance = await mermaidModulePromise
+  instance.initialize(buildMermaidConfig(isDark.value))
+  return instance
 }
 
 function sanitizeSvgToNode(rawSvg: string): SVGElement | null {
@@ -113,6 +128,9 @@ async function renderDiagram() {
     await nextTick()
     if (seq === renderSequence) {
       mountSvgInto(inlineContainer.value, svgMarkup.value)
+      if (zoomOpen.value) {
+        mountSvgInto(zoomContainer.value, svgMarkup.value)
+      }
     }
   } catch {
     if (seq !== renderSequence) return
@@ -186,6 +204,8 @@ function downloadSvg() {
 
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && zoomOpen.value) {
+    event.preventDefault()
+    event.stopImmediatePropagation()
     closeZoom()
   }
 }
@@ -194,15 +214,19 @@ watch(() => props.code, () => {
   void renderDiagram()
 })
 
+watch(isDark, () => {
+  void renderDiagram()
+})
+
 onMounted(() => {
-  window.addEventListener('keydown', onKeydown)
+  window.addEventListener('keydown', onKeydown, true)
   void renderDiagram()
 })
 
 onBeforeUnmount(() => {
   renderSequence++
   if (copyResetTimer) clearTimeout(copyResetTimer)
-  window.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('keydown', onKeydown, true)
 })
 </script>
 

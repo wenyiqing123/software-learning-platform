@@ -246,4 +246,36 @@ describe('App role navigation', () => {
 
     wrapper.unmount()
   })
+
+  it('toggles theme via topbar button and toggles command palette via Ctrl+K', async () => {
+    session.user.value = { id: 2, username: 'student', displayName: '学生', role: 'STUDENT' }
+    const routes = [
+      { path: '/dashboard', component: { template: '<div />' } },
+      { path: '/courses', component: { template: '<div />' } },
+    ]
+    const router = createRouter({ history: createMemoryHistory(), routes })
+    await router.push('/dashboard')
+    await router.isReady()
+    const wrapper = mount(App, { attachTo: document.body, global: { plugins: [router] } })
+    await flushPromises()
+
+    try {
+      const themeBtn = wrapper.get('[data-testid="theme-toggle-btn"]')
+      expect(document.documentElement.dataset.theme).not.toBe('dark')
+      await themeBtn.trigger('click')
+      expect(document.documentElement.dataset.theme).toBe('dark')
+      await themeBtn.trigger('click')
+      expect(document.documentElement.dataset.theme).toBe('light')
+
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }))
+      await flushPromises()
+      expect(document.body.querySelector('[data-testid="command-palette-dialog"]')).not.toBeNull()
+
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+      await flushPromises()
+      expect(document.body.querySelector('[data-testid="command-palette-dialog"]')).toBeNull()
+    } finally {
+      wrapper.unmount()
+    }
+  })
 })

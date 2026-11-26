@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import MermaidDiagram from './MermaidDiagram.vue'
+import { setTheme } from '../composables/useTheme'
 
 const mermaidApi = vi.hoisted(() => ({
   initialize: vi.fn(),
@@ -22,6 +23,7 @@ describe('MermaidDiagram', () => {
   })
 
   afterEach(() => {
+    setTheme('light')
     vi.restoreAllMocks()
   })
 
@@ -153,6 +155,39 @@ describe('MermaidDiagram', () => {
     expect(wrapper.get('[data-testid="mermaid-tab-diagram"]').attributes('disabled')).toBeDefined()
     expect(wrapper.get('[data-testid="mermaid-zoom-btn"]').attributes('disabled')).toBeDefined()
     expect(wrapper.get('[data-testid="mermaid-download-btn"]').attributes('disabled')).toBeDefined()
+    wrapper.unmount()
+  })
+
+  it('re-renders with dark theme config on theme switch and intercepts Escape in capture phase when zoom is open', async () => {
+    const outerKeyListener = vi.fn()
+    window.addEventListener('keydown', outerKeyListener)
+
+    const wrapper = mount(MermaidDiagram, {
+      props: { code: 'flowchart LR\n  A --> B' },
+      attachTo: document.body,
+    })
+    await flushPromises()
+
+    setTheme('dark')
+    await flushPromises()
+
+    expect(mermaidApi.initialize).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        securityLevel: 'strict',
+        theme: 'dark',
+      }),
+    )
+
+    await wrapper.get('[data-testid="mermaid-zoom-btn"]').trigger('click')
+    await flushPromises()
+    expect(document.body.querySelector('[data-testid="mermaid-zoom-modal"]')).not.toBeNull()
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await flushPromises()
+    expect(document.body.querySelector('[data-testid="mermaid-zoom-modal"]')).toBeNull()
+    expect(outerKeyListener).not.toHaveBeenCalled()
+
+    window.removeEventListener('keydown', outerKeyListener)
     wrapper.unmount()
   })
 })

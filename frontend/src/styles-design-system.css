@@ -503,3 +503,58 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .admin-center-tabs button:hover,.admin-center-tabs button.active{color:var(--accent-strong);background:var(--surface)}
 .admin-center-tabs button.active{box-shadow:var(--shadow-xs)}
 @media(max-width:760px){.admin-columns{grid-template-columns:minmax(0,1fr)}.form-pair{grid-template-columns:1fr}.course-filter{min-width:0;width:100%}}
+
+html[data-theme="dark"]{
+  color-scheme:dark;
+  --surface:#111a18;
+  --surface-soft:#172320;
+  --surface-tint:#1e2e2a;
+  --text:#e6f0ed;
+  --text-muted:#adc2bc;
+  --text-subtle:#86a099;
+  --border-default:#293c37;
+  --border-soft:#20302c;
+  --border-strong:#46635b;
+  --border-focus:#40b8a8;
+  --accent:#40b8a8;
+  --accent-strong:#5dd0c0;
+  --accent-soft:#183631;
+  --info:#6bb0d1;
+  --info-soft:#162933;
+  --warning:#dfa34b;
+  --warning-soft:#2e2414;
+  --danger:#e28175;
+  --danger-soft:#311b19;
+  --danger-border:#6b3832;
+  --surface-overlay:rgba(5,10,9,.72);
+  --shadow-xs:0 1px 3px rgb(0 0 0 / .28);
+  --shadow-sm:0 4px 14px rgb(0 0 0 / .36);
+  --shadow-md:0 10px 28px rgb(0 0 0 / .46);
+  --shadow-lg:0 18px 40px rgb(0 0 0 / .58);
+  --focus-ring:0 0 0 3px rgb(64 184 168 / .28);
+  --warning-strong:#f0bb66;
+  --info-strong:#8cc7e2;
+  --danger-strong:#f19b90;
+
+  --el-color-white:#111a18;
+  --el-color-primary-dark-2:#66d6c7;
+  --el-color-success-dark-2:#66d6c7;
+  --el-color-warning-dark-2:#edb862;
+  --el-color-danger-dark-2:#ee988d;
+  --el-color-error-dark-2:#ee988d;
+  --el-color-info-dark-2:#89c3df;
+  --el-overlay-color:rgb(4 10 9 / .62);
+  --el-overlay-color-light:rgb(4 10 9 / .48);
+  --el-overlay-color-lighter:rgb(4 10 9 / .30);
+  --el-mask-color:rgb(17 26 24 / .88);
+  --el-mask-color-extra-light:rgb(17 26 24 / .42);
+}
+
+@media print{
+  body{background:#fff;color:#111}
+  .sidebar,.topbar,.no-print,.floating-selection-toolbar,.command-palette-backdrop,.nav-flyout-menu{display:none}
+  .app-shell{display:block;min-height:auto}
+  .main-area{min-width:0}
+  .page-content{max-width:100%;padding:0;margin:0}
+  .card,.course-article-card,.note-card,.wrong-item-card{box-shadow:none;break-inside:avoid}
+}

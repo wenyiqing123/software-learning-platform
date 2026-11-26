@@ -20,5 +20,8 @@ import './styles-graph.css'
 import './styles-learning.css'
 import './styles-design-system.css'
 import router from './router'
+import { initTheme } from './composables/useTheme'
+
+initTheme()
 
 createApp(App).use(createPinia()).use(router).mount('#app')
