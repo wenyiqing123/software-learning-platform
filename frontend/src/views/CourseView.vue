@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../api/client'
 import SectionHeading from '../components/SectionHeading.vue'
@@ -24,11 +24,16 @@ const loading = ref(true)
 const saving = ref(false)
 const error = ref('')
 const progressError = ref('')
+const autoReadNotice = ref('')
 const sections = computed(() => study.value?.chapters.flatMap(ch => ch.sections) ?? [])
 const active = computed(() => sections.value.find(s => s.id === activeId.value) ?? sections.value[0])
 const position = computed(() => sections.value.findIndex(s => s.id === active.value?.id))
 const progress = computed(() => study.value?.totalSections ? Math.round(study.value.completedSections / study.value.totalSections * 100) : 0)
 let requestVersion = 0
+let requireDownwardScroll = false
+let lastScrollTop = 0
+let scrollRafId: number | null = null
+const suppressedAutoReadIds = new Set<number>()
 function failure(cause: unknown) { const e = cause as { response?: { status?: number; data?: { message?: string; detail?: string } } }; return e.response?.data?.message || e.response?.data?.detail || (e.response?.status === 404 ? '课程不存在或已停用，请选择其他课程。' : '课程内容暂时无法加载，请重试。') }
 function safeUrl(value: string) { try { const url = new URL(value); return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : undefined } catch { return undefined } }
 async function loadCourse(id: number) {
@@ -60,27 +65,108 @@ async function loadCourses() {
   } catch (cause) { error.value = failure(cause); loading.value = false }
 }
 function chooseSection(section: StudySection) {
-  activeId.value = section.id; progressError.value = ''
+  activeId.value = section.id; progressError.value = ''; autoReadNotice.value = ''
   rememberLearningContext({ courseId: courseId.value ?? undefined, sectionId: section.id, knowledgePointId: section.knowledgePointId, entity: section.graphEntity })
   void router.replace({ path: '/courses', query: { courseId: courseId.value, sectionId: section.id }, hash: '#section-' + section.id })
 }
-function chooseCourse() { if (courseId.value) { void router.replace({ path: '/courses', query: { courseId: courseId.value } }); void loadCourse(courseId.value) } }
-async function markRead() {
-  const section = active.value
+function chooseCourse() {
+  if (courseId.value) {
+    suppressedAutoReadIds.clear(); autoReadNotice.value = ''; requireDownwardScroll = false
+    void router.replace({ path: '/courses', query: { courseId: courseId.value } })
+    void loadCourse(courseId.value)
+  }
+}
+async function persistCompleted(section: StudySection, completed: boolean, source: 'scroll' | 'manual') {
   const current = study.value
-  if (!section || !current || saving.value) return
+  if (!current || saving.value) return
   saving.value = true; progressError.value = ''
-  const completed = !section.completed
+  if (source === 'manual') autoReadNotice.value = ''
   try {
     await api.put('/courses/' + current.courseId + '/study/sections/' + section.id + '/progress', { completed })
     section.completed = completed
     current.completedSections = current.chapters.flatMap(ch => ch.sections).filter(s => s.completed).length
-  } catch (cause) { progressError.value = failure(cause) }
-  finally { saving.value = false }
+    if (completed) {
+      suppressedAutoReadIds.delete(section.id)
+      autoReadNotice.value = source === 'scroll' ? '已滚动至页面底部，本节已自动标记为已读。' : ''
+    } else {
+      suppressedAutoReadIds.add(section.id)
+      autoReadNotice.value = ''
+    }
+  } catch (cause) {
+    if (source === 'scroll') suppressedAutoReadIds.add(section.id)
+    progressError.value = failure(cause)
+  } finally { saving.value = false }
 }
+async function markRead() {
+  const section = active.value
+  if (!section) return
+  await persistCompleted(section, !section.completed, 'manual')
+}
+function getWindowScrollMetrics() {
+  const doc = document.documentElement
+  if (!doc) return null
+  const viewportHeight = window.innerHeight || doc.clientHeight || 0
+  const scrollHeight = doc.scrollHeight || 0
+  const scrollTop = window.scrollY ?? window.pageYOffset ?? doc.scrollTop ?? 0
+  return { viewportHeight, scrollHeight, scrollTop, maxScroll: Math.max(0, scrollHeight - viewportHeight) }
+}
+function evaluateWindowScrollRead() {
+  const metrics = getWindowScrollMetrics()
+  const section = active.value
+  if (!metrics || metrics.maxScroll <= 2 || loading.value || error.value || !section || saving.value) {
+    if (metrics) lastScrollTop = metrics.scrollTop
+    return
+  }
+  const isScrollingDown = metrics.scrollTop > lastScrollTop
+  lastScrollTop = metrics.scrollTop
+  if (requireDownwardScroll) {
+    if (!isScrollingDown) return
+    requireDownwardScroll = false
+  }
+  const atBottom = metrics.scrollTop + metrics.viewportHeight >= metrics.scrollHeight - 24
+  if (!atBottom) {
+    if (suppressedAutoReadIds.has(section.id) && metrics.scrollTop + metrics.viewportHeight < metrics.scrollHeight - 120) {
+      suppressedAutoReadIds.delete(section.id)
+    }
+    return
+  }
+  if (!section.completed && !suppressedAutoReadIds.has(section.id)) {
+    void persistCompleted(section, true, 'scroll')
+  }
+}
+function onWindowScroll() {
+  if (typeof window.requestAnimationFrame === 'function') {
+    if (scrollRafId !== null) return
+    let rafCompleted = false
+    const handle = window.requestAnimationFrame(() => {
+      rafCompleted = true
+      scrollRafId = null
+      evaluateWindowScrollRead()
+    })
+    if (!rafCompleted) scrollRafId = handle
+    return
+  }
+  evaluateWindowScrollRead()
+}
+watch(activeId, (next, prev) => {
+  autoReadNotice.value = ''
+  const metrics = getWindowScrollMetrics()
+  lastScrollTop = metrics?.scrollTop ?? 0
+  requireDownwardScroll = prev !== null && next !== prev && (metrics?.scrollTop ?? 0) > 0
+})
 watch(() => route.query.courseId, value => { const next = Number(value); if (next > 0 && next !== courseId.value) { courseId.value = next; void loadCourse(next) } })
 watch(() => route.query.sectionId, value => { const next = Number(value); if (sections.value.some(s => s.id === next)) activeId.value = next })
-onMounted(loadCourses)
+onMounted(() => {
+  window.addEventListener('scroll', onWindowScroll, { passive: true })
+  void loadCourses()
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', onWindowScroll)
+  if (scrollRafId !== null && typeof window.cancelAnimationFrame === 'function') {
+    window.cancelAnimationFrame(scrollRafId)
+    scrollRafId = null
+  }
+})
 </script>
 
 <template>
@@ -112,7 +198,7 @@ onMounted(loadCourses)
           <section v-for="block in active.content" :key="block.heading" class="reading-block"><h3>{{ block.heading }}</h3><MarkdownContent v-for="paragraph in block.paragraphs" :key="paragraph" :content="paragraph" /></section>
            <section v-if="active.resources.length" class="study-resources"><h3>延伸阅读</h3><div v-for="resource in active.resources" :key="resource.url"><a v-if="safeUrl(resource.url)" :href="safeUrl(resource.url)" target="_blank" rel="noopener noreferrer">{{ resource.title }} ↗</a><strong v-else>{{ resource.title }}</strong><p>{{ resource.description }}</p></div></section>
           <LearningContextActions :context="{ courseId: courseId ?? undefined, sectionId: active.id, knowledgePointId: active.knowledgePointId, entity: active.graphEntity }" />
-           <footer class="study-footer"><div><button class="button button-outline" :disabled="saving" @click="markRead">{{ saving ? '正在保存…' : active.completed ? '✓ 已读 · 撤销标记' : '标记本节已读' }}</button><p>阅读记录与练习掌握度分别统计。</p><span v-if="progressError" role="alert">{{ progressError }}</span></div><div class="section-paging"><button class="text-button" :disabled="position <= 0" @click="sections[position - 1] && chooseSection(sections[position - 1]!)">上一节</button><button class="text-button" :disabled="position >= sections.length - 1" @click="sections[position + 1] && chooseSection(sections[position + 1]!)">下一节 →</button></div></footer>
+           <footer class="study-footer"><div><button class="button button-outline" :disabled="saving" @click="markRead">{{ saving ? '正在保存…' : active.completed ? '✓ 已读 · 撤销标记' : '标记本节已读' }}</button><p>滚动至页面底部自动标记本节已读；阅读记录与练习掌握度分别统计。</p><span v-if="autoReadNotice" class="auto-read-status" role="status">{{ autoReadNotice }}</span><span v-if="progressError" role="alert">{{ progressError }}</span></div><div class="section-paging"><button class="text-button" :disabled="position <= 0" @click="sections[position - 1] && chooseSection(sections[position - 1]!)">上一节</button><button class="text-button" :disabled="position >= sections.length - 1" @click="sections[position + 1] && chooseSection(sections[position + 1]!)">下一节 →</button></div></footer>
         </article>
       </div>
     </template>
@@ -161,7 +247,8 @@ onMounted(loadCourses)
 .study-footer,.section-paging{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}
 .study-footer{margin-top:20px;padding-top:16px;border-top:1px solid var(--border-soft)}
 .study-footer p{margin:8px 0 0;color:var(--text-muted);font-size:12px}
-.study-footer [role=alert]{color:var(--danger);font-size:13px}
+.auto-read-status{display:block;margin-top:6px;color:var(--accent-strong);font-size:12px;font-weight:600}
+.study-footer [role=alert]{display:block;margin-top:6px;color:var(--danger);font-size:13px}
 .study-notice,.study-empty{padding:20px;border-radius:var(--radius-md)}
 .study-notice{color:var(--danger);background:var(--danger-soft)}
 .study-empty{color:var(--text-muted);text-align:center;background:var(--surface);border:1px solid var(--border-default)}

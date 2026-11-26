@@ -169,6 +169,9 @@ function apiResponse(url, role, scenario, method) {
   if (path === '/api/spaced-reviews/paused') return json([])
   if (path === '/api/spaced-reviews/21/review') return json({ attemptId: 8, questionId: 101, correct: true, correctAnswer: ['A'], explanation: '加工名称应能说明数据变换。', recallRating: 2, intervalMinutes: 4320, nextDueAt: '2026-11-26T08:00:00', mastered: false, consecutiveSuccessfulReviews: 1 })
   if (path === '/api/study-plans/today') return json({ id: 1, date: '2026-11-21', budgetMinutes: 30, tasks: planTasks })
+  if (/^\/api\/study-plans\/tasks\/\d+$/.test(path) && method === 'PUT' && scenario === 'study-plan-hint') {
+    return json({ message: '请先完成对应课程阅读、正确作答或复习，再标记计划任务完成' }, 409)
+  }
   if (path === '/api/reports/learning') return json({ from: '2026-11-15', to: '2026-11-21', days: 7, courseName: '软件工程', reading: { totalSections: 8, completedSections: 3, completedInPeriod: 2 }, practice: { attempts: 12, correct: 9, accuracy: 75 }, reviews: { reviews: 2, correct: 1, accuracy: 50 }, plans: { totalTasks: 3, completedTasks: 1, plannedMinutes: 30, completedMinutes: 10 }, dailyActivity: [3, 4, 5].map((attempts, index) => ({ date: `2026-11-${19 + index}`, attempts, correct: attempts - 1, readingCompleted: index === 0 ? 0 : 1 })), chapters: [{ chapterId: 1, chapterName: '软件需求', totalSections: 4, completedSections: 2, completedInPeriod: 1 }, { chapterId: 2, chapterName: '软件设计', totalSections: 4, completedSections: 1, completedInPeriod: 1 }], knowledge: coursePoints.map(point => ({ pointId: point.id, pointName: point.name, mastery: point.mastery, attempts: 4, correct: Math.round(point.mastery / 25), dueReviewCount: point.id === 12 ? 1 : 0 })) })
   if (path === '/api/experiments') return json([experimentRun])
   if (path === '/api/admin/experiments/fixed-suite') return json({
@@ -219,6 +222,14 @@ const visualScenarios = {
       const toggle = page.getByRole('button', { name: /展开笔记/ })
       if (await toggle.count()) await toggle.click()
       await page.getByText('先画系统边界').waitFor()
+    } },
+    { route: '/courses?courseId=3&sectionId=32', name: 'course-scroll-read', async check(page) {
+      await page.getByRole('button', { name: '标记本节已读' }).waitFor()
+      await page.evaluate(() => {
+        window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' })
+      })
+      await page.locator('.auto-read-status').waitFor()
+      await page.getByRole('button', { name: /已读 · 撤销标记/ }).waitFor()
     } },
     { route: '/courses', name: 'course-empty', check: page => page.getByText('本课程的阅读内容正在准备中。', { exact: false }).waitFor() },
     { route: '/knowledge', name: 'graph-offline', async check(page) {
@@ -372,6 +383,25 @@ const visualScenarios = {
       await page.getByRole('radio', { name: '一般' }).check()
       await page.getByRole('button', { name: '提交复习' }).click()
       await page.getByText('4320 分钟后', { exact: false }).waitFor()
+    } },
+    { route: '/study-plan', name: 'study-plan-hint', async check(page) {
+      await page.locator('.plan-complete-btn').first().click()
+      const toast = page.getByTestId('study-plan-hint-toast')
+      await toast.waitFor({ state: 'visible' })
+      const toastText = await toast.innerText()
+      if (!toastText.includes('请先完成对应课程阅读、正确作答或复习，再标记计划任务完成')) {
+        throw new Error(`Study plan hint toast missing prerequisite text: ${toastText}`)
+      }
+      if (!await page.locator('.plan-task.is-prereq-blocked').count()) {
+        throw new Error('Blocked study plan task card should be highlighted')
+      }
+      const inViewport = await toast.evaluate(el => {
+        const r = el.getBoundingClientRect()
+        return r.top >= 0 && r.left >= 0 && r.right <= window.innerWidth && r.bottom <= window.innerHeight
+      })
+      if (!inViewport) throw new Error('Study plan hint toast must sit cleanly inside the viewport')
+      await toast.locator('.plan-hint-close').click()
+      await toast.waitFor({ state: 'detached' })
     } },
     { route: '/recommendations', name: 'recommendation-empty', check: page => page.getByText('当前暂无学习建议').waitFor() },
     { route: '/recommendations', name: 'recommendation-reason', async check(page) {
@@ -529,6 +559,7 @@ try {
       if (response.status() < 400) return
       const issue = { path: new URL(response.url()).pathname, status: response.status(), method: response.request().method() }
       if (scenario === 'micro-author-forbidden' && issue.path === '/api/courses/3/study' && issue.status === 403) expectedHttpErrors.push(issue)
+      else if (scenario === 'study-plan-hint' && issue.path.startsWith('/api/study-plans/tasks/') && issue.status === 409) expectedHttpErrors.push(issue)
       else httpErrors.push(issue)
     })
     page.on('console', message => {
@@ -641,7 +672,9 @@ try {
       await page.screenshot({ path: path.join(auditDir, screenshot), fullPage: true, animations: 'disabled' })
       const expectedResourceErrors = scenario === 'micro-author-forbidden'
         ? resourceConsoleErrors.filter(text => text.includes('status of 403')).length
-        : 0
+        : scenario === 'study-plan-hint'
+          ? resourceConsoleErrors.filter(text => text.includes('status of 409')).length
+          : 0
       results.push({ ...metrics, role, viewport: `${viewport.width}x${viewport.height}`, requested: route, scenario, scenarioError, final: metrics.path, roleRedirectPass: metrics.path === expectedPath(role, route), overflow: metrics.scrollWidth > metrics.viewportWidth + 1, blankRoot: metrics.rootChildren === 0, topbarOverflow: metrics.topbarWidth > metrics.viewportWidth + 1, topbarOverlap: metrics.topbarBottom > metrics.contentTop + 1, screenshot, consoleErrors: [...consoleErrors], pageErrors: [...pageErrors], httpErrors: [...httpErrors], resourceConsoleErrors: [...resourceConsoleErrors], expectedHttpErrors: [...expectedHttpErrors], expectedResourceErrors })
       consoleErrors.length = 0
       pageErrors.length = 0

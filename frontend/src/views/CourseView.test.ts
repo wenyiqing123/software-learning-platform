@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import CourseView from './CourseView.vue'
@@ -54,7 +54,7 @@ beforeEach(() => {
   vi.resetAllMocks()
   http.get.mockImplementation(async (path: string) => {
     if (path === '/courses') return { data: [{ id: 1, name: '软件工程导论', term: '2026秋', description: '软件工程核心基础' }] }
-    if (path === '/courses/1/study') return { data: mockStudyData }
+    if (path === '/courses/1/study') return { data: structuredClone(mockStudyData) }
     if (path === '/learning/notes') return { data: [] }
     if (path === '/learning/bookmarks') return { data: { bookmarked: false } }
     throw new Error('unexpected path: ' + path)
@@ -105,4 +105,96 @@ describe('CourseView', () => {
 
     wrapper.unmount()
   })
+
+  it('automatically marks an unread section read when scrolling to the bottom of window', async () => {
+    http.put.mockResolvedValue({ data: {} })
+    const { wrapper } = await mountCourseView({ courseId: '1', sectionId: '102' })
+
+    const setScrollState = (scrollY: number, scrollHeight = 1800, innerHeight = 900) => {
+      Object.defineProperty(window, 'innerHeight', { value: innerHeight, configurable: true })
+      Object.defineProperty(window, 'scrollY', { value: scrollY, configurable: true })
+      Object.defineProperty(document.documentElement, 'clientHeight', { value: innerHeight, configurable: true })
+      Object.defineProperty(document.documentElement, 'scrollHeight', { value: scrollHeight, configurable: true })
+    }
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      cb(0)
+      return 1
+    })
+
+    try {
+      setScrollState(300)
+      window.dispatchEvent(new Event('scroll'))
+      await flushPromises()
+      expect(http.put).not.toHaveBeenCalled()
+
+      setScrollState(900)
+      window.dispatchEvent(new Event('scroll'))
+      await flushPromises()
+      expect(http.put).toHaveBeenCalledTimes(1)
+      expect(http.put).toHaveBeenCalledWith('/courses/1/study/sections/102/progress', { completed: true })
+      expect(wrapper.find('.auto-read-status').text()).toContain('已滚动至页面底部')
+      expect(wrapper.text()).toContain('2 / 2')
+
+      // 停留在底部再次触发 scroll 不会重复提交
+      window.dispatchEvent(new Event('scroll'))
+      await flushPromises()
+      expect(http.put).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.unstubAllGlobals()
+      wrapper.unmount()
+    }
+  })
+
+  it('prevents immediate re-mark after manual undo near bottom until scrolling back up', async () => {
+    http.put.mockResolvedValue({ data: {} })
+    const { wrapper } = await mountCourseView({ courseId: '1', sectionId: '102' })
+
+    const setScrollState = (scrollY: number, scrollHeight = 1800, innerHeight = 900) => {
+      Object.defineProperty(window, 'innerHeight', { value: innerHeight, configurable: true })
+      Object.defineProperty(window, 'scrollY', { value: scrollY, configurable: true })
+      Object.defineProperty(document.documentElement, 'clientHeight', { value: innerHeight, configurable: true })
+      Object.defineProperty(document.documentElement, 'scrollHeight', { value: scrollHeight, configurable: true })
+    }
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      cb(0)
+      return 1
+    })
+
+    try {
+      setScrollState(900)
+      window.dispatchEvent(new Event('scroll'))
+      await flushPromises()
+      expect(http.put).toHaveBeenCalledTimes(1)
+
+      // 用户在底部手动撤销已读
+      await wrapper.find('.study-footer button.button-outline').trigger('click')
+      await flushPromises()
+      expect(http.put).toHaveBeenNthCalledWith(2, '/courses/1/study/sections/102/progress', { completed: false })
+
+      // 停留在底部轻微抖动不自动重新标为已读
+      setScrollState(895)
+      window.dispatchEvent(new Event('scroll'))
+      await flushPromises()
+      expect(http.put).toHaveBeenCalledTimes(2)
+
+      // 向上滚离底部后再重新滚回底部，允许再次自动标为已读
+      setScrollState(200)
+      window.dispatchEvent(new Event('scroll'))
+      await flushPromises()
+      setScrollState(900)
+      window.dispatchEvent(new Event('scroll'))
+      await flushPromises()
+      expect(http.put).toHaveBeenNthCalledWith(3, '/courses/1/study/sections/102/progress', { completed: true })
+    } finally {
+      vi.unstubAllGlobals()
+      wrapper.unmount()
+    }
+  })
+})
+
+afterEach(() => {
+  Object.defineProperty(window, 'innerHeight', { value: 768, configurable: true })
+  Object.defineProperty(window, 'scrollY', { value: 0, configurable: true })
+  Object.defineProperty(document.documentElement, 'clientHeight', { value: 768, configurable: true })
+  Object.defineProperty(document.documentElement, 'scrollHeight', { value: 0, configurable: true })
 })

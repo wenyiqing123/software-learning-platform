@@ -77,4 +77,31 @@ describe('daily plan page', () => {
     expect(wrapper.text()).toContain('已跳过')
     wrapper.unmount()
   })
+
+  it('shows non-blocking floating toast and task highlight when prerequisite behavior is missing', async () => {
+    const wrapper = await mountWithRouter(StudyPlanView, '/study-plan'); await flushPromises()
+    learning.updateStudyPlanTask.mockRejectedValueOnce({
+      response: {
+        status: 409,
+        data: { message: '请先完成对应课程阅读、正确作答或复习，再标记计划任务完成' },
+      },
+    })
+
+    await wrapper.get('.plan-complete-btn').trigger('click')
+    await flushPromises()
+
+    // 顶部文档流错误条不推出位移，而是弹出固定定位的非打扰悬浮提醒
+    expect(wrapper.find('.inline-notice').exists()).toBe(false)
+    const toast = wrapper.get('[data-testid="study-plan-hint-toast"]')
+    expect(toast.attributes('role')).toBe('alert')
+    expect(toast.text()).toContain('请先完成对应课程阅读、正确作答或复习，再标记计划任务完成')
+    expect(toast.text()).toContain('阅读需求分析')
+    expect(toast.get('a.plan-hint-link').attributes('href')).toContain('/courses?courseId=1&sectionId=101')
+    expect(wrapper.get('.plan-task').classes()).toContain('is-prereq-blocked')
+
+    await wrapper.get('.plan-hint-close').trigger('click')
+    expect(wrapper.find('[data-testid="study-plan-hint-toast"]').exists()).toBe(false)
+    expect(wrapper.get('.plan-task').classes()).not.toContain('is-prereq-blocked')
+    wrapper.unmount()
+  })
 })
