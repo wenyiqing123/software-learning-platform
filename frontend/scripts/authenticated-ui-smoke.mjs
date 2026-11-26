@@ -208,7 +208,7 @@ function apiResponse(url, role, scenario, method) {
   ])
   if (path.startsWith('/api/learning/notes')) return json(scenario === 'course-notes' ? [{ id: 1, sectionId: 32, title: '先画系统边界', content: '先列出外部实体，再检查每条输入和输出。', tags: ['数据流图'] }] : [])
   if (path === '/api/learning/bookmarks/list') return json([{ targetType: 'SECTION', targetId: 32, title: '数据流图', courseId: 3, courseName: '软件工程', knowledgePointId: 12, knowledgePointName: '数据流图', graphEntity: '数据流图' }])
-  if (path.startsWith('/api/learning/bookmarks')) return json({ bookmarked: false })
+  if (path.startsWith('/api/learning/bookmarks')) return json({ bookmarked: method === 'PUT' })
   if (path === '/api/ai/feynman/evaluate') return json({
     knowledgePoint: '需求分析',
     coveredPoints: ['明确说明了需求分析旨在确定系统边界与业务目标'],
@@ -231,6 +231,8 @@ const server = await preview({ root, configFile: path.join(root, 'vite.config.ts
 const visualScenarios = {
   STUDENT: [
     { route: '/courses?courseId=3&sectionId=32', name: 'course-notes', async check(page) {
+      await page.getByTestId('course-section-bookmark').click()
+      await page.getByTestId('course-bookmark-notice').waitFor()
       const toggle = page.getByRole('button', { name: /展开笔记/ })
       if (await toggle.count()) await toggle.click()
       await page.getByText('先画系统边界').waitFor()

@@ -8,6 +8,7 @@ interface SectionDraft { editingId: number | null; title: string; content: strin
 const draftCache = new Map<number, SectionDraft>()
 
 const props = defineProps<{ sectionId: number; knowledgePointId?: number; startCollapsed?: boolean }>()
+const emit = defineEmits<{ 'bookmark-change': [bookmarked: boolean] }>()
 const notes = ref<LearningNote[]>([])
 const bookmarked = ref(false)
 const loading = ref(true)
@@ -34,8 +35,6 @@ function prefillExcerpt(payload: { text: string; title?: string }) {
   notice.value = '已摘录选文至草稿，可补充理解后点击保存'
 }
 
-defineExpose({ prefillExcerpt })
-
 function resetDraft(clearCache = true) {
   editingId.value = null
   draft.title = ''
@@ -54,6 +53,7 @@ async function load() {
     ])
     notes.value = noteResponse.data
     bookmarked.value = Boolean(bookmarkResponse.data.bookmarked)
+    emit('bookmark-change', bookmarked.value)
   } catch (cause) { error.value = failure(cause) }
   finally { loading.value = false }
 }
@@ -88,12 +88,23 @@ async function executeRemove() {
   finally { saving.value = false }
 }
 async function toggleBookmark() {
-  if (saving.value) return
+  if (saving.value || loading.value) return false
   saving.value = true; error.value = ''; notice.value = ''
-  try { const result = (await api.put<LearningBookmark>('/learning/bookmarks', { sectionId: props.sectionId, bookmarked: !bookmarked.value })).data; bookmarked.value = result.bookmarked; notice.value = result.bookmarked ? '已收藏本节' : '已取消收藏' }
-  catch (cause) { error.value = failure(cause) }
-  finally { saving.value = false }
+  try {
+    const result = (await api.put<LearningBookmark>('/learning/bookmarks', { sectionId: props.sectionId, bookmarked: !bookmarked.value })).data
+    bookmarked.value = result.bookmarked
+    emit('bookmark-change', bookmarked.value)
+    notice.value = result.bookmarked ? '已收藏本节' : '已取消收藏'
+    return true
+  } catch (cause) {
+    error.value = failure(cause)
+    return false
+  } finally {
+    saving.value = false
+  }
 }
+
+defineExpose({ prefillExcerpt, toggleBookmark })
 watch(() => props.sectionId, (nextId, prevId) => {
   if (prevId && (draft.title.trim() || draft.content.trim() || draft.tags.trim() || editingId.value !== null)) {
     draftCache.set(prevId, { editingId: editingId.value, title: draft.title, content: draft.content, tags: draft.tags })

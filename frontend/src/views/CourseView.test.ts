@@ -242,6 +242,36 @@ describe('CourseView', () => {
     vi.restoreAllMocks()
     wrapper.unmount()
   })
+
+  it('exposes prominent top and footer section bookmark buttons synced with learning notes panel', async () => {
+    http.put.mockImplementation(async (path: string, body: { bookmarked?: boolean }) => {
+      if (path === '/learning/bookmarks') return { data: { targetType: 'SECTION', targetId: 101, bookmarked: Boolean(body.bookmarked) } }
+      return { data: {} }
+    })
+
+    const { wrapper } = await mountCourseView({ courseId: '1', sectionId: '101' })
+    const topBtn = wrapper.get('[data-testid="course-section-bookmark"]')
+    const footerBtn = wrapper.get('[data-testid="course-footer-bookmark"]')
+    expect(topBtn.text()).toContain('收藏本节')
+    expect(footerBtn.text()).toContain('收藏本节')
+
+    await topBtn.trigger('click')
+    await flushPromises()
+
+    expect(http.put).toHaveBeenCalledWith('/learning/bookmarks', { sectionId: 101, bookmarked: true })
+    expect(topBtn.text()).toContain('已收藏')
+    expect(footerBtn.text()).toContain('已收藏本节')
+    expect(wrapper.get('[data-testid="course-bookmark-notice"]').text()).toContain('已收藏本节')
+    expect(wrapper.get('.notes-bookmark').classes()).toContain('active')
+
+    await footerBtn.trigger('click')
+    await flushPromises()
+
+    expect(http.put).toHaveBeenLastCalledWith('/learning/bookmarks', { sectionId: 101, bookmarked: false })
+    expect(topBtn.text()).toContain('收藏本节')
+    expect(wrapper.get('.notes-bookmark').classes()).not.toContain('active')
+    wrapper.unmount()
+  })
 })
 
 afterEach(() => {
