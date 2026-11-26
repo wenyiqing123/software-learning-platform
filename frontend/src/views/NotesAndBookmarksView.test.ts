@@ -114,6 +114,24 @@ describe('NotesAndBookmarksView', () => {
     await flushPromises()
     expect(apiMock.setBookmark).toHaveBeenCalledWith({ sectionId: 5, bookmarked: false })
 
+    // 导出讲义与打印讲义按钮
+    const createObjectURL = vi.fn(() => 'blob:mock-notes')
+    const revokeObjectURL = vi.fn()
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, writable: true, value: createObjectURL })
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, writable: true, value: revokeObjectURL })
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    const printSpy = vi.spyOn(window, 'print').mockImplementation(() => {})
+
+    await wrapper.get('[data-testid="notes-export-md"]').trigger('click')
+    expect(createObjectURL).toHaveBeenCalledTimes(1)
+    expect(clickSpy).toHaveBeenCalledTimes(1)
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock-notes')
+    expect(wrapper.text()).toContain('已导出 Markdown 讲义')
+
+    await wrapper.get('[data-testid="notes-print"]').trigger('click')
+    expect(printSpy).toHaveBeenCalledTimes(1)
+
+    vi.restoreAllMocks()
     wrapper.unmount()
   })
 })

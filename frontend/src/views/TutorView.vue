@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { GraduationCap, MessageSquare, PanelLeftOpen, Plus } from '@lucide/vue'
+import { Database, GraduationCap, MessageSquare, Network, PanelLeftOpen, Plus, Sparkles, X } from '@lucide/vue'
 import { useRoute, useRouter } from 'vue-router'
 import { apiError, learningApi } from '../api/client'
 import type { TutorSession } from '../api/tutor'
 import type { TutorHintResult } from '../api/types'
+import type { NormalizedCitationTriple } from '../domain/citationAlignment'
 import {
   LOCKED_TUTOR_MODE,
   expandedHintLevelsInTurn,
@@ -30,7 +31,9 @@ const router = useRouter()
 
 const queryValue = (value: unknown) => typeof value === 'string' ? value : Array.isArray(value) ? String(value[0] || '') : ''
 const initialEntity = queryValue(route.query.entity)
+const initialPrompt = queryValue(route.query.prompt).trim()
 const activeActivity = ref<TutorActivity>(queryValue(route.query.activity) === 'feynman' ? 'feynman' : 'chat')
+const feynmanReferenceExcerpt = computed(() => queryValue(route.query.prompt).trim())
 
 watch(
   () => route.query.activity,
@@ -57,7 +60,8 @@ function hasRouteLearningContext(): boolean {
     queryValue(route.query.entity) ||
     queryValue(route.query.knowledgePointId) ||
     queryValue(route.query.courseId) ||
-    queryValue(route.query.sectionId)
+    queryValue(route.query.sectionId) ||
+    queryValue(route.query.prompt)
   )
 }
 
@@ -66,7 +70,7 @@ function shouldCollapseSidebarByDefault(): boolean {
   return narrowDesktopOrSmaller || hasRouteLearningContext()
 }
 
-const question = ref(initialEntity ? '请解释「' + initialEntity + '」的核心概念及相关知识。' : '')
+const question = ref(initialPrompt || (initialEntity ? '请解释「' + initialEntity + '」的核心概念及相关知识。' : ''))
 const resolvedPointName = ref('')
 const contextDismissed = ref(false)
 const loading = ref(false)
@@ -81,6 +85,36 @@ const messages = ref<TutorChatMessage[]>([])
 const historyError = ref('')
 const hintLoading = ref(false)
 const failedAsHint = ref(false)
+const inspectedCitation = ref<{
+  index: number
+  entity: string
+  triple: NormalizedCitationTriple
+  allTriples: NormalizedCitationTriple[]
+} | null>(null)
+
+function openCitationInspector(payload: {
+  index: number
+  triple: NormalizedCitationTriple
+  allTriples: NormalizedCitationTriple[]
+  entity?: string
+}) {
+  inspectedCitation.value = {
+    index: payload.index,
+    entity: payload.entity || payload.triple.subject,
+    triple: payload.triple,
+    allTriples: payload.allTriples,
+  }
+}
+
+function closeCitationInspector() {
+  inspectedCitation.value = null
+}
+
+function askAboutInspectedEntity(entity: string) {
+  if (!entity.trim()) return
+  question.value = `请进一步结合课程内容详细解释「${entity.trim()}」的作用与联系。`
+  composerRef.value?.focus()
+}
 
 const STEP_HINT_STORAGE_KEY = 'slp-tutor-step-hint-sessions'
 
@@ -220,6 +254,16 @@ watch(
   }
 )
 
+watch(
+  () => route.query.prompt,
+  (next) => {
+    const text = queryValue(next).trim()
+    if (text && activeActivity.value === 'chat') {
+      question.value = text
+    }
+  }
+)
+
 onMounted(async () => {
   void resolvePointContext()
   try {
@@ -254,6 +298,7 @@ async function selectSession() {
 function selectSessionById(id: number) {
   activeActivity.value = 'chat'
   sessionId.value = id
+  inspectedCitation.value = null
   mobileDrawerOpen.value = false
   void selectSession()
 }
@@ -261,6 +306,7 @@ function selectSessionById(id: number) {
 function newSession() {
   abortController?.abort()
   sessionId.value = null
+  inspectedCitation.value = null
   draftStepHint.value = false
   messages.value = []
   failedQuestion.value = ''
@@ -695,6 +741,7 @@ function toggleSidebarDesktop() {
             @request-hint="requestHint"
             @open-graph="openGraph"
             @quick-prompt="selectQuickPrompt"
+            @inspect-citation="openCitationInspector"
           />
 
           <div class="tutor-composer-dock">
@@ -719,6 +766,7 @@ function toggleSidebarDesktop() {
             v-if="activeActivity === 'feynman'"
             :initial-knowledge-point="initialFeynmanTopic"
             :course-id="resolvedCourseId"
+            :reference-excerpt="feynmanReferenceExcerpt"
             @open-graph="openGraph"
           />
         </KeepAlive>
@@ -732,6 +780,77 @@ function toggleSidebarDesktop() {
           {{ copyFeedback.text }}
         </div>
       </div>
+
+      <aside
+        v-if="activeActivity === 'chat' && inspectedCitation"
+        class="tutor-citation-drawer"
+        data-testid="tutor-citation-drawer"
+        aria-label="引文关联知识图谱证据"
+      >
+        <header class="tutor-citation-drawer-head">
+          <div class="tutor-citation-drawer-title">
+            <Database :size="15" aria-hidden="true" />
+            <strong>引文 [{{ inspectedCitation.index }}] 证据详情</strong>
+          </div>
+          <button
+            type="button"
+            class="icon-button"
+            aria-label="关闭引文详情抽屉"
+            data-testid="tutor-citation-close"
+            @click="closeCitationInspector"
+          >
+            <X :size="15" />
+          </button>
+        </header>
+        <div class="tutor-citation-drawer-body">
+          <div class="tutor-citation-focus-card">
+            <span class="tutor-citation-focus-badge">当前聚焦概念</span>
+            <strong>{{ inspectedCitation.entity }}</strong>
+            <div class="tutor-citation-triple-spotlight">
+              <span>{{ inspectedCitation.triple.subject }}</span>
+              <em>— {{ inspectedCitation.triple.predicate }} —</em>
+              <span>{{ inspectedCitation.triple.object }}</span>
+            </div>
+            <div class="tutor-citation-focus-actions">
+              <button
+                type="button"
+                class="button button-outline button-small"
+                data-testid="tutor-citation-ask"
+                @click="askAboutInspectedEntity(inspectedCitation.entity)"
+              >
+                <Sparkles :size="13" /><span>围绕此节点追问</span>
+              </button>
+              <button
+                type="button"
+                class="button button-outline button-small"
+                data-testid="tutor-citation-graph"
+                @click="openGraph(inspectedCitation.entity)"
+              >
+                <Network :size="13" /><span>查看图谱邻域</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="tutor-citation-list-section">
+            <small>本次检索全部图谱证据（{{ inspectedCitation.allTriples.length }}）</small>
+            <ul class="tutor-citation-list">
+              <li
+                v-for="t in inspectedCitation.allTriples"
+                :key="t.index"
+                class="tutor-citation-row"
+                :class="{ active: t.index === inspectedCitation.index }"
+              >
+                <span class="tutor-citation-idx">[{{ t.index }}]</span>
+                <div>
+                  <strong>{{ t.subject }}</strong>
+                  <em> — {{ t.predicate }} — </em>
+                  <span>{{ t.object }}</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </aside>
     </section>
     <ConfirmDialog
       :open="confirmDeleteSessionId !== null"
@@ -1012,5 +1131,148 @@ function toggleSidebarDesktop() {
   color: var(--danger);
   border-color: var(--danger-border);
   background: var(--danger-soft);
+}
+
+.tutor-citation-drawer {
+  width: 312px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--surface-soft);
+  border-left: 1px solid var(--border-default);
+}
+
+.tutor-citation-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.tutor-citation-drawer-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text);
+  font-size: 13.5px;
+}
+
+.tutor-citation-drawer-title svg {
+  color: var(--accent);
+}
+
+.tutor-citation-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tutor-citation-focus-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+}
+
+.tutor-citation-focus-badge {
+  align-self: flex-start;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.tutor-citation-focus-card > strong {
+  font-size: 15px;
+  color: var(--text);
+}
+
+.tutor-citation-triple-spotlight {
+  padding: 8px 10px;
+  background: var(--surface-tint);
+  border-radius: var(--radius-xs);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.tutor-citation-triple-spotlight em {
+  color: var(--accent-strong);
+  font-style: normal;
+  font-weight: 600;
+}
+
+.tutor-citation-focus-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tutor-citation-list-section > small {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-subtle);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tutor-citation-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tutor-citation-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-xs);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.tutor-citation-row.active {
+  border-color: var(--border-focus);
+  background: var(--accent-soft);
+}
+
+.tutor-citation-row em {
+  color: var(--text-muted);
+  font-style: normal;
+}
+
+.tutor-citation-idx {
+  color: var(--accent-strong);
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+@media (max-width: 1120px) {
+  .tutor-citation-drawer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 25;
+    width: min(320px, 88%);
+    box-shadow: var(--shadow-md);
+  }
 }
 </style>

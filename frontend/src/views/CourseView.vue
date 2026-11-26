@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { BookmarkPlus, GraduationCap, MessageSquarePlus } from '@lucide/vue'
 import { api } from '../api/client'
 import SectionHeading from '../components/SectionHeading.vue'
 import FeedbackState from '../components/FeedbackState.vue'
@@ -25,8 +26,23 @@ const saving = ref(false)
 const error = ref('')
 const progressError = ref('')
 const autoReadNotice = ref('')
+const readingProgressPct = ref(0)
+const activeAnchorId = ref('anchor-objectives')
+const readingArticleRef = ref<HTMLElement | null>(null)
+const notesPanelRef = ref<{ prefillExcerpt: (payload: { text: string; title?: string }) => void } | null>(null)
+const selectionToolbar = ref({ visible: false, text: '', top: 0, left: 0 })
 const sections = computed(() => study.value?.chapters.flatMap(ch => ch.sections) ?? [])
 const active = computed(() => sections.value.find(s => s.id === activeId.value) ?? sections.value[0])
+const sectionAnchors = computed(() => {
+  const sec = active.value
+  if (!sec) return [] as Array<{ id: string; label: string }>
+  const list: Array<{ id: string; label: string }> = [{ id: 'anchor-objectives', label: '学习目标' }]
+  sec.content.forEach((block, idx) => {
+    if (block.heading) list.push({ id: `anchor-block-${idx}`, label: block.heading })
+  })
+  if (sec.resources.length) list.push({ id: 'anchor-resources', label: '延伸阅读' })
+  return list
+})
 const position = computed(() => sections.value.findIndex(s => s.id === active.value?.id))
 const progress = computed(() => study.value?.totalSections ? Math.round(study.value.completedSections / study.value.totalSections * 100) : 0)
 let requestVersion = 0
@@ -110,8 +126,110 @@ function getWindowScrollMetrics() {
   const scrollTop = window.scrollY ?? window.pageYOffset ?? doc.scrollTop ?? 0
   return { viewportHeight, scrollHeight, scrollTop, maxScroll: Math.max(0, scrollHeight - viewportHeight) }
 }
+function updateReadingScrollIndicators(metrics: { viewportHeight: number; scrollHeight: number; scrollTop: number; maxScroll: number } | null) {
+  if (!metrics || metrics.maxScroll <= 2) {
+    readingProgressPct.value = active.value?.completed ? 100 : 0
+  } else {
+    readingProgressPct.value = Math.min(100, Math.max(0, Math.round((metrics.scrollTop / metrics.maxScroll) * 100)))
+  }
+  const anchors = sectionAnchors.value
+  if (!anchors.length) return
+  let current = anchors[0].id
+  for (const anchor of anchors) {
+    const el = typeof document !== 'undefined' ? document.getElementById(anchor.id) : null
+    if (!el || typeof el.getBoundingClientRect !== 'function') continue
+    if (el.getBoundingClientRect().top <= 160) {
+      current = anchor.id
+    }
+  }
+  activeAnchorId.value = current
+}
+function jumpToAnchor(id: string) {
+  activeAnchorId.value = id
+  const el = typeof document !== 'undefined' ? document.getElementById(id) : null
+  el?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+}
+function hideSelectionToolbar() {
+  selectionToolbar.value.visible = false
+}
+function inspectTextSelection() {
+  if (typeof window === 'undefined' || typeof window.getSelection !== 'function') return
+  const sel = window.getSelection()
+  if (!sel || sel.isCollapsed || !readingArticleRef.value) {
+    hideSelectionToolbar()
+    return
+  }
+  const text = sel.toString().trim()
+  if (text.length < 2) {
+    hideSelectionToolbar()
+    return
+  }
+  const anchorInside = sel.anchorNode ? readingArticleRef.value.contains(sel.anchorNode) : false
+  const focusInside = sel.focusNode ? readingArticleRef.value.contains(sel.focusNode) : false
+  if (!anchorInside && !focusInside) {
+    hideSelectionToolbar()
+    return
+  }
+  if (!sel.rangeCount) return
+  const rect = sel.getRangeAt(0).getBoundingClientRect()
+  const vw = window.innerWidth || 1024
+  selectionToolbar.value = {
+    visible: true,
+    text,
+    top: Math.max(12, Math.round(rect.top - 48)),
+    left: Math.min(Math.max(12, Math.round(rect.left + rect.width / 2 - 148)), Math.max(12, vw - 310)),
+  }
+}
+function clearNativeSelection() {
+  hideSelectionToolbar()
+  try {
+    window.getSelection()?.removeAllRanges()
+  } catch {
+    // 忽略测试或受限环境选区清理失败
+  }
+}
+function excerptToNote() {
+  const snippet = selectionToolbar.value.text
+  if (!snippet) return
+  notesPanelRef.value?.prefillExcerpt({ text: snippet, title: active.value?.title })
+  clearNativeSelection()
+}
+function askSelectedInTutor() {
+  const snippet = selectionToolbar.value.text
+  const sec = active.value
+  if (!snippet || !sec) return
+  clearNativeSelection()
+  void router.push({
+    path: '/tutor',
+    query: {
+      ...(courseId.value ? { courseId: String(courseId.value) } : {}),
+      sectionId: String(sec.id),
+      knowledgePointId: String(sec.knowledgePointId),
+      ...(sec.graphEntity ? { entity: sec.graphEntity } : {}),
+      prompt: `请结合课程小节《${sec.title}》讲解以下内容：\n“${snippet}”`,
+    },
+  })
+}
+function feynmanSelected() {
+  const snippet = selectionToolbar.value.text
+  const sec = active.value
+  if (!snippet || !sec) return
+  clearNativeSelection()
+  void router.push({
+    path: '/tutor',
+    query: {
+      activity: 'feynman',
+      ...(courseId.value ? { courseId: String(courseId.value) } : {}),
+      sectionId: String(sec.id),
+      knowledgePointId: String(sec.knowledgePointId),
+      entity: sec.graphEntity || sec.knowledgePointName,
+      prompt: snippet,
+    },
+  })
+}
 function evaluateWindowScrollRead() {
   const metrics = getWindowScrollMetrics()
+  updateReadingScrollIndicators(metrics)
   const section = active.value
   if (!metrics || metrics.maxScroll <= 2 || loading.value || error.value || !section || saving.value) {
     if (metrics) lastScrollTop = metrics.scrollTop
@@ -160,8 +278,11 @@ function onWindowScroll() {
 const outlineOpen = ref(typeof window === 'undefined' ? true : window.innerWidth > 760)
 watch(activeId, (next, prev) => {
   autoReadNotice.value = ''
+  hideSelectionToolbar()
+  activeAnchorId.value = 'anchor-objectives'
   const metrics = getWindowScrollMetrics()
   lastScrollTop = metrics?.scrollTop ?? 0
+  readingProgressPct.value = active.value?.completed ? 100 : 0
   requireDownwardScroll = prev !== null && next !== prev && (metrics?.scrollTop ?? 0) > 0
   if (typeof window !== 'undefined' && window.innerWidth <= 760) outlineOpen.value = false
 })
@@ -177,11 +298,13 @@ watch(() => route.query.knowledgePointId, value => {
 onMounted(() => {
   window.addEventListener('scroll', onWindowScroll, { passive: true })
   window.addEventListener('wheel', onWindowWheel, { passive: true })
+  document.addEventListener('selectionchange', inspectTextSelection)
   void loadCourses()
 })
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', onWindowScroll)
   window.removeEventListener('wheel', onWindowWheel)
+  document.removeEventListener('selectionchange', inspectTextSelection)
   if (scrollRafId !== null && typeof window.cancelAnimationFrame === 'function') {
     window.cancelAnimationFrame(scrollRafId)
     scrollRafId = null
@@ -210,22 +333,63 @@ onBeforeUnmount(() => {
       <div v-else class="study-layout">
         <div class="study-rail">
           <details id="course-outline" class="study-outline" :open="outlineOpen" @toggle="outlineOpen = ($event.target as HTMLDetailsElement).open" aria-label="章节目录"><summary class="outline-heading"><h2>章节目录</h2><span>{{ sections.length }} 节</span></summary><div><section v-for="(chapter, index) in study.chapters" :key="chapter.id"><h3>{{ String(index + 1).padStart(2, '0') }} {{ chapter.name }}</h3><p>{{ chapter.description }}</p><button v-for="section in chapter.sections" :key="section.id" class="outline-item" :class="{ active: active?.id === section.id }" :aria-current="active?.id === section.id ? 'page' : undefined" :aria-controls="'section-' + section.id" @click="chooseSection(section)"><span class="outline-status" aria-hidden="true">{{ section.completed ? '✓' : '○' }}</span><span>{{ section.title }}<small>{{ section.completed ? '已完成阅读' : section.knowledgePointName }}</small></span></button></section></div></details>
-          <LearningNotesPanel v-if="active" :section-id="active.id" :knowledge-point-id="active.knowledgePointId" start-collapsed />
+          <LearningNotesPanel v-if="active" ref="notesPanelRef" :section-id="active.id" :knowledge-point-id="active.knowledgePointId" start-collapsed />
         </div>
-        <article v-if="active" :id="'section-' + active.id" class="study-reading reading-flow" :aria-labelledby="'section-title-' + active.id">
+        <article v-if="active" ref="readingArticleRef" :id="'section-' + active.id" class="study-reading reading-flow" :aria-labelledby="'section-title-' + active.id" @mouseup="inspectTextSelection">
+          <div class="reading-progress-bar no-print" role="progressbar" aria-label="当前小节阅读滚动进度" :aria-valuenow="readingProgressPct" aria-valuemin="0" aria-valuemax="100" data-testid="reading-progress-bar">
+            <span class="reading-progress-track"><i class="reading-progress-fill" :style="{ width: readingProgressPct + '%' }"></i></span>
+            <small class="reading-progress-text">本节阅读 {{ readingProgressPct }}%</small>
+          </div>
           <p class="eyebrow">小节 {{ position + 1 }} / {{ sections.length }} · {{ active.knowledgePointName }}</p><h2 :id="'section-title-' + active.id">{{ active.title }}</h2>
-          <section class="study-objectives"><h3>本节学习目标</h3><ul><li v-for="objective in active.objectives" :key="objective">{{ objective }}</li></ul></section>
-          <section v-for="block in active.content" :key="block.heading" class="reading-block"><h3>{{ block.heading }}</h3><MarkdownContent v-for="paragraph in block.paragraphs" :key="paragraph" :content="paragraph" /></section>
-           <section v-if="active.resources.length" class="study-resources"><h3>延伸阅读</h3><div v-for="resource in active.resources" :key="resource.url"><a v-if="safeUrl(resource.url)" :href="safeUrl(resource.url)" target="_blank" rel="noopener noreferrer">{{ resource.title }} ↗</a><strong v-else>{{ resource.title }}</strong><p>{{ resource.description }}</p></div></section>
+          <nav v-if="sectionAnchors.length > 1" class="section-toc no-print" aria-label="本节段落目录" data-testid="section-toc">
+            <button
+              v-for="anchor in sectionAnchors"
+              :key="anchor.id"
+              type="button"
+              class="section-toc-item"
+              :class="{ active: activeAnchorId === anchor.id }"
+              @click="jumpToAnchor(anchor.id)"
+            >
+              {{ anchor.label }}
+            </button>
+          </nav>
+          <section id="anchor-objectives" class="study-objectives"><h3>本节学习目标</h3><ul><li v-for="objective in active.objectives" :key="objective">{{ objective }}</li></ul></section>
+          <section v-for="(block, blockIdx) in active.content" :id="'anchor-block-' + blockIdx" :key="block.heading" class="reading-block"><h3>{{ block.heading }}</h3><MarkdownContent v-for="paragraph in block.paragraphs" :key="paragraph" :content="paragraph" /></section>
+           <section v-if="active.resources.length" id="anchor-resources" class="study-resources"><h3>延伸阅读</h3><div v-for="resource in active.resources" :key="resource.url"><a v-if="safeUrl(resource.url)" :href="safeUrl(resource.url)" target="_blank" rel="noopener noreferrer">{{ resource.title }} ↗</a><strong v-else>{{ resource.title }}</strong><p>{{ resource.description }}</p></div></section>
           <LearningContextActions :context="{ courseId: courseId ?? undefined, sectionId: active.id, knowledgePointId: active.knowledgePointId, entity: active.graphEntity }" />
            <footer class="study-footer"><div><button class="button button-outline" :disabled="saving" @click="markRead">{{ saving ? '正在保存…' : active.completed ? '✓ 已读 · 撤销标记' : '标记本节已读' }}</button><p>滚动至页面底部自动标记本节已读；阅读记录与练习掌握度分别统计。</p><span v-if="autoReadNotice" class="auto-read-status" role="status">{{ autoReadNotice }}</span><span v-if="progressError" role="alert">{{ progressError }}</span></div><div class="section-paging"><button class="text-button" :disabled="position <= 0" @click="sections[position - 1] && chooseSection(sections[position - 1]!)">上一节</button><button class="text-button" :disabled="position >= sections.length - 1" @click="sections[position + 1] && chooseSection(sections[position + 1]!)">下一节 →</button></div></footer>
         </article>
       </div>
     </template>
+    <Teleport to="body">
+      <div
+        v-if="selectionToolbar.visible"
+        class="floating-selection-toolbar no-print"
+        data-testid="course-selection-toolbar"
+        role="toolbar"
+        aria-label="选中文本快捷学习操作"
+        :style="{ top: selectionToolbar.top + 'px', left: selectionToolbar.left + 'px' }"
+        @mousedown.prevent
+      >
+        <button type="button" class="selection-tool-btn" data-testid="selection-to-note" @click="excerptToNote"><BookmarkPlus :size="14" /><span>摘录到笔记</span></button>
+        <button type="button" class="selection-tool-btn" data-testid="selection-to-tutor" @click="askSelectedInTutor"><MessageSquarePlus :size="14" /><span>问 AI 助教</span></button>
+        <button type="button" class="selection-tool-btn" data-testid="selection-to-feynman" @click="feynmanSelected"><GraduationCap :size="14" /><span>费曼试讲</span></button>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <style scoped>
+.reading-progress-bar{position:sticky;top:calc(var(--topbar-height) + 4px);z-index:6;display:flex;align-items:center;gap:10px;padding:6px 10px;margin:-8px 0 14px;background:color-mix(in srgb,var(--surface) 92%,transparent);border:1px solid var(--border-soft);border-radius:var(--radius-sm);backdrop-filter:blur(6px)}
+.reading-progress-track{flex:1;height:5px;overflow:hidden;border-radius:var(--radius-pill);background:var(--surface-tint)}
+.reading-progress-fill{display:block;height:100%;background:var(--accent);border-radius:inherit;transition:width 140ms ease}
+.reading-progress-text{color:var(--text-subtle);font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.section-toc{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 16px}
+.section-toc-item{padding:4px 10px;border:1px solid var(--border-soft);border-radius:var(--radius-pill);background:var(--surface-soft);color:var(--text-muted);font-size:12px;cursor:pointer;transition:color var(--motion),border-color var(--motion),background var(--motion)}
+.section-toc-item:hover,.section-toc-item.active{color:var(--accent-strong);background:var(--accent-soft);border-color:var(--border-focus);font-weight:600}
+.floating-selection-toolbar{position:fixed;z-index:1600;display:inline-flex;align-items:center;gap:4px;padding:4px;background:var(--surface);border:1px solid var(--border-default);border-radius:var(--radius-sm);box-shadow:var(--shadow-md)}
+.selection-tool-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border:0;border-radius:var(--radius-xs);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.selection-tool-btn:hover{color:var(--accent-strong);background:var(--accent-soft)}
 .course-picker{display:grid;gap:6px;color:var(--text-muted);font-size:12px}
 .study-summary{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:16px 24px;border-radius:var(--radius-md);background:var(--surface-tint)}
 .study-summary h2,.outline-heading h2{margin:0;font-size:16px}

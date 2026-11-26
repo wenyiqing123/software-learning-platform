@@ -190,6 +190,58 @@ describe('CourseView', () => {
       wrapper.unmount()
     }
   })
+
+  it('shows sticky scroll progress, section TOC navigation, and selection floating toolbar actions', async () => {
+    const { wrapper, router } = await mountCourseView({ courseId: '1', sectionId: '101' })
+
+    const bar = wrapper.get('[data-testid="reading-progress-bar"]')
+    expect(bar.text()).toContain('本节阅读')
+
+    const toc = wrapper.get('[data-testid="section-toc"]')
+    expect(toc.text()).toContain('学习目标')
+    expect(toc.text()).toContain('引言')
+    await toc.findAll('.section-toc-item')[1].trigger('click')
+    expect(toc.findAll('.section-toc-item')[1].classes()).toContain('active')
+
+    // 模拟在阅读区划词选中
+    const article = wrapper.get('article.study-reading').element
+    const textNode = article.querySelector('.reading-block')!.firstChild || article
+    const range = {
+      getBoundingClientRect: () => ({ top: 200, left: 120, width: 100, height: 20 }),
+    }
+    vi.spyOn(window, 'getSelection').mockReturnValue({
+      isCollapsed: false,
+      toString: () => '表达系统功能需求',
+      anchorNode: textNode,
+      focusNode: textNode,
+      rangeCount: 1,
+      getRangeAt: () => range as any,
+      removeAllRanges: vi.fn(),
+    } as unknown as Selection)
+
+    document.dispatchEvent(new Event('selectionchange'))
+    await flushPromises()
+
+    const toolbar = document.body.querySelector('[data-testid="course-selection-toolbar"]')
+    expect(toolbar).not.toBeNull()
+
+    // 摘录到笔记草稿（不刷新页面，直接展开右侧草稿）
+    ;(document.body.querySelector('[data-testid="selection-to-note"]') as HTMLButtonElement).click()
+    await flushPromises()
+    const noteTextarea = wrapper.get('[aria-label="笔记内容"]').element as HTMLTextAreaElement
+    expect(noteTextarea.value).toContain('> 表达系统功能需求')
+
+    // 再次选中并跳转到 AI 助教（携带 prompt 查询参数，不自动提交）
+    document.dispatchEvent(new Event('selectionchange'))
+    await flushPromises()
+    ;(document.body.querySelector('[data-testid="selection-to-tutor"]') as HTMLButtonElement).click()
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe('/tutor')
+    expect(String(router.currentRoute.value.query.prompt)).toContain('表达系统功能需求')
+
+    vi.restoreAllMocks()
+    wrapper.unmount()
+  })
 })
 
 afterEach(() => {

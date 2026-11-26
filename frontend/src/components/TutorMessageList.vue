@@ -4,6 +4,7 @@ import { ArrowDown, ArrowRight, BookOpen, CircleAlert, Copy, Database, Graduatio
 import MarkdownContent from './MarkdownContent.vue'
 import TutorAnswerCard from './TutorAnswerCard.vue'
 import HintEvidenceTable from './HintEvidenceTable.vue'
+import type { NormalizedCitationTriple } from '../domain/citationAlignment'
 import { expandedHintLevelsInTurn, stripLegacyModePrefix, type TutorAnswerResult, type TutorChatMessage, type TutorQuickPrompt } from '../domain/tutorChat'
 
 const DEFAULT_PROMPTS: TutorQuickPrompt[] = [
@@ -35,6 +36,7 @@ const emit = defineEmits<{
   'request-hint': [question: string, level: number, sourceIndex: number]
   'open-graph': [entity?: string]
   'quick-prompt': [prompt: string]
+  'inspect-citation': [payload: { index: number; triple: NormalizedCitationTriple; allTriples: NormalizedCitationTriple[]; entity?: string }]
 }>()
 
 const scrollContainer = ref<HTMLElement | null>(null)
@@ -256,6 +258,7 @@ defineExpose({ scrollToBottom })
                   @regenerate="emit('regenerate', questionForMessage(index))"
                   @hint="emit('request-hint', questionForMessage(index), 1, index)"
                   @open-graph="emit('open-graph', $event)"
+                  @inspect-citation="emit('inspect-citation', $event)"
                 />
               </template>
 

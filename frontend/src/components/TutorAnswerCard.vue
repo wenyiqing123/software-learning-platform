@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import { Check, ChevronDown, Copy, Database, Lightbulb, Network, RotateCcw } from '@lucide/vue'
 import MarkdownContent from './MarkdownContent.vue'
-import { buildCitationAlignment } from '../domain/citationAlignment'
+import { buildCitationAlignment, type NormalizedCitationTriple } from '../domain/citationAlignment'
 import { stripLegacyModePrefix, type TutorAnswerResult } from '../domain/tutorChat'
 
 const props = withDefaults(defineProps<{
@@ -19,6 +19,7 @@ const emit = defineEmits<{
   regenerate: []
   hint: []
   'open-graph': [entity?: string]
+  'inspect-citation': [payload: { index: number; triple: NormalizedCitationTriple; allTriples: NormalizedCitationTriple[]; entity?: string }]
 }>()
 
 const copied = ref(false)
@@ -54,6 +55,15 @@ async function focusEvidenceCitation(citationIndex: number) {
   if (!citationReport.value.triples.length) return
   evidenceOpen.value = true
   highlightedIndex.value = citationIndex
+  const matched = citationReport.value.triples.find(t => t.index === citationIndex)
+  if (matched) {
+    emit('inspect-citation', {
+      index: citationIndex,
+      triple: matched,
+      allTriples: citationReport.value.triples,
+      entity: matched.subject || primaryEntity.value,
+    })
+  }
   await nextTick()
   const el = tripleElements.get(citationIndex)
   el?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })

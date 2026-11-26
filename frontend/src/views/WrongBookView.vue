@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowRight, BookOpenCheck, Check, CircleAlert, Clock3, RotateCcw, Search, Sparkles } from '@lucide/vue'
+import { ArrowRight, BookOpenCheck, Check, CircleAlert, Clock3, Download, Printer, RotateCcw, Search, Sparkles } from '@lucide/vue'
 import { learningApi } from '../api/client'
+import { buildWrongBookMarkdown, triggerMarkdownDownload } from '../domain/studyExport'
 import SectionHeading from '../components/SectionHeading.vue'
 import LearningContextActions from '../components/LearningContextActions.vue'
 
@@ -114,12 +115,28 @@ async function reopenWrong(id: number) {
 }
 onMounted(() => { void load(false) })
 onBeforeUnmount(() => { active = false; requestId++ })
+
+function exportMarkdown() {
+  if (!items.value.length) return
+  const label = filterStatus.value === 'MASTERED' ? '已掌握错题' : filterStatus.value === 'ALL' ? '全部错题记录' : '待复习题目'
+  const markdown = buildWrongBookMarkdown(items.value, label)
+  const stamp = new Date().toISOString().slice(0, 10)
+  triggerMarkdownDownload(`wrong-book-${stamp}.md`, markdown)
+}
+
+function printHandout() {
+  if (typeof window !== 'undefined' && typeof window.print === 'function') {
+    window.print()
+  }
+}
 </script>
 
 <template>
   <div class="page-stack">
     <SectionHeading eyebrow="复习巩固" title="错题复习" description="按知识点整理薄弱环节，及时回顾并记录掌握情况。">
-      <div class="wrong-heading-actions">
+      <div class="wrong-heading-actions no-print">
+        <button type="button" class="button button-outline" :disabled="loading || !loaded || !items.length" data-testid="wrong-export-md" @click="exportMarkdown"><Download :size="15" />导出讲义</button>
+        <button type="button" class="button button-outline" :disabled="loading || !loaded || !items.length" data-testid="wrong-print" @click="printHandout"><Printer :size="15" />打印清单</button>
         <button class="button button-outline" :disabled="loading || !loaded || pending.length < 2" data-testid="wrong-batch-review" @click="startBatchReview">连续复习（{{ pending.length }} 题）</button>
         <button class="button button-dark" :disabled="loading || !loaded || !pending.length" @click="review(pending[0])"><RotateCcw :size="16" />开始复习</button>
       </div>

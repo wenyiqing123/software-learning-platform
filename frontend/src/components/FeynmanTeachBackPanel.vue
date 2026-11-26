@@ -20,9 +20,11 @@ import MarkdownContent from './MarkdownContent.vue'
 const props = withDefaults(defineProps<{
   initialKnowledgePoint?: string
   courseId?: number
+  referenceExcerpt?: string
 }>(), {
   initialKnowledgePoint: '',
   courseId: undefined,
+  referenceExcerpt: '',
 })
 
 const emit = defineEmits<{
@@ -239,6 +241,10 @@ function jumpToGraph(entity: string) {
         <p class="section-description">
           请尝试用自己的话向初学者解释该概念的核心定义、作用与关联关系；系统将对照课程知识图谱三元组反馈已覆盖要点与遗漏关联。
         </p>
+        <div v-if="referenceExcerpt" class="feynman-reference-box" data-testid="feynman-reference-excerpt">
+          <small>课程阅读参考摘录：</small>
+          <p>{{ referenceExcerpt }}</p>
+        </div>
       </header>
 
       <form class="feynman-form-surface" @submit.prevent="submit">
@@ -896,6 +902,30 @@ function jumpToGraph(entity: string) {
   color: var(--accent-strong);
   font-size: 12px;
   font-weight: 600;
+}
+
+.feynman-reference-box {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: var(--surface-soft);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-xs);
+  text-align: left;
+}
+
+.feynman-reference-box small {
+  display: block;
+  color: var(--accent-strong);
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.feynman-reference-box p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 @media (max-width: 780px) {

@@ -19,6 +19,23 @@ const confirmDeleteNote = ref<LearningNote | null>(null)
 const collapsed = ref(Boolean(props.startCollapsed))
 const draft = reactive({ title: '', content: '', tags: '' })
 
+function prefillExcerpt(payload: { text: string; title?: string }) {
+  const snippet = payload.text.trim()
+  if (!snippet) return
+  collapsed.value = false
+  if (!draft.title.trim() && payload.title?.trim()) {
+    draft.title = payload.title.trim().slice(0, 160)
+  }
+  const quoted = snippet
+    .split(/\r?\n/)
+    .map((line) => `> ${line}`)
+    .join('\n')
+  draft.content = draft.content.trim() ? `${draft.content.trimEnd()}\n\n${quoted}` : quoted
+  notice.value = '已摘录选文至草稿，可补充理解后点击保存'
+}
+
+defineExpose({ prefillExcerpt })
+
 function resetDraft(clearCache = true) {
   editingId.value = null
   draft.title = ''

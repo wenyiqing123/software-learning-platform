@@ -49,4 +49,25 @@ describe('WrongBookView', () => {
     expect(wrapper.findAll('article.wrong-row')).toHaveLength(1)
     wrapper.unmount()
   })
+
+  it('exports markdown handout and prints wrong-book list', async () => {
+    const createObjectURL = vi.fn(() => 'blob:mock-wrong')
+    const revokeObjectURL = vi.fn()
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, writable: true, value: createObjectURL })
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, writable: true, value: revokeObjectURL })
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    const printSpy = vi.spyOn(window, 'print').mockImplementation(() => {})
+
+    const { wrapper } = await mountPage()
+    await wrapper.get('[data-testid="wrong-export-md"]').trigger('click')
+    expect(createObjectURL).toHaveBeenCalledTimes(1)
+    expect(clickSpy).toHaveBeenCalledTimes(1)
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock-wrong')
+
+    await wrapper.get('[data-testid="wrong-print"]').trigger('click')
+    expect(printSpy).toHaveBeenCalledTimes(1)
+
+    vi.restoreAllMocks()
+    wrapper.unmount()
+  })
 })

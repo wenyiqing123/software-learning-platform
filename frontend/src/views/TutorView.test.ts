@@ -474,4 +474,34 @@ describe('TutorView', () => {
     expect(learning.deleteSession).toHaveBeenCalledWith(30)
     wrapper.unmount()
   })
+
+  it('prefills question from route.query.prompt without auto-submitting and opens citation inspector drawer on [k] click', async () => {
+    const promptText = '请结合教材第2章讲解加工与外部实体的区别'
+    const wrapper = await mountPage(`/tutor?prompt=${encodeURIComponent(promptText)}`)
+    await flushPromises()
+
+    expect(learning.streamAsk).not.toHaveBeenCalled()
+    expect((wrapper.get('#question-input').element as HTMLTextAreaElement).value).toBe(promptText)
+    expect(wrapper.find('[data-testid="tutor-citation-drawer"]').exists()).toBe(false)
+
+    await wrapper.get('[data-testid="tutor-send"]').trigger('click')
+    await flushPromises()
+
+    const citeBtn = wrapper.get('[data-testid="inline-citation-1"]')
+    await citeBtn.trigger('click')
+    await flushPromises()
+
+    const drawer = wrapper.get('[data-testid="tutor-citation-drawer"]')
+    expect(drawer.text()).toContain('引文 [1] 证据详情')
+    expect(drawer.text()).toContain('加工')
+    expect(drawer.text()).toContain('动宾短语')
+
+    await wrapper.get('[data-testid="tutor-citation-ask"]').trigger('click')
+    expect(learning.streamAsk).toHaveBeenCalledTimes(1)
+    expect((wrapper.get('#question-input').element as HTMLTextAreaElement).value).toContain('加工')
+
+    await wrapper.get('[data-testid="tutor-citation-close"]').trigger('click')
+    expect(wrapper.find('[data-testid="tutor-citation-drawer"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
 })

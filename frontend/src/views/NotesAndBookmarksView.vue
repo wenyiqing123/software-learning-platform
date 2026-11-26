@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { ArrowUpRight, Bookmark, BookmarkX, BookOpen, CheckSquare, FileText, Network, Pencil, RotateCcw, Save, Search, Trash2, X } from '@lucide/vue'
+import { ArrowUpRight, Bookmark, BookmarkX, BookOpen, CheckSquare, Download, FileText, Network, Pencil, Printer, RotateCcw, Save, Search, Trash2, X } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import { apiError, type LearningBookmarkItem, type LearningNote } from '../api/client'
 import * as notesApi from '../api/notes'
+import { buildNotesMarkdown, triggerMarkdownDownload } from '../domain/studyExport'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 import SectionHeading from '../components/SectionHeading.vue'
 
@@ -166,6 +167,23 @@ async function unbookmark(item: LearningBookmarkItem) {
 }
 
 onMounted(() => void loadAll())
+
+function exportHandout() {
+  const scopeParts: string[] = []
+  if (activeTag.value) scopeParts.push(`标签 #${activeTag.value}`)
+  if (keyword.value.trim()) scopeParts.push(`关键词 “${keyword.value.trim()}”`)
+  const scopeLabel = scopeParts.length ? scopeParts.join(' · ') : '全部笔记与收藏'
+  const markdown = buildNotesMarkdown(filteredNotes.value, filteredBookmarks.value, scopeLabel)
+  const stamp = new Date().toISOString().slice(0, 10)
+  triggerMarkdownDownload(`study-notes-${stamp}.md`, markdown)
+  notice.value = `已导出 Markdown 讲义（${filteredNotes.value.length} 条笔记，${filteredBookmarks.value.length} 项收藏）`
+}
+
+function printHandout() {
+  if (typeof window !== 'undefined' && typeof window.print === 'function') {
+    window.print()
+  }
+}
 </script>
 
 <template>
@@ -175,9 +193,29 @@ onMounted(() => void loadAll())
       title="笔记与收藏"
       description="集中检索各课程小节记下的理解与标签，随时回到收藏小节或重点知识点继续巩固。"
     >
-      <button class="button button-outline" :disabled="loading" @click="loadAll">
-        <RotateCcw :size="15" />刷新
-      </button>
+      <div class="notes-hub-heading-actions no-print">
+        <button
+          type="button"
+          class="button button-outline"
+          :disabled="loading || (!filteredNotes.length && !filteredBookmarks.length)"
+          data-testid="notes-export-md"
+          @click="exportHandout"
+        >
+          <Download :size="15" />导出讲义
+        </button>
+        <button
+          type="button"
+          class="button button-outline"
+          :disabled="loading || (!filteredNotes.length && !filteredBookmarks.length)"
+          data-testid="notes-print"
+          @click="printHandout"
+        >
+          <Printer :size="15" />打印讲义
+        </button>
+        <button class="button button-outline" :disabled="loading" @click="loadAll">
+          <RotateCcw :size="15" />刷新
+        </button>
+      </div>
     </SectionHeading>
 
     <div v-if="error" class="inline-notice error-notice" role="alert">
@@ -431,6 +469,13 @@ onMounted(() => void loadAll())
 <style scoped>
 .notes-hub-page {
   min-width: 0;
+}
+
+.notes-hub-heading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 
 .notes-hub-toolbar {
