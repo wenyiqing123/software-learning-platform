@@ -596,6 +596,9 @@ onBeforeUnmount(() => { loadId++; window.removeEventListener('keydown', onAnswer
   color: var(--danger);
   border-color: var(--danger-border);
 }
+.navigator-slot-btn.flagged {
+  border-color: var(--warning);
+}
 .navigator-slot-btn.current {
   box-shadow: var(--focus-ring);
   color: var(--text);
