@@ -1,4 +1,5 @@
 import { buildCitationAlignment, type RawCitationTriple } from './citationAlignment'
+import { buildAriaConfig, buildSaveAsImageToolbox, getChartSurfacePalette } from './chartExport'
 
 export interface ExperimentMetricScores {
   rougeL?: number
@@ -127,36 +128,36 @@ export function computeExperimentCitationCoverage(result: ExperimentConditionRes
 }
 
 export function buildExperimentBarOption(rows: ReadonlyArray<BaselineDeltaRow>, isDark = false) {
-  const textColor = isDark ? '#e6f0ed' : '#172b27'
-  const mutedColor = isDark ? '#adc2bc' : '#52645f'
-  const lineColor = isDark ? '#293c37' : '#dce5e3'
-  const surfaceColor = isDark ? '#172320' : '#ffffff'
+  const palette = getChartSurfacePalette(isDark)
 
   return {
+    aria: buildAriaConfig('多条件自动指标 ROUGE-L、BLEU 与实体召回率对比分组柱状图', true),
+    toolbox: buildSaveAsImageToolbox('slp-experiment-comparison', isDark),
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
-      backgroundColor: surfaceColor,
-      borderColor: lineColor,
-      textStyle: { color: textColor, fontSize: 12 },
+      backgroundColor: palette.surface,
+      borderColor: palette.line,
+      textStyle: { color: palette.text, fontSize: 12 },
     },
     legend: {
       top: 0,
-      textStyle: { color: mutedColor, fontSize: 11.5 },
+      left: 0,
+      textStyle: { color: palette.muted, fontSize: 11.5 },
       data: ['ROUGE-L (%)', 'BLEU ≤ 4 (%)', '实体召回率 (%)'],
     },
-    grid: { top: 34, right: 16, bottom: 28, left: 40 },
+    grid: { top: 38, right: 16, bottom: 28, left: 40 },
     xAxis: {
       type: 'category',
       data: rows.map((r) => r.label),
-      axisLine: { lineStyle: { color: lineColor } },
-      axisLabel: { color: mutedColor, fontSize: 11 },
+      axisLine: { lineStyle: { color: palette.line } },
+      axisLabel: { color: palette.muted, fontSize: 11 },
     },
     yAxis: {
       type: 'value',
       max: 100,
-      splitLine: { lineStyle: { color: lineColor, type: 'dashed' } },
-      axisLabel: { color: mutedColor, fontSize: 11, formatter: '{value}%' },
+      splitLine: { lineStyle: { color: palette.line, type: 'dashed' } },
+      axisLabel: { color: palette.muted, fontSize: 11, formatter: '{value}%' },
     },
     series: [
       {

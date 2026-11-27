@@ -502,6 +502,10 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .admin-center-tabs button{min-height:var(--admin-tab-height);padding:4px 12px;color:var(--text-muted);background:transparent;border:0;font-size:13px;font-weight:600;white-space:nowrap}
 .admin-center-tabs button:hover,.admin-center-tabs button.active{color:var(--accent-strong);background:var(--surface)}
 .admin-center-tabs button.active{box-shadow:var(--shadow-xs)}
+.chart-head-actions{display:inline-flex;align-items:center;flex-wrap:wrap;gap:8px}
+.chart-export-btn{display:inline-flex;align-items:center;gap:5px;min-height:28px;padding:3px 9px;color:var(--text-muted);background:var(--surface-soft);border:1px solid var(--border-default);border-radius:var(--radius-pill);font-size:12px;font-weight:600;cursor:pointer;transition:background-color 150ms cubic-bezier(0.2,0,0,1),border-color 150ms cubic-bezier(0.2,0,0,1),color 150ms cubic-bezier(0.2,0,0,1)}
+.chart-export-btn:hover:not(:disabled){color:var(--accent-strong);background:var(--accent-soft);border-color:var(--border-focus)}
+.chart-export-btn:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:760px){.admin-columns{grid-template-columns:minmax(0,1fr)}.form-pair{grid-template-columns:1fr}.course-filter{min-width:0;width:100%}}
 
 html[data-theme="dark"]{

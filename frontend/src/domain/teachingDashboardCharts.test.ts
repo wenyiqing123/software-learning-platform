@@ -23,5 +23,8 @@ describe('teaching dashboard chart adapters', () => {
 
     expect(option.yAxis.data).toEqual(['数据流图', '需求分析'])
     expect(option.series[0].data).toEqual([35, 62])
+    expect(option.aria.enabled).toBe(true)
+    expect(option.aria.decal.show).toBe(true)
+    expect(option.toolbox.feature.saveAsImage.name).toBe('slp-teaching-weakpoints')
   })
 })

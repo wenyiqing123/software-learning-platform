@@ -30,6 +30,10 @@ describe('experimentComparisonCharts', () => {
     const option = buildExperimentBarOption(summary.rows, false)
     expect(option.xAxis.data).toEqual(['大模型直答', '排序评分'])
     expect(option.series).toHaveLength(3)
+    expect(option.aria.enabled).toBe(true)
+    expect(option.aria.decal.show).toBe(true)
+    expect(option.toolbox.feature.saveAsImage.pixelRatio).toBe(2)
+    expect(option.toolbox.feature.saveAsImage.name).toBe('slp-experiment-comparison')
   })
 
   it('computes selectionMs vs answerMs stacked breakdown and citation alignment badge', () => {

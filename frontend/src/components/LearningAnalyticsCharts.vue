@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import * as echarts from 'echarts'
+import type * as echarts from 'echarts'
+import { Download } from '@lucide/vue'
 import { useTheme } from '../composables/useTheme'
+import { exportChartAsPng, safeDisposeChart, safeInitChart } from '../domain/chartExport'
 import {
   buildHeatmapActivityOption,
   buildMasteryRadarOption,
@@ -34,37 +36,17 @@ const radarHost = ref<HTMLElement | null>(null)
 let heatmapChart: echarts.ECharts | null = null
 let radarChart: echarts.ECharts | null = null
 
-function canRenderCanvas(): boolean {
-  if (typeof document === 'undefined') return false
-  try {
-    const probe = document.createElement('canvas')
-    return Boolean(typeof probe.getContext === 'function' && probe.getContext('2d'))
-  } catch {
-    return false
-  }
+function exportHeatmap() {
+  exportChartAsPng(heatmapChart, 'slp-learning-heatmap', isDark.value)
 }
 
-function safeDispose(chart: echarts.ECharts | null) {
-  if (!chart) return
-  try {
-    chart.dispose()
-  } catch {
-    // 忽略测试环境无 Canvas 导致的销毁异常
-  }
-}
-
-function safeInitChart(el: HTMLElement | null): echarts.ECharts | null {
-  if (!el || !canRenderCanvas()) return null
-  try {
-    return echarts.init(el)
-  } catch {
-    return null
-  }
+function exportRadar() {
+  exportChartAsPng(radarChart, 'slp-mastery-radar', isDark.value)
 }
 
 function renderCharts() {
-  safeDispose(heatmapChart)
-  safeDispose(radarChart)
+  safeDisposeChart(heatmapChart)
+  safeDisposeChart(radarChart)
   heatmapChart = null
   radarChart = null
 
@@ -110,8 +92,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', resizeCharts)
-  safeDispose(heatmapChart)
-  safeDispose(radarChart)
+  safeDisposeChart(heatmapChart)
+  safeDisposeChart(radarChart)
   heatmapChart = null
   radarChart = null
 })
@@ -131,7 +113,19 @@ onBeforeUnmount(() => {
           <p class="eyebrow">ACTIVITY HEATMAP</p>
           <h2>{{ heatmapTitle }}</h2>
         </div>
-        <small>按日期与星期矩阵呈现活跃度</small>
+        <div class="chart-head-actions no-print">
+          <small>按日期与星期矩阵呈现活跃度</small>
+          <button
+            type="button"
+            class="chart-export-btn"
+            data-testid="export-heatmap-png"
+            aria-label="导出学习热力图 PNG"
+            @click="exportHeatmap"
+          >
+            <Download :size="13" aria-hidden="true" />
+            <span>导出 PNG</span>
+          </button>
+        </div>
       </header>
       <div ref="heatmapHost" class="analytics-chart-canvas" role="img" :aria-label="heatmapTitle" data-testid="analytics-heatmap-chart"></div>
     </article>
@@ -142,7 +136,19 @@ onBeforeUnmount(() => {
           <p class="eyebrow">MASTERY RADAR</p>
           <h2>{{ radarTitle }}</h2>
         </div>
-        <small>最多展示 8 个核心知识点当前保持度</small>
+        <div class="chart-head-actions no-print">
+          <small>最多展示 8 个核心知识点当前保持度</small>
+          <button
+            type="button"
+            class="chart-export-btn"
+            data-testid="export-radar-png"
+            aria-label="导出掌握度雷达图 PNG"
+            @click="exportRadar"
+          >
+            <Download :size="13" aria-hidden="true" />
+            <span>导出 PNG</span>
+          </button>
+        </div>
       </header>
       <div ref="radarHost" class="analytics-chart-canvas" role="img" :aria-label="radarTitle" data-testid="analytics-radar-chart"></div>
     </article>

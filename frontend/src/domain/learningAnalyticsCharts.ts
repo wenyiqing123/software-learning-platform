@@ -1,4 +1,5 @@
 import type { ForecastDayBucket } from './graphAlgorithms'
+import { buildAriaConfig, buildSaveAsImageToolbox, getChartSurfacePalette } from './chartExport'
 
 export interface HeatmapActivityPoint {
   date: string
@@ -13,12 +14,10 @@ export interface MasteryRadarPoint {
 }
 
 function chartPalette(isDark: boolean) {
+  const base = getChartSurfacePalette(isDark)
   return isDark
     ? {
-        text: '#e6f0ed',
-        muted: '#adc2bc',
-        line: '#293c37',
-        surface: '#172320',
+        ...base,
         accent: '#40b8a8',
         accentSoft: 'rgba(64, 184, 168, 0.24)',
         heatLow: '#1b2b27',
@@ -26,10 +25,7 @@ function chartPalette(isDark: boolean) {
         heatHigh: '#5dd0c0',
       }
     : {
-        text: '#172b27',
-        muted: '#52645f',
-        line: '#dce5e3',
-        surface: '#ffffff',
+        ...base,
         accent: '#0f665e',
         accentSoft: 'rgba(15, 102, 94, 0.2)',
         heatLow: '#eef2f3',
@@ -64,6 +60,8 @@ export function buildHeatmapActivityOption(days: ReadonlyArray<HeatmapActivityPo
   })
 
   return {
+    aria: buildAriaConfig('每周按日期分布的学习活跃度热力图', false),
+    toolbox: buildSaveAsImageToolbox('slp-learning-heatmap', isDark),
     tooltip: {
       trigger: 'item',
       backgroundColor: palette.surface,
@@ -79,7 +77,7 @@ export function buildHeatmapActivityOption(days: ReadonlyArray<HeatmapActivityPo
         return extra.join('<br/>')
       },
     },
-    grid: { top: 12, right: 16, bottom: 28, left: 32 },
+    grid: { top: 26, right: 16, bottom: 28, left: 32 },
     xAxis: {
       type: 'category',
       data: xLabels,
@@ -136,6 +134,8 @@ export function buildMasteryRadarOption(points: ReadonlyArray<MasteryRadarPoint>
   const values = limited.map((p) => Math.max(0, Math.min(100, Math.round(p.value))))
 
   return {
+    aria: buildAriaConfig('核心知识点当前保持度多维雷达图', false),
+    toolbox: buildSaveAsImageToolbox('slp-mastery-radar', isDark),
     tooltip: {
       trigger: 'item',
       backgroundColor: palette.surface,
@@ -173,13 +173,15 @@ export function buildMasteryRadarOption(points: ReadonlyArray<MasteryRadarPoint>
 export function buildReviewForecastChartOption(buckets: ReadonlyArray<ForecastDayBucket>, isDark = false) {
   const palette = chartPalette(isDark)
   return {
+    aria: buildAriaConfig('未来 7 天到期复习题量分布柱状图', true),
+    toolbox: buildSaveAsImageToolbox('slp-review-forecast', isDark),
     tooltip: {
       trigger: 'axis',
       backgroundColor: palette.surface,
       borderColor: palette.line,
       textStyle: { color: palette.text, fontSize: 12 },
     },
-    grid: { top: 16, right: 14, bottom: 26, left: 32 },
+    grid: { top: 28, right: 14, bottom: 26, left: 32 },
     xAxis: {
       type: 'category',
       data: buckets.map((b) => b.label),

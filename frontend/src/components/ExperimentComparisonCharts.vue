@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import * as echarts from 'echarts'
-import { TrendingUp } from '@lucide/vue'
+import type * as echarts from 'echarts'
+import { Download, TrendingUp } from '@lucide/vue'
 import { useTheme } from '../composables/useTheme'
+import { exportChartAsPng, safeDisposeChart, safeInitChart } from '../domain/chartExport'
 import {
   buildExperimentBarOption,
   computeBaselineDeltas,
@@ -32,34 +33,19 @@ const hasMetricValues = computed(() =>
   ),
 )
 
-function canRenderCanvas(): boolean {
-  if (typeof document === 'undefined') return false
-  try {
-    const probe = document.createElement('canvas')
-    return Boolean(typeof probe.getContext === 'function' && probe.getContext('2d'))
-  } catch {
-    return false
-  }
-}
-
-function safeDispose(chart: echarts.ECharts | null) {
-  if (!chart) return
-  try {
-    chart.dispose()
-  } catch {
-    // 忽略测试无 Canvas 上下文的清理异常
-  }
+function exportComparisonChart() {
+  exportChartAsPng(chartInstance, 'slp-experiment-comparison', isDark.value)
 }
 
 function renderChart() {
-  safeDispose(chartInstance)
+  safeDisposeChart(chartInstance)
   chartInstance = null
-  if (!hasMetricValues.value || !chartHost.value || !canRenderCanvas()) return
+  if (!hasMetricValues.value || !chartHost.value) return
+  chartInstance = safeInitChart(chartHost.value)
   try {
-    chartInstance = echarts.init(chartHost.value)
-    chartInstance.setOption(buildExperimentBarOption(deltaSummary.value.rows, isDark.value))
+    chartInstance?.setOption(buildExperimentBarOption(deltaSummary.value.rows, isDark.value))
   } catch {
-    safeDispose(chartInstance)
+    safeDisposeChart(chartInstance)
     chartInstance = null
   }
 }
@@ -92,7 +78,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', resizeChart)
-  safeDispose(chartInstance)
+  safeDisposeChart(chartInstance)
   chartInstance = null
 })
 </script>
@@ -109,7 +95,19 @@ onBeforeUnmount(() => {
         <TrendingUp :size="16" aria-hidden="true" />
         <strong>多条件客观指标对比与基线差值</strong>
       </div>
-      <small v-if="deltaSummary.baselineLabel">基线参照：{{ deltaSummary.baselineLabel }}</small>
+      <div class="chart-head-actions no-print">
+        <small v-if="deltaSummary.baselineLabel">基线参照：{{ deltaSummary.baselineLabel }}</small>
+        <button
+          type="button"
+          class="chart-export-btn"
+          data-testid="export-experiment-png"
+          aria-label="导出实验指标对比图 PNG"
+          @click="exportComparisonChart"
+        >
+          <Download :size="13" aria-hidden="true" />
+          <span>导出 PNG</span>
+        </button>
+      </div>
     </div>
 
     <div v-if="deltaSummary.baselineKey && deltaSummary.rows.length > 1" class="exp-delta-strip" data-testid="experiment-delta-strip">
