@@ -14,12 +14,19 @@ import VisualizationViewport from '../components/VisualizationViewport.vue'
 import ThreeGraphCanvas from '../components/ThreeGraphCanvas.vue'
 import GraphEvidenceDrawer, { type EvidenceTriple } from '../components/GraphEvidenceDrawer.vue'
 import ConceptComparisonPanel from '../components/ConceptComparisonPanel.vue'
+import GraphTripleQuizPanel from '../components/GraphTripleQuizPanel.vue'
 
 const graphHost = ref<HTMLElement | null>(null)
 const route = useRoute()
 const router = useRouter()
-const mode = ref<'graph' | 'path' | 'compare'>(
-  route.query.view === 'path' ? 'path' : route.query.view === 'compare' ? 'compare' : 'graph',
+const mode = ref<'graph' | 'path' | 'compare' | 'quiz'>(
+  route.query.view === 'path'
+    ? 'path'
+    : route.query.view === 'compare'
+      ? 'compare'
+      : route.query.view === 'quiz'
+        ? 'quiz'
+        : 'graph',
 )
 const courseId = computed(() => Number(route.query.courseId) || undefined)
 const pathTargetId = computed(() => Number(route.query.knowledgePointId) || undefined)
@@ -211,11 +218,14 @@ function setPathEntity(value: string) {
   entity.value = value
 }
 
-async function switchMode(next: 'graph' | 'path' | 'compare') {
+async function switchMode(next: 'graph' | 'path' | 'compare' | 'quiz') {
   if (mode.value === next) return
   mode.value = next
   if (next !== 'graph') {
     destroyGraph()
+    if (next === 'quiz' && !graphData.value.available && !loading.value && !error.value) {
+      await searchEntity(entity.value)
+    }
     return
   }
   if (graphData.value.available && graphData.value.nodes.length && renderMode.value === '2d') await drawGraph()
@@ -319,9 +329,10 @@ onBeforeUnmount(() => {
     <SectionHeading eyebrow="软件工程知识网络" title="知识图谱" description="从一个概念出发，沿着关系探索课程知识。">
       <button class="button button-outline" @click="emit('navigate', 'tutor', selectedNode)"><Sparkles :size="16" />围绕此知识提问</button>
     </SectionHeading>
-    <div class="graph-mode-switch" role="tablist" aria-label="知识关系视图"><button :class="{ active: mode === 'graph' }" role="tab" aria-label="图谱浏览" :aria-selected="mode === 'graph'" aria-controls="knowledge-graph-panel" @click="switchMode('graph')">图谱浏览</button><button :class="{ active: mode === 'path' }" role="tab" aria-label="先修学习路径" :aria-selected="mode === 'path'" aria-controls="prerequisite-path-panel" @click="switchMode('path')">先修学习路径</button><button :class="{ active: mode === 'compare' }" role="tab" aria-label="概念对比" :aria-selected="mode === 'compare'" aria-controls="concept-comparison-panel" data-testid="graph-mode-compare" @click="switchMode('compare')">概念对比</button></div>
+    <div class="graph-mode-switch" role="tablist" aria-label="知识关系视图"><button :class="{ active: mode === 'graph' }" role="tab" aria-label="图谱浏览" :aria-selected="mode === 'graph'" aria-controls="knowledge-graph-panel" @click="switchMode('graph')">图谱浏览</button><button :class="{ active: mode === 'path' }" role="tab" aria-label="先修学习路径" :aria-selected="mode === 'path'" aria-controls="prerequisite-path-panel" @click="switchMode('path')">先修学习路径</button><button :class="{ active: mode === 'compare' }" role="tab" aria-label="概念对比" :aria-selected="mode === 'compare'" aria-controls="concept-comparison-panel" data-testid="graph-mode-compare" @click="switchMode('compare')">概念对比</button><button :class="{ active: mode === 'quiz' }" role="tab" aria-label="关系辨析" :aria-selected="mode === 'quiz'" aria-controls="kg-triple-quiz-panel" data-testid="graph-mode-quiz" @click="switchMode('quiz')">关系辨析</button></div>
     <PrerequisitePathPanel v-if="mode === 'path'" id="prerequisite-path-panel" role="tabpanel" :course-id="courseId" :initial-target-id="pathTargetId" @target-change="setPathEntity" />
     <ConceptComparisonPanel v-else-if="mode === 'compare'" id="concept-comparison-panel" role="tabpanel" :course-points="coursePoints" :initial-left="selectedNode" @focus-entity="focusComparedEntity" @ask-tutor="askTutorComparison" />
+    <GraphTripleQuizPanel v-else-if="mode === 'quiz'" id="kg-triple-quiz-panel" role="tabpanel" :graph-data="graphData" :selected-entity="selectedNode" :graph-error="error" :expanding="expandingHop" :loading="loading" @expand-hop="expandSelectedNode" @focus-entity="focusComparedEntity" @retry="searchEntity()" />
     <div v-else id="knowledge-graph-panel" class="graph-browser" role="tabpanel">
     <section class="graph-toolbar" aria-label="图谱数据概况">
       <span class="graph-count"><Network :size="16" />{{ graphData.nodes.length }} 个实体</span>

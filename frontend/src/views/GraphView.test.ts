@@ -229,4 +229,56 @@ describe('knowledge graph view modes', () => {
     fetchSpy.mockRestore()
     wrapper.unmount()
   })
+
+  it('supports deterministic KG triple cloze mode with honest sparse/offline guard and entity refocus', async () => {
+    // 默认 mock 仅 1 条边：切换关系辨析页签应诚实提示三元组不足
+    const sparseWrapper = await renderGraphMode()
+    await sparseWrapper.get('[data-testid="graph-mode-quiz"]').trigger('click')
+    await flushPromises()
+    expect(sparseWrapper.get('[data-testid="kg-quiz-unavailable"]').text()).toContain('至少需要 4 条')
+    sparseWrapper.unmount()
+
+    // 真实返回 5 条三元组时，支持作答核对证据与回跳图谱聚焦
+    graphApi.graph.mockResolvedValue({
+      available: true,
+      nodes: [
+        { id: '需求分析', label: '需求分析' },
+        { id: '数据流图DFD', label: '数据流图DFD' },
+        { id: '用例图', label: '用例图' },
+        { id: '软件需求规格说明书', label: '软件需求规格说明书' },
+        { id: '系统设计', label: '系统设计' },
+      ],
+      edges: [
+        { source: '需求分析', target: '数据流图DFD', label: '使用' },
+        { source: '需求分析', target: '用例图', label: '包含' },
+        { source: '需求分析', target: '软件需求规格说明书', label: '输出' },
+        { source: '需求分析', target: '系统设计', label: '引出' },
+        { source: '系统设计', target: '软件需求规格说明书', label: '依据' },
+      ],
+      evidence: [
+        { subject: '需求分析', predicate: '使用', object: '数据流图DFD', score: 0.95 },
+        { subject: '需求分析', predicate: '包含', object: '用例图', score: 0.9 },
+        { subject: '需求分析', predicate: '输出', object: '软件需求规格说明书', score: 0.88 },
+        { subject: '需求分析', predicate: '引出', object: '系统设计', score: 0.86 },
+        { subject: '系统设计', predicate: '依据', object: '软件需求规格说明书', score: 0.84 },
+      ],
+    })
+
+    const richWrapper = await renderGraphMode()
+    await richWrapper.get('[data-testid="graph-mode-quiz"]').trigger('click')
+    await flushPromises()
+
+    expect(richWrapper.find('[data-testid="kg-quiz-card"]').exists()).toBe(true)
+    await richWrapper.get('[data-testid="kg-quiz-option-A"]').trigger('click')
+    await richWrapper.get('[data-testid="kg-quiz-submit"]').trigger('click')
+    await flushPromises()
+
+    expect(richWrapper.get('[data-testid="kg-quiz-feedback"]').text()).toContain('溯源三元组：')
+    expect(richWrapper.get('[data-testid="kg-quiz-score"]').text()).toContain('已核对 1/')
+
+    await richWrapper.get('[data-testid="kg-quiz-focus-node"]').trigger('click')
+    await flushPromises()
+    expect(richWrapper.find('[data-testid="knowledge-graph"]').exists()).toBe(true)
+    richWrapper.unmount()
+  })
 })
