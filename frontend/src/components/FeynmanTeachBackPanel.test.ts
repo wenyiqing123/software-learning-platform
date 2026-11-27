@@ -19,6 +19,9 @@ async function mountPanel(props: { initialKnowledgePoint?: string; courseId?: nu
     routes: [
       { path: '/tutor', component: { template: '<div />' } },
       { path: '/knowledge', component: { template: '<div />' } },
+      { path: '/practice', component: { template: '<div />' } },
+      { path: '/courses', component: { template: '<div />' } },
+      { path: '/flashcards', component: { template: '<div />' } },
     ],
   })
   await router.push('/tutor')
@@ -101,7 +104,11 @@ describe('FeynmanTeachBackPanel', () => {
     expect(draft).toContain('需求分析主要用来调研业务方的真实诉求并确定系统边界。')
     expect(draft).toContain('需求分析最终通过哪份规范化文档冻结？')
 
-    // 点击遗漏图谱关联跳转到对应图谱实体
+    // 点击遗漏图谱关联跳转到对应图谱实体，同时展示定向练习/回看小节/闪卡闭环链接
+    expect(wrapper.find('[data-testid="feynman-remediate-practice"]').attributes('href')).toContain('/practice?knowledgePointId=11')
+    expect(wrapper.find('[data-testid="feynman-remediate-course"]').attributes('href')).toContain('/courses?courseId=3&knowledgePointId=11')
+    expect(wrapper.find('[data-testid="feynman-remediate-flashcard"]').attributes('href')).toContain('/flashcards?courseId=3')
+
     await wrapper.get('[data-testid="feynman-missing"] button').trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.path).toBe('/knowledge')

@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import {
   ArrowRight,
+  BookOpen,
+  CheckSquare,
   ChevronDown,
   CircleAlert,
   CircleCheck,
   Database,
   GraduationCap,
+  Layers,
   Network,
   RotateCcw,
   SendHorizontal,
@@ -15,6 +18,7 @@ import {
   Trash2,
 } from '@lucide/vue'
 import { apiError, learningApi, type FeynmanEvaluateResponse, type KnowledgePoint } from '../api/client'
+import { buildMissingTripleRemediations } from '../domain/feynmanRemediation'
 import MarkdownContent from './MarkdownContent.vue'
 
 const props = withDefaults(defineProps<{
@@ -174,6 +178,16 @@ const roundDelta = computed(() => {
     coveredDiff: latest.coveredCount - prev.coveredCount,
     missingDiff: latest.missingCount - prev.missingCount,
   }
+})
+
+const missingRemediations = computed(() => {
+  if (!result.value) return []
+  return buildMissingTripleRemediations(
+    result.value.missingTriples,
+    result.value.knowledgePoint || trimmedTopic.value,
+    points.value,
+    props.courseId,
+  )
 })
 
 async function submit() {
@@ -389,19 +403,51 @@ function jumpToGraph(entity: string) {
               <CircleAlert :size="15" aria-hidden="true" />
               <span>遗漏的图谱关联</span>
             </h3>
-            <div v-if="result.missingTriples.length" class="feynman-missing-list">
-              <button
-                v-for="(triple, idx) in result.missingTriples"
-                :key="`${idx}-${triple.subject}-${triple.predicate}-${triple.object}`"
-                type="button"
-                class="feynman-triple-jump"
-                @click="jumpToGraph(triple.subject)"
+            <div v-if="missingRemediations.length" class="feynman-missing-list">
+              <div
+                v-for="(plan, idx) in missingRemediations"
+                :key="`${idx}-${plan.triple.subject}-${plan.triple.predicate}-${plan.triple.object}`"
+                class="feynman-missing-item"
               >
-                <span class="feynman-triple-text">
-                  <strong>{{ triple.subject }}</strong> — {{ triple.predicate }} — {{ triple.object }}
-                </span>
-                <ArrowRight :size="14" aria-hidden="true" />
-              </button>
+                <button
+                  type="button"
+                  class="feynman-triple-jump"
+                  @click="jumpToGraph(plan.graphTarget)"
+                >
+                  <span class="feynman-triple-text">
+                    <strong>{{ plan.triple.subject }}</strong> — {{ plan.triple.predicate }} — {{ plan.triple.object }}
+                  </span>
+                  <ArrowRight :size="14" aria-hidden="true" />
+                </button>
+                <div class="feynman-remediation-links" data-testid="feynman-remediation-links">
+                  <RouterLink
+                    v-if="plan.practiceTarget"
+                    :to="plan.practiceTarget"
+                    class="remediation-link-pill"
+                    data-testid="feynman-remediate-practice"
+                  >
+                    <CheckSquare :size="12" aria-hidden="true" />
+                    <span>练「{{ plan.matchedPoint?.name }}」</span>
+                  </RouterLink>
+                  <RouterLink
+                    v-if="plan.courseTarget"
+                    :to="plan.courseTarget"
+                    class="remediation-link-pill"
+                    data-testid="feynman-remediate-course"
+                  >
+                    <BookOpen :size="12" aria-hidden="true" />
+                    <span>回看课程小节</span>
+                  </RouterLink>
+                  <RouterLink
+                    :to="plan.flashcardsTarget"
+                    class="remediation-link-pill"
+                    data-testid="feynman-remediate-flashcard"
+                  >
+                    <Layers :size="12" aria-hidden="true" />
+                    <span>复习闪卡</span>
+                  </RouterLink>
+                </div>
+              </div>
             </div>
             <p v-else class="feynman-empty-note">本次未发现明显遗漏的检索图谱关联。</p>
           </article>
@@ -699,6 +745,38 @@ function jumpToGraph(entity: string) {
 .feynman-missing-list {
   display: grid;
   gap: 8px;
+}
+
+.feynman-missing-item {
+  display: grid;
+  gap: 5px;
+}
+
+.feynman-remediation-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-inline-start: 2px;
+}
+
+.remediation-link-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--accent-strong);
+  font-size: 11.5px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 150ms cubic-bezier(0.2,0,0,1), border-color 150ms cubic-bezier(0.2,0,0,1);
+}
+
+.remediation-link-pill:hover {
+  background: var(--accent-soft);
+  border-color: var(--border-focus);
 }
 
 .feynman-triple-jump {
