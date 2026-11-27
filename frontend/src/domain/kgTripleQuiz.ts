@@ -61,11 +61,14 @@ function factSignature(t: Pick<GraphTripleFact, 'subject' | 'predicate' | 'objec
   return `${t.subject}\u0000${t.predicate}\u0000${t.object}`
 }
 
+export type KgTripleQuizSourceGraph = Pick<GraphResponse, 'available'> &
+  Partial<Pick<GraphResponse, 'nodes' | 'edges' | 'evidence'>>
+
 /**
  * 从真实图谱响应中提取并去重有效的 (subject, predicate, object) 三元组。
  * 优先读取 evidence；当图谱可用且 evidence 为空时回退读取真实图边。图谱离线时始终返回空列表。
  */
-export function extractValidGraphTriples(graph: Pick<GraphResponse, 'available' | 'edges' | 'evidence'> | null | undefined): GraphTripleFact[] {
+export function extractValidGraphTriples(graph: KgTripleQuizSourceGraph | null | undefined): GraphTripleFact[] {
   if (!graph || !graph.available) return []
   const seen = new Set<string>()
   const result: GraphTripleFact[] = []
@@ -126,7 +129,7 @@ function orderOptionsDeterministically(
  * 3. 不使用 LLM 编题、不写库、离线或数据稀疏时诚实降级返回 ready: false。
  */
 export function buildDeterministicKgTripleQuiz(
-  graph: Pick<GraphResponse, 'available' | 'edges' | 'evidence'> | null | undefined,
+  graph: KgTripleQuizSourceGraph | null | undefined,
   maxQuestions = 5,
 ): KgTripleQuizBuildResult {
   if (!graph || !graph.available) {
